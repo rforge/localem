@@ -11,6 +11,10 @@
 #' 
 #' @importFrom spdep poly2nb
 #' @importFrom stats dpois rmultinom
+#' @import sp 
+#' @import Matrix 
+#' @import raster
+
 #' 
 #' @details After using the \code{lemXv} function, the last entry of the data frame object is the theoretical cross-validation score when bandwidth is set to infinity. 
 
