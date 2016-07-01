@@ -4,8 +4,8 @@
 #'  the partitions created by rasterizing the coarse and fine polygons, and 
 #'  their smoothed offsets created by applying the kernel smoothing function with input bandwidths. 
 #'
-#' @param \code{rasterObjects} Raster objects of partitions and smoothed offsets
-#' @param \code{ncores} Number of cores
+#' @param rasterObjects Raster objects of partitions and smoothed offsets
+#' @param ncores Number of cores
 #'
 #' @details After using the \code{smoothingMatrix} function, the smoothing matrix is an array containing the integrated kernel smoothing entries of the partitions divided by the integrated kernel smoothing entries of the study region for each specified bandwidth. 
 #'  

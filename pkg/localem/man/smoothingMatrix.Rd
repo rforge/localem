@@ -7,9 +7,9 @@
 smoothingMatrix(rasterObjects, ncores = 2, verbose = FALSE)
 }
 \arguments{
-\item{\code{rasterObjects}}{Raster objects of partitions and smoothed offsets}
+\item{rasterObjects}{Raster objects of partitions and smoothed offsets}
 
-\item{\code{ncores}}{Number of cores}
+\item{ncores}{Number of cores}
 }
 \value{
 The \code{smoothingMatrix} function returns a list containing an array of smoothing matrix entries, and 

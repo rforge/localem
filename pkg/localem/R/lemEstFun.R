@@ -3,11 +3,11 @@
 #' @description The \code{lemEst} function first creates the smoothing matrix at the final iteration with the input bandwidth, and then,
 #'  computes the estimates of the relative risk on the cells of the fine raster.
 #'
-#' @param \code{x} Spatial polygons of case data
-#' @param \code{lemObjects} List of arrays for the smoothing matrix and
+#' @param x Spatial polygons of case data
+#' @param lemObjects List of arrays for the smoothing matrix and
 #'  raster stacks for the partition and smoothed offsets
-#' @param \code{bw} Numeric value of bandwidth
-#' @param \code{ncores} Number of cores/threads for parallel processing
+#' @param bw Numeric value of bandwidth
+#' @param ncores Number of cores/threads for parallel processing
 #'
 #' @importFrom spdep poly2nb
 #'

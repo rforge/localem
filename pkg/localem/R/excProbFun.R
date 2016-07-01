@@ -3,14 +3,13 @@
 #' @description The \code{excProb} function first bootstraps cases with the input risk thresholds, and then, 
 #'  computes the exceedance probablities with the same bandwidth as the risk estimation on the cells of the fine raster. 
 #' 
-#' @param \code{x} Spatial polygons of case data
-#' @param \code{lemObjects} List of arrays for the smoothing matrix and 
+#' @param x Spatial polygons of case data
+#' @param lemObjects List of arrays for the smoothing matrix and 
 #'  raster stacks for the partition and smoothed offsets
-#' @param \code{threshold} Vector of risk thresholds
-#' @param \code{Nboot} Number of bootstraps
-#' @param \code{ncores} Number of cores/threads for parallel processing
+#' @param threshold Vector of risk thresholds
+#' @param Nboot Number of bootstraps
+#' @param ncores Number of cores/threads for parallel processing
 #' 
-#' @importFrom spdep poly2nb
 #' 
 #' @details After using the \code{excProb} function, the raster of exceedance probabilities is done on cells of the raster on the fine polygons. 
 #' 

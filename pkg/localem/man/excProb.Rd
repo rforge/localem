@@ -8,16 +8,16 @@ excProb(x, lemObjects, threshold = 1, Nboot = 100, ncores = 2,
   tol = 1e-06, maxIter = 2000, verbose = FALSE)
 }
 \arguments{
-\item{\code{x}}{Spatial polygons of case data}
+\item{x}{Spatial polygons of case data}
 
-\item{\code{lemObjects}}{List of arrays for the smoothing matrix and 
+\item{lemObjects}{List of arrays for the smoothing matrix and 
 raster stacks for the partition and smoothed offsets}
 
-\item{\code{threshold}}{Vector of risk thresholds}
+\item{threshold}{Vector of risk thresholds}
 
-\item{\code{Nboot}}{Number of bootstraps}
+\item{Nboot}{Number of bootstraps}
 
-\item{\code{ncores}}{Number of cores/threads for parallel processing}
+\item{ncores}{Number of cores/threads for parallel processing}
 }
 \value{
 The \code{excProb} function returns a raster stack of the risk estimation and 

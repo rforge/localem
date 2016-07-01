@@ -8,14 +8,14 @@ lemEst(x, lemObjects, bw, ncores = 2, tol = 1e-06, maxIter = 2000,
   verbose = FALSE)
 }
 \arguments{
-\item{\code{x}}{Spatial polygons of case data}
+\item{x}{Spatial polygons of case data}
 
-\item{\code{lemObjects}}{List of arrays for the smoothing matrix and
+\item{lemObjects}{List of arrays for the smoothing matrix and
 raster stacks for the partition and smoothed offsets}
 
-\item{\code{bw}}{Numeric value of bandwidth}
+\item{bw}{Numeric value of bandwidth}
 
-\item{\code{ncores}}{Number of cores/threads for parallel processing}
+\item{ncores}{Number of cores/threads for parallel processing}
 }
 \value{
 The \code{lemEst} function returns a list containing the raster of risk estimations,
