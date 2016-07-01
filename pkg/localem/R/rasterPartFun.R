@@ -36,6 +36,7 @@
 #'                    idFile = 'id.grd', offsetFile = 'offset.grd')
 #'}
 #'
+#' @export
 rasterPartition = function(
   polyCoarse, 
   polyFine, 

@@ -29,6 +29,7 @@
 #'                    ncores = 4) 
 #'}
 #'
+#' @export
 smoothingMatrix = function(
   rasterObjects,
   ncores = 2,
