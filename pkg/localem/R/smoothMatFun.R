@@ -6,6 +6,7 @@
 #'
 #' @param rasterObjects Raster objects of partitions and smoothed offsets
 #' @param ncores Number of cores
+#' @param verbose print additional output
 #'
 #' @details After using the \code{smoothingMatrix} function, the smoothing matrix is an array containing the integrated kernel smoothing entries of the partitions divided by the integrated kernel smoothing entries of the study region for each specified bandwidth. 
 #'  

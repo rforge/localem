@@ -18,6 +18,12 @@ raster stacks for the partition and smoothed offsets}
 \item{Nboot}{Number of bootstraps}
 
 \item{ncores}{Number of cores/threads for parallel processing}
+
+\item{tol}{tolerance for convergence}
+
+\item{maxIter}{maximum number of iterations}
+
+\item{verbose}{verbose output}
 }
 \value{
 The \code{excProb} function returns a raster stack of the risk estimation and 

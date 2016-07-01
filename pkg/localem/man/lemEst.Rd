@@ -16,6 +16,12 @@ raster stacks for the partition and smoothed offsets}
 \item{bw}{Numeric value of bandwidth}
 
 \item{ncores}{Number of cores/threads for parallel processing}
+
+\item{tol}{tolerance for convergence}
+
+\item{maxIter}{maximum number of iterations}
+
+\item{verbose}{verbose output}
 }
 \value{
 The \code{lemEst} function returns a list containing the raster of risk estimations,

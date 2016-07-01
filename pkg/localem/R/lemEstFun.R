@@ -8,7 +8,10 @@
 #'  raster stacks for the partition and smoothed offsets
 #' @param bw Numeric value of bandwidth
 #' @param ncores Number of cores/threads for parallel processing
-#'
+#' @param tol tolerance for convergence
+#' @param maxIter maximum number of iterations
+#' @param verbose verbose output
+#' 
 #' @importFrom spdep poly2nb
 #'
 #' @details After using the \code{lemEst} function, the raster of risk estimations is done on cells of the raster on the fine polygons.

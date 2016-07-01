@@ -9,6 +9,9 @@
 #' @param threshold Vector of risk thresholds
 #' @param Nboot Number of bootstraps
 #' @param ncores Number of cores/threads for parallel processing
+#' @param tol tolerance for convergence
+#' @param maxIter maximum number of iterations
+#' @param verbose verbose output
 #' 
 #' 
 #' @details After using the \code{excProb} function, the raster of exceedance probabilities is done on cells of the raster on the fine polygons. 

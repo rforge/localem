@@ -9,21 +9,23 @@ rasterPartition(polyCoarse, polyFine, cellsCoarse = 40, cellsFine = 400, bw,
   offsetFile = paste(tempfile(), "Offset.grd", sep = ""), verbose = FALSE)
 }
 \arguments{
-\item{\code{polyCoarse}}{Spatial polygons of case data}
+\item{polyCoarse}{Spatial polygons of case data}
 
-\item{\code{polyFine}}{Spatial polygons of population data}
+\item{polyFine}{Spatial polygons of population data}
 
-\item{\code{bw}}{Vector of bandwidths}
+\item{cellsCoarse}{Horizontal/vertical resolution of raster applied to coarse polygons}
 
-\item{\code{cellsCoarse}}{Horizontal/vertical resolution of raster applied to coarse polygons}
+\item{cellsFine}{Horizontal/vertical resolution of raster applied to fine polygons}
 
-\item{\code{cellsFine}}{Horizontal/vertical resolution of raster applied to fine polygons}
+\item{bw}{Vector of bandwidths}
 
-\item{\code{ncores}}{Number of cores/threads for parallel processing}
+\item{ncores}{Number of cores/threads for parallel processing}
 
-\item{\code{idFile}}{Filename (must have .grd extension) of the raster of partitions}
+\item{idFile}{Filename (must have .grd extension) of the raster of partitions}
 
-\item{\code{offsetFile}}{Filename (must have .grd extension) of the rasters of smoothed offsets}
+\item{offsetFile}{Filename (must have .grd extension) of the rasters of smoothed offsets}
+
+\item{verbose}{verbose output}
 }
 \value{
 The \code{rasterPartition} function returns a list containing the raster of the coarse polygons, 

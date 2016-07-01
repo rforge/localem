@@ -4,14 +4,16 @@
 #'  overlays these rasters to generate the raster of partitions of the local-EM algorithm. 
 #'  It also applies the kernel smoothing function with input bandwidths to the expected counts of the fine polygons to obtain the smoothed offsets (i.e., smoothed expected counts / cell area) of the partitions. 
 #' 
-#' @param \code{polyCoarse} Spatial polygons of case data
-#' @param \code{polyFine} Spatial polygons of population data
-#' @param \code{bw} Vector of bandwidths
-#' @param \code{cellsCoarse} Horizontal/vertical resolution of raster applied to coarse polygons
-#' @param \code{cellsFine} Horizontal/vertical resolution of raster applied to fine polygons
-#' @param \code{ncores} Number of cores/threads for parallel processing
-#' @param \code{idFile} Filename (must have .grd extension) of the raster of partitions
-#' @param \code{offsetFile} Filename (must have .grd extension) of the rasters of smoothed offsets
+#' @param polyCoarse Spatial polygons of case data
+#' @param polyFine Spatial polygons of population data
+#' @param bw Vector of bandwidths
+#' @param cellsCoarse Horizontal/vertical resolution of raster applied to coarse polygons
+#' @param cellsFine Horizontal/vertical resolution of raster applied to fine polygons
+#' @param ncores Number of cores/threads for parallel processing
+#' @param idFile Filename (must have .grd extension) of the raster of partitions
+#' @param offsetFile Filename (must have .grd extension) of the rasters of smoothed offsets
+#' @param verbose verbose output
+#' 
 #' 
 #' @details After using the \code{rasterPartition} function, the fine raster is a raster stack containing the IDs for the partitions created by overlaying the coarse and fine rasters. 
 #'  The offset raster is a raster stack containing the offsets of the partitions smoothed with the specified bandwidths. These values represent the denominator of the kernel smoothing matrix. 

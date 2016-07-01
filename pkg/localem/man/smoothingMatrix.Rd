@@ -10,6 +10,8 @@ smoothingMatrix(rasterObjects, ncores = 2, verbose = FALSE)
 \item{rasterObjects}{Raster objects of partitions and smoothed offsets}
 
 \item{ncores}{Number of cores}
+
+\item{verbose}{print additional output}
 }
 \value{
 The \code{smoothingMatrix} function returns a list containing an array of smoothing matrix entries, and 

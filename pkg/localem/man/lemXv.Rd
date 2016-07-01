@@ -8,14 +8,22 @@ lemXv(x, lemObjects, Nxv = 5, ncores = 4, tol = 1e-06, maxIter = 2000,
   randomSeed = NULL, verbose = FALSE)
 }
 \arguments{
-\item{\code{x}}{Spatial polygons of case data}
+\item{x}{Spatial polygons of case data}
 
-\item{\code{lemObjects}}{List of arrays for the smoothing matrix and 
+\item{lemObjects}{List of arrays for the smoothing matrix and 
 raster stacks for the partition and smoothed offsets}
 
-\item{\code{Nxv}}{Number of cross-validation datasets}
+\item{Nxv}{Number of cross-validation datasets}
 
-\item{\code{ncores}}{Number of cores/threads for parallel processing}
+\item{ncores}{Number of cores/threads for parallel processing}
+
+\item{tol}{tolerance for convergence}
+
+\item{maxIter}{maximum number of iterations}
+
+\item{randomSeed}{seed for radom number generator}
+
+\item{verbose}{verbose output}
 }
 \value{
 The \code{lemXv} function returns a data frame of specified bandwidths and cross-validation scores.
