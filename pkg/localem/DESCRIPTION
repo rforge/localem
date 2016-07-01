@@ -10,15 +10,17 @@ Description: Implementing the kernel smoothing local-EM algorithm on
     estimate spatial risk.
 License: GPL-2
 LazyData: FALSE
-Imports:
-    spdep
 Depends:
-    parallel,
-    rgdal,
     raster,
     sp,
-    rgeos,
-    diseasemapping,
-    geostatsp,
     Matrix
+Imports:
+    spdep,
+    parallel,
+    rgeos,
+    geostatsp,
+    stats
+Suggests:
+    diseasemapping,
+    rgdal
 RoxygenNote: 5.0.1

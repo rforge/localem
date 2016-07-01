@@ -10,6 +10,7 @@
 #' @param \code{ncores} Number of cores/threads for parallel processing
 #' 
 #' @importFrom spdep poly2nb
+#' @importFrom stats dpois rmultinom
 #' 
 #' @details After using the \code{lemXv} function, the last entry of the data frame object is the theoretical cross-validation score when bandwidth is set to infinity. 
 
