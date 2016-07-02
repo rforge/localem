@@ -12,7 +12,6 @@
 #' @param maxIter maximum number of iterations
 #' @param verbose verbose output
 #' 
-#' @importFrom spdep poly2nb
 #'
 #' @details After using the \code{lemEst} function, the raster of risk estimations is done on cells of the raster on the fine polygons.
 

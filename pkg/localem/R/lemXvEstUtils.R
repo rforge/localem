@@ -506,7 +506,7 @@ riskEst = function(x,
   #fine raster did not include all regions in the coarse shapefile
   if(length(idCoarse) != dim(regionMat)[[2]]) {
 
-    polyNeigh = poly2nb(lemObjects$polyCoarse, row.names = idCoarse)
+    polyNeigh = spdep::poly2nb(lemObjects$polyCoarse, row.names = idCoarse)
 
     idMatch = idCoarse[as.numeric(dimnames(regionMat)[[2]])]
     idNotMatch = idCoarse[!(idCoarse %in% idMatch)]
