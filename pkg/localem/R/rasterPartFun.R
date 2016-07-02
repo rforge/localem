@@ -66,51 +66,53 @@ rasterPartition = function(
   names(rasterCoarse) = "cellCoarse"
 
   rasterFine = disaggregate(rasterCoarse,
-                            ceiling(cellsFine/ncol(rasterCoarse)))
-
-  idCoarse = 1:length(polyCoarse)
+      ceiling(cellsFine/ncol(rasterCoarse)))
+	names(rasterFine) = 'cellCoarse'
+	
+	# coarse poly ID's for fine raster
+	idCoarse = 1:length(polyCoarse)
   names(idCoarse) = polyCoarse$id
   polyCoarse$idCoarse = idCoarse
-  polyFine$idFine = 1:length(polyFine)
+	
+	rasterIdCoarse = rasterize(
+			polyCoarse,
+      rasterFine,
+      field='idCoarse')
+	names(rasterIdCoarse) = 'idCoarse'
+	
+  polyFine@data[is.na(polyFine@data[,'expected']),'expected'] = 0
+	
+	rasterOffset = geostatsp::spdfToBrick(
+			x=polyFine,
+      template=rasterFine,
+      pattern='expected')
+  names(rasterOffset) = 'offset'
+	
+  rasterOffset = raster::mask(rasterOffset, rasterIdCoarse[['idCoarse']])
+	
+  rasterOffset = writeRaster(rasterOffset,
+      paste(tempfile(), ".grd"))
+												
 
-  rasterRes <- parallel::mccollect(
-    list(
-      parallel::mcparallel(
-        rasterize(polyFine,
-                  rasterFine,
-                  field='idFine')
-      ),
-      parallel::mcparallel(
-        rasterize(polyCoarse,
-                  rasterFine,
-                  field='idCoarse')
-      )
-    )
-  )
+	
 
-  names(rasterRes[[1]]) = 'idFine'
-  rasterFineId = stack(rasterRes[[1]], rasterFine)
-
-  names(rasterRes[[2]]) = 'idCoarse'
-  rasterFineId = addLayer(rasterFineId,
-                          rasterRes[[2]])
-  theNames = names(rasterFineId)
+	# fine ID (iffset
+	# scale the offsets to cases per cell
+  # times 10 (roughly)
+	# then create fine ID's with homogeneous offsets
+  maxOffset = 10^5 / maxValue(rasterOffset)
+  ratifyOffset = ratify(round(rasterOffset*maxOffset), count=FALSE)
+	stuff= levels(ratifyOffset)[[1]]
+	stuff$idFine = seq(1, nrow(stuff))
+	levels(ratifyOffset) = stuff
+	rasterIdFine = deratify(ratifyOffset, 'idFine')
+	
+	rasterFineId = brick(rasterIdCoarse, rasterIdFine, rasterFine)	
+	
+	
   rasterFineId = writeRaster(rasterFineId, idFile,
                              overwrite=file.exists(idFile))
-  names(rasterFineId) = theNames
-
-  polyFine@data[is.na(polyFine@data[,'expected']),'expected'] = 0
-  rasterOffset = offsetSpToRaster(x=polyFine,
-                                  rasterFine=rasterFineId,
-                                  pattern='expected')
-  names(rasterOffset) = 'offset'
-
-  rasterOffset = raster::mask(rasterOffset, rasterFineId[['idCoarse']])
-
-  theNames = names(rasterOffset)
-  rasterOffset = writeRaster(rasterOffset,
-                             paste(tempfile(), ".grd"))
-  names(rasterOffset) = theNames
+	
 
   theFocal = focalFromBw(bw = bw, rasterFine, ncores=ncores)
 

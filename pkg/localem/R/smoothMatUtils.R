@@ -233,12 +233,12 @@ smoothingMatrixDiag = function(
 
   # matrices for local-EM M bit
   Scells = ifelse(is.na(values(rasterFine[["cellCoarse"]])) | is.na(values(rasterFine[["idCoarse"]])),
-                  NA,
-                  paste("c", values(rasterFine[["cellCoarse"]]), "p", values(rasterFine[["idCoarse"]]), sep = "")
+      NA,
+      paste("c", values(rasterFine[["cellCoarse"]]), "p", values(rasterFine[["idCoarse"]]), sep = "")
   )
   meanOffsets = tapply(values(offsetRaster[['offset']]),
-                       list(Scells),
-                       mean, na.rm=TRUE)
+      list(Scells),
+      mean, na.rm=TRUE)
   meanOffsets = meanOffsets[match(Spartitions, names(meanOffsets))]
   offsetMat = Diagonal(length(Spartitions), meanOffsets)
 

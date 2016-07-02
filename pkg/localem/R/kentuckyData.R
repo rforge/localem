@@ -42,3 +42,28 @@ NULL
 #' spplot(kentuckyTract, 'logOffset')
 #'
 NULL
+
+#' @title Map of Kentucky
+#'
+#' @description Stamen toner map of Kentucky
+#'
+#' @name kMap
+#'
+#' @docType data
+#'
+#' @usage data('kMap')
+#'
+#' @format A SpatialPolygonsDataFrame of Kentucky census tract boundaries and populations.
+#'
+#' @details The lung cancer case data are obtained from www.cancer-rates.info and were simulated from a log Gaussian Cox process for deliberately unspecified years.
+#'
+#' @keywords datasets
+#'
+#' @examples
+#' data('kentuckyTract')
+#' data('kMap')
+#' mapmisc::map.new(kentuckyTract)
+#' plot(kentuckyTract, col='yellow', border='#00FF0020', add=TRUE)
+#' plot(kMap, add=TRUE)
+#' mapmisc::scaleBar(kentuckyTract, 'topleft', bg='white')
+NULL

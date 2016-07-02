@@ -16,12 +16,15 @@ Depends:
     sp,
     Matrix
 Imports:
-    spdep,
     parallel,
     rgeos,
     geostatsp,
     stats
 Suggests:
+    spdep,
     diseasemapping,
-    rgdal
+    rgdal,
+	mapmisc
+Enhances:
+	RandomFields
 RoxygenNote: 5.0.1
