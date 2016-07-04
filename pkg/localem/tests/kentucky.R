@@ -38,11 +38,10 @@ oCol = colourScale(
 		breaks=10, style='equal',
 		dec=7, transform='sqrt'
 		)
-map.new(kentuckyTract[35,], buffer=10000)
+map.new(kentuckyTract)
 plot(lemRaster$offset$offset,
 		col=oCol$col, breaks=oCol$breaks,
 		legend=FALSE, add=TRUE)
-plot(kentuckyTract,add=TRUE)
 plot(kMap, add=TRUE)
 
 legendBreaks("topleft", 
@@ -61,7 +60,15 @@ if(!interactive()) {
 
 lemSmoothMat = smoothingMatrix(
 		rasterObjects = lemRaster, 
-    ncores = ncores) 
+    ncores = ncores,
+		verbose=TRUE) 
+
+cell1 = cell2 = 12
+    focalList=kernelArrayD
+    coarse=rasterCoarse
+    fine=rasterFine
+    offsetRaster=offsetRaster
+
 
 dim(lemSmoothMat$smoothingArray)
 length(lemSmoothMat$polyCoarse)
