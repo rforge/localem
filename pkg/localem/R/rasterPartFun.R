@@ -38,17 +38,17 @@
 #'
 #' @export
 rasterPartition = function(
-  polyCoarse, 
-  polyFine, 
-  cellsCoarse = 40, 
-  cellsFine = 400, 
-  bw, 
-  ncores = 2, 
-  idFile = paste(tempfile(), 'Id.grd', sep = ''), 
-  offsetFile = paste(tempfile(), 'Offset.grd', sep = ''), 
-  verbose = FALSE
+  	polyCoarse, 
+  	polyFine, 
+  	cellsCoarse = 40, 
+  	cellsFine = 400, 
+  	bw, 
+  	ncores = 2, 
+  	idFile = paste(tempfile(), 'Id.grd', sep = ''), 
+  	offsetFile = paste(tempfile(), 'Offset.grd', sep = ''), 
+  	verbose = FALSE
 ){
-
+	
   if(verbose) {
     cat(date(), "\n")
     cat("obtaining rasters\n")
@@ -60,11 +60,11 @@ rasterPartition = function(
   if(!(length(grep("\\.grd$", idFile)))){
     warning("idFile should have .grd extension")
   }
-
+	
   rasterCoarse=geostatsp::squareRaster(polyCoarse, cellsCoarse)
   values(rasterCoarse) = seq(1, ncell(rasterCoarse))
   names(rasterCoarse) = "cellCoarse"
-
+	
   rasterFine = disaggregate(rasterCoarse,
       ceiling(cellsFine/ncol(rasterCoarse)))
 	names(rasterFine) = 'cellCoarse'
@@ -92,10 +92,10 @@ rasterPartition = function(
 	
   rasterOffset = writeRaster(rasterOffset,
       paste(tempfile(), ".grd"))
-												
-
 	
-
+	
+	
+	
 	# fine ID (iffset
 	# scale the offsets to cases per cell
   # times 10 (roughly)
@@ -111,56 +111,56 @@ rasterPartition = function(
 	
 	
   rasterFineId = writeRaster(rasterFineId, idFile,
-                             overwrite=file.exists(idFile))
+      overwrite=file.exists(idFile))
 	
-
+	
   theFocal = focalFromBw(bw = bw, rasterFine, ncores=ncores)
-
+	
   Sagg = sort(setdiff(unique(theFocal$bw$fact), 1))
   offsetAgg = parallel::mcmapply(
-    aggregate,
-    fact = Sagg,
-    MoreArgs=list(
-      x=rasterOffset[['offset']])
+    	aggregate,
+    	fact = Sagg,
+    	MoreArgs=list(
+      		x=rasterOffset[['offset']])
   )
   for(D in names(offsetAgg)){
     offsetAgg[[D]] = addLayer(offsetAgg[[D]], raster(offsetAgg[[D]]))
     names(offsetAgg[[D]]) = 'offset'
     offsetAgg[[D]] = writeRaster(offsetAgg[[D]],
-                                 paste(tempfile(), ".grd"))
+        paste(tempfile(), ".grd"))
   }
-
+	
   forSmooth = expand.grid(bw=names(theFocal$focal),
-                          layer='offset')
-
+      layer='offset')
+	
   smoothedOffset = parallel::mcmapply(
-    Dbw=forSmooth[,'bw'],
-    Dlayer = forSmooth[,'layer'],
-    function(Dbw,Dlayer){
-      res = raster::focal(
-        x=rasterOffset[[Dlayer]],
-        w=theFocal$focal[[Dbw]],
-        na.rm=TRUE,pad=TRUE)
-      names(res) = paste(Dlayer,Dbw,sep='.')
-      res
-    },
-    mc.cores=ncores)
-
+    	Dbw=forSmooth[,'bw'],
+    	Dlayer = forSmooth[,'layer'],
+    	function(Dbw,Dlayer){
+      	res = raster::focal(
+        		x=rasterOffset[[Dlayer]],
+        		w=theFocal$focal[[Dbw]],
+        		na.rm=TRUE,pad=TRUE)
+      	names(res) = paste(Dlayer,Dbw,sep='.')
+      	res
+    	},
+    	mc.cores=ncores)
+	
   offsetStack = rasterOffset
   for(D in 1:length(smoothedOffset))
     offsetStack = addLayer(offsetStack, smoothedOffset[[D]])
-
+	
   theNames = names(offsetStack)
   offsetStack = raster::mask(offsetStack, rasterFineId[['idCoarse']])
   offsetStack = writeRaster(offsetStack, offsetFile,overwrite=TRUE)
   names(offsetStack) = theNames
-
+	
   result = list(
-    rasterCoarse=rasterCoarse,
-    rasterFine=rasterFineId,
-    focal=theFocal,
-    offset=offsetStack,
-    polyCoarse = polyCoarse[,grep("^id", names(polyCoarse))]
+    	rasterCoarse=rasterCoarse,
+    	rasterFine=rasterFineId,
+    	focal=theFocal,
+    	offset=offsetStack,
+    	polyCoarse = polyCoarse[,grep("^id", names(polyCoarse))]
   )
   
   return(result)
