@@ -96,7 +96,7 @@ smoothingMatrix = function(
   if(any(smoothingArrayInf)) {
     cat("excluding bandwidths (b/c infinite values in smoothing matrix): ", bw[smoothingArrayInf],  "\n")
 
-    theMat$smoothingArray = theMat$smoothingArray[,,!smoothingArrayInf]
+    theMat$smoothingArray = theMat$smoothingArray[,,!smoothingArrayInf,drop=FALSE]
   }
 
   result = c(theMat, rasterObjects)

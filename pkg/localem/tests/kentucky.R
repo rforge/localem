@@ -63,15 +63,21 @@ lemSmoothMat = smoothingMatrix(
     ncores = ncores,
 		verbose=TRUE) 
 
-cell1 = cell2 = 12
-    focalList=kernelArrayD
-    coarse=rasterCoarse
-    fine=rasterFine
-    offsetRaster=offsetRaster
-
-
 dim(lemSmoothMat$smoothingArray)
-length(lemSmoothMat$polyCoarse)
-length(kentuckyTract)
-length(unique(values(lemRaster$rasterFine$idFine)))
-length(unique(values(lemRaster$offset$offset)))
+dimnames(lemSmoothMat$smoothingArray)[[3]]
+
+
+lemCv = lemXv(x = kentuckyCounty, 
+                    lemObjects = lemSmoothMat, 
+                    ncores = ncores) 
+
+do.call(rbind, lemCv)
+								
+								
+lemRisk = riskEst(x = kentuckyCounty,
+                    lemObjects = lemSmoothMat,
+                    bw = lemCv$bw[1]
+								)
+
+
+								

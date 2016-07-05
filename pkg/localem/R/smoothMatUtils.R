@@ -138,7 +138,7 @@ smoothingMatrixEntries = function(
     #Sarea2 = SNcells2 * Scw2
   	Sarea2 = cellInfo2$partition$Freq * Scw2
 		
-    if(!length(Spart2)){
+    if(!length(Sarea2)){
       res[[as.character(Dcell2)]]=NULL
     }
 		

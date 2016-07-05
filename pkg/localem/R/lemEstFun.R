@@ -66,11 +66,11 @@ lemEst = function(x,
   }
 
   #smoothing matrix for the final iteration
-  theFinalMat = smoothingFinalMat(
-    lemObjects=lemObjects,
-    bw=bw,
-    ncores=ncores
-  )
+#  theFinalMat = smoothingFinalMat(
+#    lemObjects=lemObjects,
+#    bw=bw,
+#    ncores=ncores
+#  )
 
   if(verbose) {
     cat(date(), "\n")
@@ -80,8 +80,8 @@ lemEst = function(x,
   #risk estimation
   theRisk = riskEst(
     x=x,
-    lemObjects=theFinalMat,
-    bw=dimnames(theFinalMat$smoothingArray)[[3]],
+    lemObjects=lemObjects,
+    bw=bwdimnames(theFinalMat$smoothingArray)[[3]],
     tol=tol,
     maxIter=maxIter
   )

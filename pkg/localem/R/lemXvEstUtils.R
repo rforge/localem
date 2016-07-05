@@ -12,6 +12,8 @@ oneLemIter = function(
     t(smoothingMat) %*% em
   )
 
+	attributes(result)$em = em
+	
   return(result)
 }
 
@@ -134,11 +136,14 @@ smoothingFinalStepEntries = function(
       }
     } # end cells not equal
 
-    Spart2 = cellInfo2$idCoarse
-    SNcells2 = tapply(cellInfo2$id[,"idCoarse"], list(cellInfo2$id[,"idCoarse"]), length)
-    Sarea2 = SNcells2 * Scw2
+    #Spart2 = cellInfo2$idCoarse
+    #SNcells2 = tapply(cellInfo2$id[,"idCoarse"], list(cellInfo2$id[,"idCoarse"]), length)
+    #Sarea2 = SNcells2 * Scw2
+		
+		Sarea2 = cellInfo2$partition$Freq * Scw2
+		
 
-    if(!length(Spart2)){
+    if(!length(Sarea2)){
       res[[as.character(Dcell2)]]=NULL
     }
 
@@ -148,15 +153,31 @@ smoothingFinalStepEntries = function(
     smoothedOffset2 = aperm(smoothedOffset2, c(3,1,2))
 
     # the final smoothing matrix (or part thereof)
-    Scell1 = ifelse(is.na(cellInfo2$id[,"idCoarse"]),
-                    NA,
-                    paste("c", Dcell2, "p", cellInfo2$id[,"idCoarse"], sep='')
-    )
-    Scell2 = ifelse(is.na(cellInfo1$id[,"idCoarse"]),
-                    NA,
-                    paste("c", cell1, "p", cellInfo1$id[,"idCoarse"], sep='')
-    )
+    #Scell1 = ifelse(is.na(cellInfo2$id[,"idCoarse"]),
+      #              NA,
+     #               paste("c", Dcell2, "p", cellInfo2$id[,"idCoarse"], sep='')
+    #)
+    #Scell2 = ifelse(is.na(cellInfo1$id[,"idCoarse"]),
+      #              NA,
+     #               paste("c", cell1, "p", cellInfo1$id[,"idCoarse"], sep='')
+    #)
 
+		theDimnames = list(
+      	paste("c", cell1, "p", 
+						cellInfo1$partition$coarse, '.', 
+						cellInfo1$partition$fine, sep=''),
+      	paste("c", Dcell2, "p",						
+						cellInfo2$partition$coarse, '.', 
+						cellInfo2$partition$fine, sep=''),
+      	Sbw,
+      	c('straightup', 'transpose')
+    )
+		
+    theDim = c(
+      	nrow(cellInfo1$partition),
+      	nrow(cellInfo2$partition),
+      	length(Sbw),2)
+		
 
     theDim1 = c(
       cellInfo2$Ncells,
@@ -412,13 +433,8 @@ smoothingFinalMat = function(
   focal$focal = focal$focal[focalBw]
   focal$extended = focal$extended[focalBw]
 
-  smoothingArray = lemObjects$smoothingArray[,,names(focal$focal)]
-  if(length(dim(smoothingArray)) == 2) {
-    smoothingArray = array(smoothingArray,
-                           dim = c(dim(smoothingArray),1),
-                           dimnames = list(dimnames(smoothingArray)[[1]], dimnames(smoothingArray)[[2]], names(focal$focal))
-    )
-  }
+  smoothingArray = lemObjects$smoothingArray[,,names(focal$focal), drop=FALSE]
+
 
   rasterOffset = lemObjects$offset[[c("offset",
                                       paste("offset.", names(focal$focal), sep="")
@@ -499,12 +515,13 @@ riskEst = function(x,
 
   regionMat = lemObjects$regionMat
   offsetMat = lemObjects$offsetMat
-  smoothingMat = lemObjects$smoothingArray[,,bw]
+  smoothingMat = lemObjects$smoothingArray[,,
+			paste('bw', bw, sep='')]
 
   idCoarse = lemObjects$polyCoarse$id
 
   #fine raster did not include all regions in the coarse shapefile
-  if(length(idCoarse) != dim(regionMat)[[2]]) {
+  if(length(idCoarse) != dim(regionMat)[2]) {
 
     polyNeigh = spdep::poly2nb(lemObjects$polyCoarse, row.names = idCoarse)
 
@@ -551,6 +568,7 @@ riskEst = function(x,
       }
     }
   } else {
+		#fine raster does include all regions in the coarse shapefile
     obsCounts = as.matrix(x$count[match(idCoarse, x[['id']])])
   }
 
@@ -565,6 +583,8 @@ riskEst = function(x,
   Diter = 1
   absdiff = 1
 
+#	smoothingMat = smoothingMat / prod(res(lemObjects$offset))
+	
   while((absdiff > tol) && (Diter < maxIter)) {
 
     Lambda = oneLemIter(
@@ -580,34 +600,55 @@ riskEst = function(x,
     Diter = Diter + 1
   }
 
-  #risk estimation for point-locations
-  offsetRaster = lemObjects$offsetRaster
-  offsetRaster[values(offsetRaster) == 0] = NA
 
-  pointsMat = cbind(Re(lemObjects$pointsStepArray), Im(lemObjects$pointsStepArray))
-  smoothingStepMat = lemObjects$smoothingStepArray[,,bw]
+	lambdaMult = offsetMat %*% Lambda
+	
+	# convert lambdas to rasters
 
-  denom = t(regionMat) %*% offsetMat %*% Lambda
-  em = t(t(obsCounts/denom) %*% t(regionMat) %*% offsetMat) * Lambda
-  em[as.vector(!is.finite(em))] = 0
-  em = as.matrix(em[match(dimnames(smoothingStepMat)[[2]], dimnames(em)[[1]])])
-
-  pointsRisk = as.numeric(smoothingStepMat %*% em)
-
-  pointsCells = !is.na(pointsRisk)
-  pointsRisk = pointsRisk[pointsCells]
-  pointsMat = pointsMat[pointsCells,]
-  dimnames(pointsMat)[[1]] = 1:dim(pointsMat)[1]
-
-  estRisk = SpatialPointsDataFrame(
-    coords = pointsMat,
-    data = data.frame(risk = pointsRisk),
-    proj4string = CRS(proj4string(offsetRaster))
-  )
-
-  result = rasterize(estRisk, offsetRaster, field = "risk")
-  result = raster::mask(result, offsetRaster)
-  result = raster::trim(result)
+	resultRaster = lemObjects$rasterFine$idFine + 
+			(maxValue(lemObjects$rasterFine$idFine)+10)*lemObjects$rasterFine$idCoarse
+	
+	resultRaster = resultRaster + (
+				maxValue(resultRaster)+10) * lemObjects$rasterFine$cellCoarse
+	
+	resultRaster = ratify(resultRaster, count=TRUE)
+	
+	uniqueCells = levels(resultRaster)[[1]]$ID
+	uniqueCells = match(uniqueCells, values(resultRaster))
+	
+	for(Dname in names(lemObjects$rasterFine))
+		levels(resultRaster)[[1]][[Dname]] =
+				values(lemObjects$rasterFine[[Dname]])[uniqueCells]
+	
+	levels(resultRaster)[[1]]$expected = 
+			values(lemObjects$offset$offset)[uniqueCells] * 
+			prod(res(lemObjects$offset))
+	
+	levels(resultRaster)[[1]]$partition = paste(
+			'c', levels(resultRaster)[[1]]$cellCoarse,
+			'p', levels(resultRaster)[[1]]$idCoarse,
+			'.', levels(resultRaster)[[1]]$idFine,
+			sep=''
+			)
+	
+	levels(resultRaster)[[1]]$em = attributes(Lambda)$em[levels(resultRaster)[[1]]$partition,]		
+	levels(resultRaster)[[1]]$bigLambda = lambdaMult[levels(resultRaster)[[1]]$partition,]		
+	levels(resultRaster)[[1]]$lambda = levels(resultRaster)[[1]]$bigLambda / 
+			(levels(resultRaster)[[1]]$COUNT * levels(resultRaster)[[1]]$expected)
+	
+	levels(resultRaster)[[1]]$emScale = levels(resultRaster)[[1]]$em / (
+				levels(resultRaster)[[1]]$COUNT * prod(res(resultRaster)))
+	
+	emScale = deratify(resultRaster, 'emScale')
+	
+	emSmooth = focal(
+			x=emScale, 
+			w=lemObjects$focal$focal[[paste('bw',bw, sep='')]],
+			na.rm=TRUE,pad=TRUE
+			)
+	
+	result = emSmooth/lemObjects$offset[[paste('offset.bw',bw, sep='')]]
+	
 
   return(result)
 }
