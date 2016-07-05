@@ -509,8 +509,8 @@ smoothingFinalMat = function(
 riskEst = function(x,
                   lemObjects,
                   bw,
-                  tol,
-                  maxIter
+									tol = 1e-6,
+  								maxIter = 2000
 ) {
 
   regionMat = lemObjects$regionMat
