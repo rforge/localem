@@ -1,43 +1,48 @@
 #' # Local-EM example with Kentucky
 
+#+ setup
+
+ncores = 1+ (.Platform$OS.type=='unix')
+
 library('localEM')
 library('mapmisc')
 
 data('kentuckyCounty') 
 data('kentuckyTract')
+
+data('kMap')
+
 kentuckyTract$expected = kentuckyTract$expected/5
+#'
 
-if(interactive()) {
-	kMapOrig = openmap(
-			kentuckyCounty,
-			path='stamen-toner')
-	kMap = tonerToTrans(kMapOrig)
-} else {
-	data('kMap')
+#+ forFigures, eval=FALSE, include=FALSE
+if(!interactive()) {
+	pdf("kentucky.pdf")
 }
+#'
 
 
 
-ncores = 1+ (.Platform$OS.type=='unix')
+
 
 #' # Rasters
 
+#+ rasters, cache=TRUE
 lemRaster = rasterPartition(
 		polyCoarse = kentuckyCounty, 
 		polyFine = kentuckyTract, 
     cellsCoarse = 5, 
-		cellsFine = 120,
+		cellsFine = 150,
     bw = c(8, 10,15, 20, 30) * 1000, 
     ncores = ncores
 )
 
 sum(kentuckyTract$expected)
 sum(values(lemRaster$offset$offset), na.rm=TRUE)*prod(res(lemRaster$offset))
+#'
 
-if(!interactive()) {
-	pdf("kentucky.pdf")
-}
 
+#+ plotOffset, echo=FALSE
 oCol = colourScale(
 		lemRaster$offset$offset,
 		breaks=10, style='equal',
@@ -58,9 +63,13 @@ scaleBar(kentuckyCounty,
 		inset=c(0.3, 0.1),
 		bg='white'
 )
+#'
 
+#' 
 #' # Simulate cases
+#' 
 
+#+ simcases, cache=TRUE
 kLogOffset = log(lemRaster$offset$offset)
 names(kLogOffset) = 'logOffset'
 
@@ -75,6 +84,14 @@ length(kCases$events)
 sum(values(kCases$raster$intensity), na.rm=TRUE)*prod(res(kCases$raster))
 
 
+countyCounts = table(over(kCases$events, kentuckyCounty)$id)
+kentuckyCounty$count = countyCounts[kentuckyCounty$id]
+kentuckyCounty$count[is.na(kentuckyCounty$count)]= 0
+
+#'
+
+
+#+ plotCases, fig.cap = 'simulated', fig.subcap = c('intensity','events'), echo=FALSE
 iCol = colourScale(
 		kCases$raster$relativeIntensity,
 		breaks=8, dec=1, style='equal'
@@ -95,7 +112,6 @@ scaleBar(kentuckyCounty,
 		bg='white'
 )
 		
-		
 map.new(kentuckyTract)
 plot(kMap, add=TRUE)
 points(kCases$events, col='#FF000030')
@@ -105,13 +121,12 @@ scaleBar(kentuckyCounty,
 		inset=c(0.3, 0.1),
 		bg='white'
 )
+#+		
 
-countyCounts = table(over(kCases$events, kentuckyCounty)$id)
-kentuckyCounty$count = countyCounts[kentuckyCounty$id]
-kentuckyCounty$count[is.na(kentuckyCounty$count)]= 0
 
 #' # Smoothing Matrix
 
+#+ smoothingMatrix, cache=TRUE
 lemSmoothMat = smoothingMatrix(
 		rasterObjects = lemRaster, 
     ncores = ncores,
@@ -119,25 +134,31 @@ lemSmoothMat = smoothingMatrix(
 
 dim(lemSmoothMat$smoothingArray)
 dimnames(lemSmoothMat$smoothingArray)[[3]]
+#'
 
-
+#+ cv, cache=TRUE
 lemCv = lemXv(x = kentuckyCounty, 
     lemObjects = lemSmoothMat, 
     ncores = ncores) 
+bestBw = lemCv$bw[which.min(lemCv$cv)]
+#'
 
+#+ plotCv, echo=FALSE
 par(mar=c(5,5,1,1))
 plot(do.call(cbind, lemCv), xlab='bw', ylab='cv', log='x', pch=16, col='red')
+abline(v=bestBw, lty=3)
+#'
 
 #' # Risk estimates
 
-bestBw = lemCv$bw[which.min(lemCv$cv)]
-
+#+ riskExt, cache=TRUE
 lemRisk = riskEst(x = kentuckyCounty,
     lemObjects = lemSmoothMat,
     bw = bestBw
 )
+#'
 
-
+#+ plotRisk, echo=FALSE
 rCol = colourScale(
 		lemRisk,
 		breaks=10, style='equal',
@@ -161,10 +182,11 @@ scaleBar(kentuckyCounty,
 		inset=c(0.3, 0.1),
 		bg='white'
 )
-
+#'
 
 #' # Exceedance probabilities
 
+#+ excProb, cache=TRUE
 lemExcProb = excProb(x = kentuckyCounty, 
     lemObjects = lemSmoothMat, 
 		estimate=lemRisk,
@@ -172,7 +194,9 @@ lemExcProb = excProb(x = kentuckyCounty,
     threshold = c(1.2, 1.5), 
     Nboot = 10, 
     ncores = ncores) 
+#'
 
+#+ plotExcProb, echo=FALSE
 pCol = colourScale(
 		lemExcProb$threshold.1.5,
 		breaks=5, style='equal'
@@ -195,8 +219,13 @@ scaleBar(kentuckyCounty,
 		inset=c(0.3, 0.1),
 		bg='white'
 )
+#'
 
-		
+#+ forFiguresEnd, eval=FALSE, include=FALSE
 if(!interactive()) {
 	dev.off()
 }
+
+#'
+
+
