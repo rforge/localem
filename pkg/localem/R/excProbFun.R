@@ -38,13 +38,14 @@
 #'                    lemObjects = lemSmoothMat, 
 #'                    ncores = 4) 
 #'                    
-#' lemRisk = lemEst(x = kentuckyCounty, 
+#' lemRisk = riskEst(x = kentuckyCounty, 
 #'                    lemObjects = lemSmoothMat, 
 #'                    bw = 15000, 
 #'                    ncores = 4) 
 #'                    
 #' lemExcProb = excProb(x = kentuckyCounty, 
-#'                    lemObjects = lemRisk, 
+#'                    lemObjects = lemSmoothMat, 
+#' 										estimate=lemRisk,
 #'                    threshold = c(1, 1.1, 1.25), 
 #'                    Nboot = 100, 
 #'                    ncores = 4) 
@@ -52,21 +53,21 @@
 #' plot(lemExcProb)
 #'}
 #'
-excProb = function(x, 
-                      lemObjects, 
-                      threshold = 1, 
-                      Nboot = 100, 
-                      ncores = 2, 
-                      tol = 1e-6, 
-                      maxIter = 2000, 
-                      verbose = FALSE
+excProb = function(
+		x, 
+  	estimate,
+    lemObjects,
+		bw,
+    threshold = 1, 
+    Nboot = 100, 
+    ncores = 2, 
+    tol = 1e-6, 
+    maxIter = 2000, 
+    verbose = FALSE
 ){
   
   #observed risk surface
-  theLemRisk = lemObjects$risk
-  
-  #bandwidth
-  bw = dimnames(lemObjects$smoothingArray)[[3]]
+  theLemRisk = estimate
   
   #risk and exceedance probabilities
   result = theLemRisk
@@ -78,19 +79,19 @@ excProb = function(x,
       cat(date(), "\n")
       cat("obtaining risk estimation of simulated counts for threshold: ", threshold[inT], "\n")
     }
-    
+		
     #simulated risk surface
     estRiskBoot = simplify2array(
-      parallel::mclapply(1:Nboot, 
-                         simLemEst, 
-                         x = x, 
-                         lemObjects = lemObjects, 
-                         threshold = threshold[inT], 
-                         bw = bw, 
-                         tol = tol, 
-                         maxIter = maxIter, 
-                         mc.cores=ncores
-      ))
+      	parallel::mclapply(1:Nboot, 
+            simLemEst, 
+            x = x, 
+            lemObjects = lemObjects, 
+            threshold = threshold[inT], 
+            bw = bw, 
+            tol = tol, 
+            maxIter = maxIter, 
+            mc.cores=ncores
+      	))
     
     if(verbose) {
       cat(date(), "\n")

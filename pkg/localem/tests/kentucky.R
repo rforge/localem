@@ -5,6 +5,7 @@ library('mapmisc')
 
 data('kentuckyCounty') 
 data('kentuckyTract')
+kentuckyTract$expected = kentuckyTract$expected/5
 
 if(interactive()) {
 	kMapOrig = openmap(
@@ -26,7 +27,7 @@ lemRaster = rasterPartition(
 		polyFine = kentuckyTract, 
     cellsCoarse = 5, 
 		cellsFine = 120,
-    bw = c(5, 10,15, 20, 30) * 1000, 
+    bw = c(8, 10,15, 20, 30) * 1000, 
     ncores = ncores
 )
 
@@ -65,7 +66,7 @@ names(kLogOffset) = 'logOffset'
 
 set.seed(0)
 kCases = geostatsp::simLgcp(
-		param=c(mean=-1, variance=0.4^2, 
+		param=c(mean=0, variance=0.4^2, 
         range=120*1000, shape=2),
 		covariates = kLogOffset,
 		offset='logOffset')
@@ -125,13 +126,15 @@ lemCv = lemXv(x = kentuckyCounty,
     ncores = ncores) 
 
 par(mar=c(5,5,1,1))
-plot(do.call(cbind, lemCv), xlab='bw', ylab='cv', log='x')
+plot(do.call(cbind, lemCv), xlab='bw', ylab='cv', log='x', pch=16, col='red')
 
 #' # Risk estimates
 
+bestBw = lemCv$bw[which.min(lemCv$cv)]
+
 lemRisk = riskEst(x = kentuckyCounty,
     lemObjects = lemSmoothMat,
-    bw = lemCv$bw[which.min(lemCv$cv)]
+    bw = bestBw
 )
 
 
@@ -162,12 +165,38 @@ scaleBar(kentuckyCounty,
 
 #' # Exceedance probabilities
 
-#lemExcProb = excProb(x = kentuckyCounty, 
-#                    lemObjects = lemRisk, 
-#                    threshold = c(1, 1.1), 
-#                    Nboot = 10, 
-#                    ncores = ncores) 
+lemExcProb = excProb(x = kentuckyCounty, 
+    lemObjects = lemSmoothMat, 
+		estimate=lemRisk,
+		bw=bestBw,
+    threshold = c(1.2, 1.5), 
+    Nboot = 10, 
+    ncores = ncores) 
 
+pCol = colourScale(
+		lemExcProb$threshold.1.5,
+		breaks=5, style='equal'
+)								
+
+map.new(kentuckyTract)
+
+plot(lemExcProb$threshold.1.5,
+		col=pCol$col, breaks=pCol$breaks,
+		legend=FALSE, add=TRUE)
+
+plot(kMap, add=TRUE)
+
+legendBreaks("topleft", 
+		pCol,
+		title='prob', bg='white')
+
+scaleBar(kentuckyCounty,
+		'topleft',
+		inset=c(0.3, 0.1),
+		bg='white'
+)
+
+		
 if(!interactive()) {
 	dev.off()
 }

@@ -9,7 +9,7 @@ simLemEst = function(bootId,
                      maxIter
 ) {
 
-  offsetRaster = trim(lemObjects$offsetRaster)
+  offsetRaster = trim(lemObjects$offset$offset)
 
   simEvents = geostatsp::simPoissonPP(threshold * offsetRaster)$events
   simEvents$id = over(simEvents, x)[["id"]]
