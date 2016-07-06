@@ -15,6 +15,8 @@ if(interactive()) {
 	data('kMap')
 }
 
+
+
 ncores = 1+ (.Platform$OS.type=='unix')
 
 #' # Rasters
@@ -23,8 +25,8 @@ lemRaster = rasterPartition(
 		polyCoarse = kentuckyCounty, 
 		polyFine = kentuckyTract, 
     cellsCoarse = 5, 
-		cellsFine = 100,
-    bw = c(5, 10, 20, 40) * 1000, 
+		cellsFine = 120,
+    bw = c(5, 10,15, 20, 30) * 1000, 
     ncores = ncores
 )
 
@@ -56,6 +58,57 @@ scaleBar(kentuckyCounty,
 		bg='white'
 )
 
+#' # Simulate cases
+
+kLogOffset = log(lemRaster$offset$offset)
+names(kLogOffset) = 'logOffset'
+
+set.seed(0)
+kCases = geostatsp::simLgcp(
+		param=c(mean=-1, variance=0.4^2, 
+        range=120*1000, shape=2),
+		covariates = kLogOffset,
+		offset='logOffset')
+
+length(kCases$events)
+sum(values(kCases$raster$intensity), na.rm=TRUE)*prod(res(kCases$raster))
+
+
+iCol = colourScale(
+		kCases$raster$relativeIntensity,
+		breaks=8, dec=1, style='equal'
+)
+map.new(kentuckyTract)
+plot(kCases$raster$relativeIntensity,
+		col=iCol$col, breaks=iCol$breaks,
+		legend=FALSE, add=TRUE)
+plot(kMap, add=TRUE)
+
+	legendBreaks("topleft", 
+			iCol, title='relative risk',
+			bg='white')
+
+scaleBar(kentuckyCounty,
+		'topleft',
+		inset=c(0.3, 0.1),
+		bg='white'
+)
+		
+		
+map.new(kentuckyTract)
+plot(kMap, add=TRUE)
+points(kCases$events, col='#FF000030')
+
+scaleBar(kentuckyCounty,
+		'topleft',
+		inset=c(0.3, 0.1),
+		bg='white'
+)
+
+countyCounts = table(over(kCases$events, kentuckyCounty)$id)
+kentuckyCounty$count = countyCounts[kentuckyCounty$id]
+kentuckyCounty$count[is.na(kentuckyCounty$count)]= 0
+
 #' # Smoothing Matrix
 
 lemSmoothMat = smoothingMatrix(
@@ -71,13 +124,14 @@ lemCv = lemXv(x = kentuckyCounty,
     lemObjects = lemSmoothMat, 
     ncores = ncores) 
 
-do.call(rbind, lemCv)
+par(mar=c(5,5,1,1))
+plot(do.call(cbind, lemCv), xlab='bw', ylab='cv', log='x')
 
 #' # Risk estimates
 
 lemRisk = riskEst(x = kentuckyCounty,
     lemObjects = lemSmoothMat,
-    bw = lemCv$bw[2]
+    bw = lemCv$bw[which.min(lemCv$cv)]
 )
 
 
@@ -104,6 +158,7 @@ scaleBar(kentuckyCounty,
 		inset=c(0.3, 0.1),
 		bg='white'
 )
+
 
 #' # Exceedance probabilities
 
