@@ -28,3 +28,4 @@ Suggests:
 Enhances:
 	RandomFields
 RoxygenNote: 5.0.1
+VignetteBuilder: knitr

@@ -35,72 +35,75 @@ smoothingMatrix = function(
   ncores = 2,
   verbose = FALSE
 ){
-
+	
   if(verbose) {
     cat(date(), "\n")
     cat("diagonal blocks of smoothing matrix for partitions\n")
   }
   theMat = smoothingMatrixDiag(
-    rasterCoarse=rasterObjects$rasterCoarse,
-    rasterFine=rasterObjects$rasterFine,
-    focalList=rasterObjects$focal,
-    offsetRaster=rasterObjects$offset,
-    ncores=ncores)
-
+    	rasterCoarse=rasterObjects$rasterCoarse,
+    	rasterFine=rasterObjects$rasterFine,
+    	focalList=rasterObjects$focal,
+    	offsetRaster=rasterObjects$offset,
+    	ncores=ncores)
+	
   if(verbose) {
     cat(date(), "\n")
     cat("off-diagonal blocks of smoothing matrix\n")
   }
   offDiag = parallel::mcmapply(
-    smoothingMatrixOneDist,
-    x=theMat$uniqueDist,
-    MoreArgs=list(
-      allCells=theMat$cells,
-      focal=rasterObjects$focal,
-      coarse=rasterObjects$rasterCoarse,
-      fine=rasterObjects$rasterFine,
-      offsetRaster=rasterObjects$offset
-    ),
-    mc.cores=ncores, SIMPLIFY=FALSE
+    	smoothingMatrixOneDist,
+    	x=theMat$uniqueDist,
+    	MoreArgs=list(
+      		allCells=theMat$cells,
+      		focal=rasterObjects$focal,
+      		coarse=rasterObjects$rasterCoarse,
+      		fine=rasterObjects$rasterFine,
+      		offsetRaster=rasterObjects$offset
+    	),
+    	mc.cores=ncores, SIMPLIFY=FALSE
   )
-
+	
   if(verbose) {
     cat(date(), "\n")
     cat("assembling smoothing matrix\n")
   }
-
+	
   for(Ddist in 1:length(offDiag)) {
     for(Dcell1 in 1:length(offDiag[[Ddist]])) {
       for(Dcell2 in 1:length(offDiag[[Ddist]][[Dcell1]])) {
-
+				
         s1 = dimnames(offDiag[[Ddist]][[Dcell1]][[Dcell2]])[[1]]
         s2 = dimnames(offDiag[[Ddist]][[Dcell1]][[Dcell2]])[[2]]
-
+				
         if(length(s1) == 1 || length(s2) == 1) {
-          theMat$smoothingArray[s2,s1,] = offDiag[[Ddist]][[Dcell1]][[Dcell2]][,,,'transpose']
+          theMat$smoothingArray[s2,s1,] = 
+							offDiag[[Ddist]][[Dcell1]][[Dcell2]][,,,'transpose']
         } else {
-          theMat$smoothingArray[s2,s1,] = aperm(offDiag[[Ddist]][[Dcell1]][[Dcell2]][,,,'transpose'], c(2,1,3))
+          theMat$smoothingArray[s2,s1,] = 
+							aperm(offDiag[[Ddist]][[Dcell1]][[Dcell2]][,,,'transpose'], c(2,1,3))
         }
-        theMat$smoothingArray[s1,s2,] = offDiag[[Ddist]][[Dcell1]][[Dcell2]][,,,'straightup']
-
+        theMat$smoothingArray[s1,s2,] = 
+						offDiag[[Ddist]][[Dcell1]][[Dcell2]][,,,'straightup']
+				
       }
     }
   }
-
+	
   #fill in the zeros in the smoothing matrix where distance is beyond largest bandwidth
   theMat$smoothingArray[is.na(theMat$smoothingArray)] = 0
-
+	
   bw = gsub("^bw", "", dimnames(theMat$smoothingArray)[[3]])
   smoothingArrayInf = apply(!is.finite(theMat$smoothingArray), 3, any)
-
+	
   if(any(smoothingArrayInf)) {
     cat("excluding bandwidths (b/c infinite values in smoothing matrix): ", bw[smoothingArrayInf],  "\n")
-
+		
     theMat$smoothingArray = theMat$smoothingArray[,,!smoothingArrayInf,drop=FALSE]
   }
-
+	
   result = c(theMat, rasterObjects)
-
+	
   return(result)
   
   if(verbose) {

@@ -1,6 +1,14 @@
-#' # Local-EM example with Kentucky
+<!--
+		%\VignetteEngine{knitr::docco_linear}
+		%\VignetteIndexEntry{Local-EM example with Kentucky}
+-->
+	
 
-#+ setup
+# Local-EM example with Kentucky
+
+
+
+```{r setup}
 
 ncores = 1+ (.Platform$OS.type=='unix')
 
@@ -13,36 +21,32 @@ data('kentuckyTract')
 data('kMap')
 
 kentuckyTract$expected = kentuckyTract$expected/5
-#'
-
-#+ forFigures, eval=FALSE, include=FALSE
-if(!interactive()) {
-	pdf("kentucky.pdf")
-}
-#'
+```
 
 
+ 
 
+# Rasters
 
-
-#' # Rasters
-
-#+ rasters, cache=TRUE
+```{r rasters, cache=TRUE}
 lemRaster = rasterPartition(
 		polyCoarse = kentuckyCounty, 
 		polyFine = kentuckyTract, 
-    cellsCoarse = 5, 
-		cellsFine = 150,
-    bw = c(8, 10,15, 20, 30) * 1000, 
-    ncores = ncores
+    cellsCoarse = 8, 
+		cellsFine = 100,
+    bw = c(10, 12,15,  17, 20) * 1000, 
+    ncores = ncores,
+		idFile = 'id.grd',
+		offsetFile = 'offset.grd'
 )
 
 sum(kentuckyTract$expected)
 sum(values(lemRaster$offset$offset), na.rm=TRUE)*prod(res(lemRaster$offset))
-#'
+```
 
 
-#+ plotOffset, echo=FALSE
+
+```{r plotOffset, echo=FALSE}
 oCol = colourScale(
 		lemRaster$offset$offset,
 		breaks=10, style='equal',
@@ -63,13 +67,14 @@ scaleBar(kentuckyCounty,
 		inset=c(0.3, 0.1),
 		bg='white'
 )
-#'
+```
 
-#' 
-#' # Simulate cases
-#' 
 
-#+ simcases, cache=TRUE
+
+# Simulate cases
+
+
+```{r simcases, cache=TRUE}
 kLogOffset = log(lemRaster$offset$offset)
 names(kLogOffset) = 'logOffset'
 
@@ -87,11 +92,11 @@ sum(values(kCases$raster$intensity), na.rm=TRUE)*prod(res(kCases$raster))
 countyCounts = table(over(kCases$events, kentuckyCounty)$id)
 kentuckyCounty$count = countyCounts[kentuckyCounty$id]
 kentuckyCounty$count[is.na(kentuckyCounty$count)]= 0
+```
 
-#'
 
 
-#+ plotCases, fig.cap = 'simulated', fig.subcap = c('intensity','events'), echo=FALSE
+```{r plotCases, fig.cap = 'simulated', fig.subcap = c('intensity','events'), echo=FALSE}
 iCol = colourScale(
 		kCases$raster$relativeIntensity,
 		breaks=8, dec=1, style='equal'
@@ -121,12 +126,12 @@ scaleBar(kentuckyCounty,
 		inset=c(0.3, 0.1),
 		bg='white'
 )
-#+		
+```{r }
+```
 
+# Smoothing Matrix
 
-#' # Smoothing Matrix
-
-#+ smoothingMatrix, cache=TRUE
+```{r smoothingMatrix, cache=TRUE,stuff=1}
 lemSmoothMat = smoothingMatrix(
 		rasterObjects = lemRaster, 
     ncores = ncores,
@@ -134,31 +139,38 @@ lemSmoothMat = smoothingMatrix(
 
 dim(lemSmoothMat$smoothingArray)
 dimnames(lemSmoothMat$smoothingArray)[[3]]
-#'
+```
 
-#+ cv, cache=TRUE
+
+
+```{r cv, cache=TRUE}
 lemCv = lemXv(x = kentuckyCounty, 
     lemObjects = lemSmoothMat, 
     ncores = ncores) 
 bestBw = lemCv$bw[which.min(lemCv$cv)]
-#'
+```
 
-#+ plotCv, echo=FALSE
+
+
+```{r plotCv, echo=FALSE}
 par(mar=c(5,5,1,1))
 plot(do.call(cbind, lemCv), xlab='bw', ylab='cv', log='x', pch=16, col='red')
 abline(v=bestBw, lty=3)
-#'
+```
 
-#' # Risk estimates
 
-#+ riskExt, cache=TRUE
+# Risk estimates
+
+```{r riskExt, cache=TRUE}
 lemRisk = riskEst(x = kentuckyCounty,
     lemObjects = lemSmoothMat,
     bw = bestBw
 )
-#'
+```
 
-#+ plotRisk, echo=FALSE
+
+
+```{r plotRisk, echo=FALSE}
 rCol = colourScale(
 		lemRisk,
 		breaks=10, style='equal',
@@ -182,21 +194,24 @@ scaleBar(kentuckyCounty,
 		inset=c(0.3, 0.1),
 		bg='white'
 )
-#'
+```
 
-#' # Exceedance probabilities
 
-#+ excProb, cache=TRUE
+# Exceedance probabilities
+
+```{r excProb, cache=TRUE}
 lemExcProb = excProb(x = kentuckyCounty, 
     lemObjects = lemSmoothMat, 
 		estimate=lemRisk,
 		bw=bestBw,
     threshold = c(1.2, 1.5), 
-    Nboot = 10, 
+    Nboot = 20, 
     ncores = ncores) 
-#'
+```
 
-#+ plotExcProb, echo=FALSE
+
+
+```{r plotExcProb, echo=FALSE}
 pCol = colourScale(
 		lemExcProb$threshold.1.5,
 		breaks=5, style='equal'
@@ -219,13 +234,12 @@ scaleBar(kentuckyCounty,
 		inset=c(0.3, 0.1),
 		bg='white'
 )
-#'
+```
 
 
-#' # ROC
+# ROC
 
-
-#+ lemRoc
+```{r lemRoc}
 lemRoc = geostatsp::spatialRoc(
  fit= lemExcProb, 
  truth = kCases, 
@@ -233,23 +247,17 @@ lemRoc = geostatsp::spatialRoc(
 		prob = NULL, 
  spec = seq(0,1,by=0.01)
 )
-#'
+```
 
 
-#+ plotRoc, fig.cap='ROC', echo=FALSE
 
-matplot(lemRoc[,1], lemRoc[,c(2,3)], ylab='sens', xlab='1-spec', type='l',
-		col=2:3)
-legend("bottomright", lty=1, col=2:3, legend=colnames(lemRoc)[-1], 
-		title='threshold')
+```{r plotRoc, fig.cap='ROC', echo=FALSE}
+matplot(lemRoc[,1], lemRoc[,c(2,3)], ylab='sens', 
+	xlab='1-spec', type='l', col=2:3)
+legend("bottomright", lty=1, col=2:3, 
+	legend=colnames(lemRoc)[-1], 
+	title='threshold')
+```
 
-#'
-
-#+ forFiguresEnd, eval=FALSE, include=FALSE
-if(!interactive()) {
-	dev.off()
-}
-
-#'
-
+ 
 

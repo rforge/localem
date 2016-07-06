@@ -4,8 +4,8 @@
 \alias{excProb}
 \title{Computes the exceedance probabilities on the raster of fine polygons}
 \usage{
-excProb(x, lemObjects, threshold = 1, Nboot = 100, ncores = 2,
-  tol = 1e-06, maxIter = 2000, verbose = FALSE)
+excProb(x, estimate, lemObjects, bw, threshold = 1, Nboot = 100,
+  ncores = 2, tol = 1e-06, maxIter = 2000, verbose = FALSE)
 }
 \arguments{
 \item{x}{Spatial polygons of case data}
@@ -55,13 +55,14 @@ lemCv = lemXv(x = kentuckyCounty,
                    lemObjects = lemSmoothMat, 
                    ncores = 4) 
                    
-lemRisk = lemEst(x = kentuckyCounty, 
+lemRisk = riskEst(x = kentuckyCounty, 
                    lemObjects = lemSmoothMat, 
                    bw = 15000, 
                    ncores = 4) 
                    
 lemExcProb = excProb(x = kentuckyCounty, 
-                   lemObjects = lemRisk, 
+                   lemObjects = lemSmoothMat, 
+										estimate=lemRisk,
                    threshold = c(1, 1.1, 1.25), 
                    Nboot = 100, 
                    ncores = 4) 
