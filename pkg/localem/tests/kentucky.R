@@ -221,6 +221,30 @@ scaleBar(kentuckyCounty,
 )
 #'
 
+
+#' # ROC
+
+
+#+ lemRoc
+lemRoc = geostatsp::spatialRoc(
+ fit= lemExcProb, 
+ truth = kCases, 
+		border=NULL, random=FALSE,
+		prob = NULL, 
+ spec = seq(0,1,by=0.01)
+)
+#'
+
+
+#+ plotRoc, fig.cap='ROC', echo=FALSE
+
+matplot(lemRoc[,1], lemRoc[,c(2,3)], ylab='sens', xlab='1-spec', type='l',
+		col=2:3)
+legend("bottomright", lty=1, col=2:3, legend=colnames(lemRoc)[-1], 
+		title='threshold')
+
+#'
+
 #+ forFiguresEnd, eval=FALSE, include=FALSE
 if(!interactive()) {
 	dev.off()
