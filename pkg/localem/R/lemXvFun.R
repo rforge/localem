@@ -43,6 +43,7 @@
 #'                    ncores = 4) 
 #'}
 #'
+#' @export
 lemXv = function(x, 
                  lemObjects,
                  Nxv = 5, 

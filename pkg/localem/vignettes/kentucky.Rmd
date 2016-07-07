@@ -20,7 +20,9 @@ data('kentuckyTract')
 
 data('kMap')
 
-kentuckyTract$expected = kentuckyTract$expected/5
+# 3000 expected events
+kentuckyTract$expected = (3000/sum(kentuckyTract$expected, na.rm=TRUE)) * 
+	kentuckyTract$expected
 ```
 
 
@@ -28,16 +30,15 @@ kentuckyTract$expected = kentuckyTract$expected/5
 
 # Rasters
 
-```{r rasters, cache=TRUE}
+```{r rasters}
 lemRaster = rasterPartition(
 		polyCoarse = kentuckyCounty, 
 		polyFine = kentuckyTract, 
-    cellsCoarse = 8, 
+    cellsCoarse = 6, 
 		cellsFine = 100,
-    bw = c(10, 12,15,  17, 20) * 1000, 
+    bw = c(12,15,  17, 20, 25) * 1000, 
     ncores = ncores,
-		idFile = 'id.grd',
-		offsetFile = 'offset.grd'
+		offsetFile = 'off.grd', idFile = 'id.grd'
 )
 
 sum(kentuckyTract$expected)
@@ -50,7 +51,7 @@ sum(values(lemRaster$offset$offset), na.rm=TRUE)*prod(res(lemRaster$offset))
 oCol = colourScale(
 		lemRaster$offset$offset,
 		breaks=10, style='equal',
-		dec=7, transform='sqrt'
+		dec=8, transform='sqrt'
 )
 map.new(kentuckyTract)
 plot(lemRaster$offset$offset,
@@ -74,7 +75,7 @@ scaleBar(kentuckyCounty,
 # Simulate cases
 
 
-```{r simcases, cache=TRUE}
+```{r simcases}
 kLogOffset = log(lemRaster$offset$offset)
 names(kLogOffset) = 'logOffset'
 
@@ -101,20 +102,21 @@ iCol = colourScale(
 		kCases$raster$relativeIntensity,
 		breaks=8, dec=1, style='equal'
 )
+
 map.new(kentuckyTract)
 plot(kCases$raster$relativeIntensity,
-		col=iCol$col, breaks=iCol$breaks,
-		legend=FALSE, add=TRUE)
+	col=iCol$col, breaks=iCol$breaks,
+legend=FALSE, add=TRUE)
 plot(kMap, add=TRUE)
-
-	legendBreaks("topleft", 
-			iCol, title='relative risk',
-			bg='white')
+		
+legendBreaks("topleft", 
+	iCol, title='relative risk',
+	bg='white')
 
 scaleBar(kentuckyCounty,
-		'topleft',
-		inset=c(0.3, 0.1),
-		bg='white'
+	'topleft',
+	inset=c(0.3, 0.1),
+	bg='white'
 )
 		
 map.new(kentuckyTract)
@@ -122,16 +124,15 @@ plot(kMap, add=TRUE)
 points(kCases$events, col='#FF000030')
 
 scaleBar(kentuckyCounty,
-		'topleft',
-		inset=c(0.3, 0.1),
-		bg='white'
+	'topleft',
+	inset=c(0.3, 0.1),
+	bg='white'
 )
-```{r }
 ```
 
 # Smoothing Matrix
 
-```{r smoothingMatrix, cache=TRUE,stuff=1}
+```{r smoothingMatrix, cache=TRUE, stuff=0}
 lemSmoothMat = smoothingMatrix(
 		rasterObjects = lemRaster, 
     ncores = ncores,
@@ -143,7 +144,7 @@ dimnames(lemSmoothMat$smoothingArray)[[3]]
 
 
 
-```{r cv, cache=TRUE}
+```{r cv}
 lemCv = lemXv(x = kentuckyCounty, 
     lemObjects = lemSmoothMat, 
     ncores = ncores) 
@@ -154,15 +155,16 @@ bestBw = lemCv$bw[which.min(lemCv$cv)]
 
 ```{r plotCv, echo=FALSE}
 par(mar=c(5,5,1,1))
-plot(do.call(cbind, lemCv), xlab='bw', ylab='cv', log='x', pch=16, col='red')
+plot(do.call(cbind, lemCv), xlab='bw', ylab='cv', log='x', pch=16, col='red', type='o')
 abline(v=bestBw, lty=3)
 ```
 
 
 # Risk estimates
 
-```{r riskExt, cache=TRUE}
-lemRisk = riskEst(x = kentuckyCounty,
+```{r riskExt}
+lemRisk = riskEst(
+	x = kentuckyCounty,
     lemObjects = lemSmoothMat,
     bw = bestBw
 )
@@ -199,41 +201,49 @@ scaleBar(kentuckyCounty,
 
 # Exceedance probabilities
 
-```{r excProb, cache=TRUE}
+```{r excProb}
 lemExcProb = excProb(x = kentuckyCounty, 
     lemObjects = lemSmoothMat, 
 		estimate=lemRisk,
 		bw=bestBw,
-    threshold = c(1.2, 1.5), 
-    Nboot = 20, 
+    threshold = c(1.25,1.75), 
+    Nboot = 200, 
     ncores = ncores) 
 ```
 
 
 
-```{r plotExcProb, echo=FALSE}
+```{r plotExcProb, echo=FALSE, fig.cap='Exceedance probabilities', fig.subcap=names(lemExcProb)}
+
 pCol = colourScale(
-		lemExcProb$threshold.1.5,
-		breaks=5, style='equal'
+		breaks=c(0,0.2, 0.8, 0.95,1),
+		style='fixed',
+		col=c('green','yellow','orange','red')
 )								
 
-map.new(kentuckyTract)
 
-plot(lemExcProb$threshold.1.5,
-		col=pCol$col, breaks=pCol$breaks,
-		legend=FALSE, add=TRUE)
-
-plot(kMap, add=TRUE)
-
-legendBreaks("topleft", 
-		pCol,
-		title='prob', bg='white')
-
-scaleBar(kentuckyCounty,
-		'topleft',
-		inset=c(0.3, 0.1),
-		bg='white'
-)
+for(Dthreshold in names(lemExcProb)) {
+	
+	
+	map.new(kentuckyTract)
+	
+	plot(lemExcProb[[Dthreshold]],
+			col=pCol$col, breaks=pCol$breaks,
+			legend=FALSE, add=TRUE)
+	
+	plot(kMap, add=TRUE)
+	
+	legendBreaks("topleft", 
+			pCol,
+			title=paste('prob, t=', gsub("threshold\\.", '', Dthreshold)),
+			bg='white')
+	
+	scaleBar(kentuckyCounty,
+			'topleft',
+			inset=c(0.3, 0.1),
+			bg='white'
+	)
+}
 ```
 
 
@@ -241,20 +251,20 @@ scaleBar(kentuckyCounty,
 
 ```{r lemRoc}
 lemRoc = geostatsp::spatialRoc(
- fit= lemExcProb, 
- truth = kCases, 
+  	fit= lemExcProb, 
+  	truth = kCases, 
 		border=NULL, random=FALSE,
 		prob = NULL, 
- spec = seq(0,1,by=0.01)
+  	spec = seq(0,1,by=0.01)
 )
 ```
 
 
 
 ```{r plotRoc, fig.cap='ROC', echo=FALSE}
-matplot(lemRoc[,1], lemRoc[,c(2,3)], ylab='sens', 
-	xlab='1-spec', type='l', col=2:3)
-legend("bottomright", lty=1, col=2:3, 
+matplot(lemRoc[,1], lemRoc[,-1], ylab='sens', 
+	xlab='1-spec', type='l', col=2:ncol(lemRoc))
+legend("bottomright", lty=1, col=2:ncol(lemRoc), 
 	legend=colnames(lemRoc)[-1], 
 	title='threshold')
 ```

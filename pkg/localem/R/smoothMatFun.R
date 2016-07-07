@@ -69,7 +69,7 @@ smoothingMatrix = function(
     cat("assembling smoothing matrix\n")
   }
 	
-  for(Ddist in 1:length(offDiag)) {
+  for(Ddist in seq(1, len=length(offDiag), by=1)) {
     for(Dcell1 in 1:length(offDiag[[Ddist]])) {
       for(Dcell2 in 1:length(offDiag[[Ddist]][[Dcell1]])) {
 				

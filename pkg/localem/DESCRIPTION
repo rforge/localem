@@ -2,7 +2,7 @@ Package: localEM
 Type: Package
 Title: Nonparametric Modelling of Spatial Risk for Areal Disease Data
 Version: 0.2.0
-Author: Paul Nguyen, Patrick Brown, Others...
+Author: Paul Nguyen, Patrick Brown
 Maintainer: Paul Nguyen <pablo.nguyen@utoronto.ca>
 Description: Implementing the kernel smoothing local-EM algorithm on
     disease data aggregated to highly coarse geographical regions while using
@@ -13,16 +13,16 @@ LazyData: FALSE
 Depends:
 	R (>= 2.1.0),
     raster,
-    sp,
-    Matrix
+    sp
 Imports:
     parallel,
-    rgeos,
+    Matrix,
     geostatsp (>= 1.4.4),
     stats
 Suggests:
     spdep,
     diseasemapping,
+    rgeos,
     rgdal,
 	mapmisc
 Enhances:

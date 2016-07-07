@@ -46,6 +46,7 @@
 #' plot(lemRisk$risk)
 #'}
 #'
+#' @export
 lemEst = function(x,
   lemObjects,
   bw,
@@ -100,11 +101,13 @@ lemEst = function(x,
 }
 
 # Computes the relative risk estimation on the raster of fine polygons
+#' @export
 riskEst = function(x,
     lemObjects,
     bw,
 		tol = 1e-6,
-  	maxIter = 2000
+  	maxIter = 2000,
+		ncores=1
 ) {
 	
   regionMat = lemObjects$regionMat
@@ -114,8 +117,12 @@ riskEst = function(x,
 	
   idCoarse = lemObjects$polyCoarse$id
 	
+	if(is.matrix(x)) {
+		# probably simulated data
+		obsCounts = x[idCoarse,]
+	} else if(length(idCoarse) != dim(regionMat)[2]) {
+					
   #fine raster did not include all regions in the coarse shapefile
-  if(length(idCoarse) != dim(regionMat)[2]) {
 		
     polyNeigh = spdep::poly2nb(lemObjects$polyCoarse, row.names = idCoarse)
 		
@@ -164,14 +171,17 @@ riskEst = function(x,
   } else {
 		#fine raster does include all regions in the coarse shapefile
     obsCounts = as.matrix(x$count[match(idCoarse, x[['id']])])
+		colnames(obsCounts) = bw
   }
 	
   #risk estimation for aggregated regions
   oldLambda = offsetMat %*%
     	matrix(1,
           nrow = dim(offsetMat)[1],
-          ncol = 1,
-          dimnames = list(dimnames(offsetMat)[[1]], bw)
+          ncol = ncol(obsCounts),
+          dimnames = list(
+							dimnames(offsetMat)[[1]], 
+							colnames(obsCounts))
     	)
 	
   Diter = 1
@@ -225,24 +235,51 @@ riskEst = function(x,
 			sep=''
 	)
 	
-	levels(resultRaster)[[1]]$em = attributes(Lambda)$em[levels(resultRaster)[[1]]$partition,]		
-	levels(resultRaster)[[1]]$bigLambda = lambdaMult[levels(resultRaster)[[1]]$partition,]		
-	levels(resultRaster)[[1]]$lambda = levels(resultRaster)[[1]]$bigLambda / 
-			(levels(resultRaster)[[1]]$COUNT * levels(resultRaster)[[1]]$expected)
+	levelsEm = as.matrix(attributes(Lambda)$em)[levels(resultRaster)[[1]]$partition,,drop=FALSE]
+	emScale = levelsEm /(
+				levels(resultRaster)[[1]]$COUNT * prod(res(resultRaster))
+				)
 	
-	levels(resultRaster)[[1]]$emScale = levels(resultRaster)[[1]]$em / (
-				levels(resultRaster)[[1]]$COUNT * prod(res(resultRaster)))
+	colnames(levelsEm) = 
+			paste('em.', colnames(levelsEm), sep='')
+	colnames(emScale) =
+			paste('emScale.', colnames(emScale), sep='')
 	
-	emScale = deratify(resultRaster, 'emScale')
 	
-	emSmooth = focal(
-			x=emScale, 
-			w=lemObjects$focal$focal[[paste('bw',bw, sep='')]],
-			na.rm=TRUE,pad=TRUE
+#	bigLambda = as.matrix(lambdaMult)[levels(resultRaster)[[1]]$partition,]
+	
+#	littleLambda = bigLambda / (levels(resultRaster)[[1]]$COUNT * levels(resultRaster)[[1]]$expected)
+	
+#	colnames(bigLambda) = paste('bigLambda.', colnames(bigLambda), sep='')
+#	colnames(littleLambda) = paste('lambda.', colnames(littleLambda), sep='')
+	
+	levels(resultRaster)[[1]] = cbind(
+			levels(resultRaster)[[1]],
+			emScale#, levelsEm, bigLambda, littleLambda
 	)
 	
-	result = emSmooth/lemObjects$offset[[paste('offset.bw',bw, sep='')]]
+	emScale = deratify(resultRaster, 
+			grep('^emScale', colnames(levels(resultRaster)[[1]]), value=TRUE)
+	)
 	
+	
+	wMat=lemObjects$focal$focal[[paste('bw',bw, sep='')]]
+	offsetSmooth = lemObjects$offset[[paste('offset.bw',bw, sep='')]]
+	
+	emSmooth = parallel::mcmapply(
+			function(layer) {
+				focal(
+						x=emScale[[layer]],
+						w=wMat, na.rm=TRUE, pad=TRUE
+						)/offsetSmooth
+			},
+			layer = names(emScale),
+			mc.cores=ncores
+			)
+	theNames = names(emSmooth)
+	names(emSmooth) = NULL
+	result = do.call(brick, emSmooth)		
+	names(result) = gsub("^emScale", "risk", theNames)
 	
   return(result)
 }

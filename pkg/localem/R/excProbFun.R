@@ -53,6 +53,7 @@
 #' plot(lemExcProb)
 #'}
 #'
+#' @export
 excProb = function(
 		x, 
   	estimate,
@@ -73,43 +74,60 @@ excProb = function(
   result = theLemRisk
   names(result) = paste("risk.", bw, sep = "")
   
-  for(inT in 1:length(threshold)) {
-    
-    if(verbose) {
-      cat(date(), "\n")
-      cat("obtaining risk estimation of simulated counts for threshold: ", threshold[inT], "\n")
-    }
-		
-    #simulated risk surface
-    estRiskBoot = simplify2array(
-      	parallel::mclapply(1:Nboot, 
-            simLemEst, 
-            x = x, 
-            lemObjects = lemObjects, 
-            threshold = threshold[inT], 
-            bw = bw, 
-            tol = tol, 
-            maxIter = maxIter, 
-            mc.cores=ncores
-      	))
-    
-    if(verbose) {
-      cat(date(), "\n")
-      cat("obtaining exceedance probabilities\n")
-    }
-    
-    #exceedance probabilities
-    theExcProb = theLemRisk
-    values(theExcProb) = apply(estRiskBoot <= values(theLemRisk), 1, mean)
-    names(theExcProb) = paste("threshold.", threshold[inT], sep = "")
-    
-    result = raster::addLayer(result, theExcProb)
-  }
+	offset = na.omit(as.data.frame(
+					stack(
+							lemObjects$offset$offset,
+							lemObjects$rasterFine$idCoarse
+					)
+			)
+	)
+	offset = drop(tapply(
+			offset[,'offset'], 
+			lemObjects$polyCoarse$id[offset[,'idCoarse']], 
+			sum
+			)
+	)
+	offset = offset * prod(res(lemObjects$offset))
+	offset = outer(offset, threshold)
 
-  return(result)
-  
+	bootCounts = stats::rpois(
+			length(offset)* Nboot,
+			rep(offset, Nboot)
+			)
+	bootCounts = matrix(bootCounts, nrow(offset),
+			dimnames=list(
+					rownames(offset), 
+					paste('threshold.',rep(threshold, Nboot),
+							'.sim.',rep(1:Nboot, rep(length(threshold), Nboot)), 
+									sep='')
+			)
+	)
+	
   if(verbose) {
+    cat(date(), "\n")
+    cat("obtaining risk estimation of simulated counts\n")
+  }
+	
+	estRiskBoot = riskEst(
+			x=bootCounts, lemObjects=lemObjects,
+			bw=bw, tol=tol, maxIter=maxIter, ncores=ncores
+			)
+	values(estRiskBoot)  = values(estRiskBoot) < rep(values(estimate), nlayers(estRiskBoot))		
+			
+	tIndex = gsub("^risk.threshold.|.sim.[[:digit:]]+$", "", names(estRiskBoot))		
+	tIndex = factor(tIndex)		
+	excProb = stackApply(
+			estRiskBoot,
+			as.numeric(tIndex),
+			mean
+			)		
+	names(excProb) = paste("threshold.", levels(tIndex), sep='')		
+
+	if(verbose) {
     cat(date(), "\n")
     cat("done\n")
   }
+	
+	excProb
+	  
 }
