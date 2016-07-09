@@ -10,8 +10,12 @@ excProb(x, estimate, lemObjects, bw, threshold = 1, Nboot = 100,
 \arguments{
 \item{x}{Spatial polygons of case data}
 
+\item{estimate}{Estimated intensity surface}
+
 \item{lemObjects}{List of arrays for the smoothing matrix and 
 raster stacks for the partition and smoothed offsets}
+
+\item{bw}{bandwidth, specifying which smoothing matrix in \code{lemObjects} to use}
 
 \item{threshold}{Vector of risk thresholds}
 

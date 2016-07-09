@@ -1,3 +1,4 @@
+#' @alias riskEst
 #' @title Computes the relative risk estimation on the raster of fine polygons
 #'
 #' @description The \code{lemEst} function first creates the smoothing matrix at the final iteration with the input bandwidth, and then,

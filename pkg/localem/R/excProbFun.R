@@ -4,8 +4,10 @@
 #'  computes the exceedance probablities with the same bandwidth as the risk estimation on the cells of the fine raster. 
 #' 
 #' @param x Spatial polygons of case data
+#' @param estimate Estimated intensity surface
 #' @param lemObjects List of arrays for the smoothing matrix and 
 #'  raster stacks for the partition and smoothed offsets
+#' @param bw bandwidth, specifying which smoothing matrix in \code{lemObjects} to use
 #' @param threshold Vector of risk thresholds
 #' @param Nboot Number of bootstraps
 #' @param ncores Number of cores/threads for parallel processing
@@ -74,7 +76,7 @@ excProb = function(
   result = theLemRisk
   names(result) = paste("risk.", bw, sep = "")
   
-	offset = na.omit(as.data.frame(
+	offset = stats::na.omit(as.data.frame(
 					stack(
 							lemObjects$offset$offset,
 							lemObjects$rasterFine$idCoarse

@@ -136,7 +136,7 @@ smoothingFinalStepEntries = function(
       }
     } # end cells not equal
 
-    #Spart2 = cellInfo2$idCoarse
+    Spart2 = cellInfo2$idCoarse
     #SNcells2 = tapply(cellInfo2$id[,"idCoarse"], list(cellInfo2$id[,"idCoarse"]), length)
     #Sarea2 = SNcells2 * Scw2
 		

@@ -11,7 +11,7 @@ Description: Implementing the kernel smoothing local-EM algorithm on
 License: GPL-2
 LazyData: FALSE
 Depends:
-	R (>= 2.1.0),
+	R (>= 2.10),
     raster,
     sp
 Imports:
@@ -24,7 +24,8 @@ Suggests:
     diseasemapping,
     rgeos,
     rgdal,
-	mapmisc
+	mapmisc,
+	knitr
 Enhances:
 	RandomFields
 RoxygenNote: 5.0.1
