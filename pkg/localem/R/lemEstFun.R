@@ -64,18 +64,6 @@ lemEst = function(x,
 
   if(verbose) {
     cat(date(), "\n")
-    cat("generating smoothing matrix at final iteration\n")
-  }
-
-  #smoothing matrix for the final iteration
-#  theFinalMat = smoothingFinalMat(
-#    lemObjects=lemObjects,
-#    bw=bw,
-#    ncores=ncores
-#  )
-
-  if(verbose) {
-    cat(date(), "\n")
     cat("obtaining risk estimation at final iteration\n")
   }
 
@@ -122,7 +110,7 @@ riskEst = function(x,
   
 	if(is.matrix(x)) {
 		# probably simulated data
-		obsCounts = x[idCoarse,]
+		obsCounts = x[idCoarse,, drop=FALSE]
 	} else if(length(idCoarse) != dim(regionMat)[2]) {
 					
   #fine raster did not include all regions in the coarse shapefile
@@ -248,8 +236,11 @@ riskEst = function(x,
 			'.', levels(resultRaster)[[1]]$idFine,
 			sep=''
 	)
+
+	levelsEm = as.matrix(
+			attributes(Lambda)$em
+	)[levels(resultRaster)[[1]]$partition,,drop=FALSE]
 	
-	levelsEm = as.matrix(attributes(Lambda)$em)[levels(resultRaster)[[1]]$partition,,drop=FALSE]
 	emScale = levelsEm /(
 				levels(resultRaster)[[1]]$COUNT * prod(res(resultRaster))
 				)
@@ -260,26 +251,35 @@ riskEst = function(x,
 			paste('emScale.', colnames(emScale), sep='')
 	
 	
+	levels(resultRaster)[[1]] = cbind(
+			levels(resultRaster)[[1]],
+			emScale#, levelsEm, bigLambda, littleLambda
+	)
+	
+	
 #	bigLambda = as.matrix(lambdaMult)[levels(resultRaster)[[1]]$partition,]
 	
 #	littleLambda = bigLambda / (levels(resultRaster)[[1]]$COUNT * levels(resultRaster)[[1]]$expected)
 	
 #	colnames(bigLambda) = paste('bigLambda.', colnames(bigLambda), sep='')
 #	colnames(littleLambda) = paste('lambda.', colnames(littleLambda), sep='')
-	
-	levels(resultRaster)[[1]] = cbind(
-			levels(resultRaster)[[1]],
-			emScale#, levelsEm, bigLambda, littleLambda
-	)
-	
-	emScale = deratify(resultRaster, 
-			grep('^emScale', colnames(levels(resultRaster)[[1]]), value=TRUE)
-	)
+
+emScale = deratify(resultRaster, 
+		grep('^emScale', 
+				colnames(levels(resultRaster)[[1]]), 
+				value=TRUE)
+)
 	
 	
 	wMat=lemObjects$focal$focal[[paste('bw',bw, sep='')]]
 	offsetSmooth = lemObjects$offset[[paste('offset.bw',bw, sep='')]]
 
+#	stuff = oneLastStepSmooth(
+#			Dlayer = names(emScale)[100],
+#			emScale=emScale,
+#			w=wMat,
+#			offsetSmooth=offsetSmooth			
+#			)
 	
 	emSmooth = parallel::mcmapply(
 			oneLastStepSmooth,
@@ -289,7 +289,10 @@ riskEst = function(x,
 					w=wMat,
 					offsetSmooth=offsetSmooth
 					),
-			mc.cores=ncores
+			SIMPLIFY=FALSE,
+#			USE.NAMES=FALSE,
+		# for some reason ncores=4 fails
+			mc.cores=pmin(2,ncores)
 			)
 	theNames = names(emSmooth)
 	names(emSmooth) = NULL
@@ -301,10 +304,10 @@ riskEst = function(x,
 }
 
 oneLastStepSmooth = function(Dlayer, emScale, w, offsetSmooth) {
-	focal(
+	result = focal(
 			x=emScale[[Dlayer]],
-			w=w, na.rm=TRUE, pad=TRUE,
-			filename=paste(tempfile(), Dlayer, ".grd",
-					sep='')
+			w=w, na.rm=TRUE, pad=TRUE
 	)/offsetSmooth
+	names(result) = as.character(Dlayer)
+	result
 }

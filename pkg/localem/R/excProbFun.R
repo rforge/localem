@@ -106,15 +106,22 @@ excProb = function(
 			)
 	)
 	
-  if(verbose) {
-    cat(date(), "\n")
-    cat("obtaining risk estimation of simulated counts\n")
-  }
+	if(verbose) {
+		cat(date(), "\n")
+		cat("obtaining risk estimation of simulated counts\n")
+	}
 	
 	estRiskBoot = riskEst(
 			x=bootCounts, lemObjects=lemObjects,
 			bw=bw, tol=tol, maxIter=maxIter, ncores=ncores
-			)
+	)
+	
+	
+	if(verbose) {
+		cat(date(), "\n")
+		cat("calculating exceedances\n")
+	}
+			
 	values(estRiskBoot)  = values(estRiskBoot) < rep(values(estimate), nlayers(estRiskBoot))		
 
 	tIndex = gsub(
