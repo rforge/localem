@@ -12,7 +12,7 @@
 #' @param tol tolerance for convergence
 #' @param maxIter maximum number of iterations
 #' @param verbose verbose output
-#' 
+#' @param filename passed to writeRaster
 #'
 #' @details After using the \code{lemEst} function, the raster of risk estimations is done on cells of the raster on the fine polygons.
 
@@ -104,11 +104,12 @@ lemEst = function(x,
 # Computes the relative risk estimation on the raster of fine polygons
 #' @export
 riskEst = function(x,
-    lemObjects,
-    bw,
+		lemObjects,
+		bw,
 		tol = 1e-6,
-  	maxIter = 2000,
-		ncores=1
+		maxIter = 2000,
+		ncores=1,
+		filename=''
 ) {
 	
   regionMat = lemObjects$regionMat
@@ -118,6 +119,7 @@ riskEst = function(x,
 	
   idCoarse = lemObjects$polyCoarse$id
 	
+  
 	if(is.matrix(x)) {
 		# probably simulated data
 		obsCounts = x[idCoarse,]
@@ -171,7 +173,18 @@ riskEst = function(x,
     }
   } else {
 		#fine raster does include all regions in the coarse shapefile
-    obsCounts = as.matrix(x$count[match(idCoarse, x[['id']])])
+
+	if(any(names(x)=='count')){
+		countcol = 'count'
+	} else {
+		countcol = grep(
+				"^id", names(x), 
+				invert=TRUE, value=TRUE
+		)[1]
+	}
+	
+	obsCounts = as.matrix(x@data[match(idCoarse, x[['id']]), 
+					countcol])
 		colnames(obsCounts) = bw
   }
 	
@@ -266,21 +279,32 @@ riskEst = function(x,
 	
 	wMat=lemObjects$focal$focal[[paste('bw',bw, sep='')]]
 	offsetSmooth = lemObjects$offset[[paste('offset.bw',bw, sep='')]]
+
 	
 	emSmooth = parallel::mcmapply(
-			function(layer) {
-				focal(
-						x=emScale[[layer]],
-						w=wMat, na.rm=TRUE, pad=TRUE
-						)/offsetSmooth
-			},
-			layer = names(emScale),
+			oneLastStepSmooth,
+			Dlayer = names(emScale),
+			MoreArgs = list(
+					emScale=emScale,
+					w=wMat,
+					offsetSmooth=offsetSmooth
+					),
 			mc.cores=ncores
 			)
 	theNames = names(emSmooth)
 	names(emSmooth) = NULL
-	result = do.call(brick, emSmooth)		
+	result = do.call(brick, 
+			c(emSmooth, list(filename=filename)))		
 	names(result) = gsub("^emScale", "risk", theNames)
 	
   return(result)
+}
+
+oneLastStepSmooth = function(Dlayer, emScale, w, offsetSmooth) {
+	focal(
+			x=emScale[[Dlayer]],
+			w=w, na.rm=TRUE, pad=TRUE,
+			filename=paste(tempfile(), Dlayer, ".grd",
+					sep='')
+	)/offsetSmooth
 }

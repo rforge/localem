@@ -63,6 +63,19 @@ lemXv = function(x,
   
   idCoarse = lemObjects$polyCoarse$id
   
+  if(any(names(x)=='count')){
+	  countcol = 'count'
+  } else {
+	  countcol = grep(
+			  "^id", names(x), 
+			  invert=TRUE, value=TRUE
+			  )[1]
+  }
+  
+  if(any(class(x)=='SpatialPolygonsDataFrame')) {
+	  x = data.frame(x)
+  }
+  
   #fine raster did not include all regions in the coarse shapefile
   if(length(idCoarse) != dim(regionMat)[[2]]) {
     
@@ -114,7 +127,7 @@ lemXv = function(x,
     idCoarse = idMatch
     
   } else {
-    countCoarse = x$count[match(idCoarse, x[['id']])]
+    countCoarse = x[match(idCoarse, x[['id']]),countcol]
   }
   
   #partition area

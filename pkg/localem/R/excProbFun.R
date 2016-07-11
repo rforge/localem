@@ -66,7 +66,8 @@ excProb = function(
     ncores = 2, 
     tol = 1e-6, 
     maxIter = 2000, 
-    verbose = FALSE
+    verbose = FALSE,
+	filename=''
 ){
   
   #observed risk surface
@@ -115,15 +116,20 @@ excProb = function(
 			bw=bw, tol=tol, maxIter=maxIter, ncores=ncores
 			)
 	values(estRiskBoot)  = values(estRiskBoot) < rep(values(estimate), nlayers(estRiskBoot))		
-			
-	tIndex = gsub("^risk.threshold.|.sim.[[:digit:]]+$", "", names(estRiskBoot))		
+
+	tIndex = gsub(
+			"^risk.threshold.|.sim.[[:digit:]]+$", "", 
+					names(estRiskBoot))
+	
 	tIndex = factor(tIndex)		
 	excProb = stackApply(
 			estRiskBoot,
 			as.numeric(tIndex),
-			mean
-			)		
+			mean)		
+	
+	
 	names(excProb) = paste("threshold.", levels(tIndex), sep='')		
+	
 
 	if(verbose) {
     cat(date(), "\n")
