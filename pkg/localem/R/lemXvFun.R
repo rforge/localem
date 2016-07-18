@@ -133,11 +133,20 @@ lemXv = function(x,
   #partition area
   rasterFine = lemObjects$rasterFine
   
+  # Scells = ifelse(is.na(values(rasterFine[["cellCoarse"]])) | is.na(values(rasterFine[["idCoarse"]])), 
+                  # NA, 
+                  # paste("c", values(rasterFine[["cellCoarse"]]), "p", values(rasterFine[["idCoarse"]]), sep = "")
+  # )
+
   Scw2 = prod(res(rasterFine))
   Scells = ifelse(is.na(values(rasterFine[["cellCoarse"]])) | is.na(values(rasterFine[["idCoarse"]])), 
                   NA, 
-                  paste("c", values(rasterFine[["cellCoarse"]]), "p", values(rasterFine[["idCoarse"]]), sep = "")
+                  paste("c", values(rasterFine[["cellCoarse"]]), 
+					"p", values(rasterFine[["idCoarse"]]), 
+					".", values(rasterFine[["idFine"]]), 
+					sep = "")
   )
+
   SNcells = tapply(Scells, list(Scells), length)
   SNcells = SNcells[match(dimnames(trainSmoothingMat)[[1]], names(SNcells))]
   Sarea = SNcells * Scw2 
@@ -199,7 +208,8 @@ lemXv = function(x,
   }
   
   #risk estimation of training set for infinity bandwidth
-  Sexpected = diag(trainOffsetMat) * Sarea
+  # Sexpected = diag(trainOffsetMat) * Sarea
+  Sexpected = trainOffsetMat@x * Sarea
   
   xvLambda[,,"bwInf"] = outer(Sarea, apply(trainCounts, 2, sum) / sum(Sexpected), "*")
   
