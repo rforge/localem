@@ -85,7 +85,7 @@ rasterPartition = function(
 	rasterOffset = geostatsp::spdfToBrick(
 			x=polyFine,
       template=rasterFine,
-      pattern='expected')
+      pattern='^expected$')
   names(rasterOffset) = 'offset'
 	
   rasterOffset = raster::mask(rasterOffset, rasterIdCoarse[['idCoarse']])
