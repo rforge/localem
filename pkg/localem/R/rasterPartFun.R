@@ -121,7 +121,8 @@ rasterPartition = function(
       overwrite=file.exists(idFile))
 	
 	
-  theFocal = focalFromBw(bw = bw, rasterFine, focalSize=focalSize, ncores=ncores)
+  theFocal = focalFromBw(bw = bw, fine=rasterFine, 
+				focalSize=focalSize, ncores=ncores)
 	
   Sagg = sort(setdiff(unique(theFocal$bw$fact), 1))
   offsetAgg = parallel::mcmapply(

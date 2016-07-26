@@ -28,13 +28,13 @@ focalFromBw = function(
  )
 	
  focalList = parallel::mcmapply(
-   focalWeight,
-   d=bw,
+   focalWeightWithSize,
+   bw=bw,
    MoreArgs=list(
      x=fine,
-     type='Gauss'
+					size = focalSize
    ),
-   mc.cores=ncores, SIMPLIFY=FALSE
+	 mc.cores=ncores, SIMPLIFY=FALSE
  )
 	
  names(focalList) = paste("bw",
