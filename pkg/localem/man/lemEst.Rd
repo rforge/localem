@@ -22,6 +22,8 @@ raster stacks for the partition and smoothed offsets}
 \item{maxIter}{maximum number of iterations}
 
 \item{verbose}{verbose output}
+
+\item{filename}{passed to writeRaster}
 }
 \value{
 The \code{lemEst} function returns a list containing the raster of risk estimations,

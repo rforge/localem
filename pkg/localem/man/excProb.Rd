@@ -5,7 +5,8 @@
 \title{Computes the exceedance probabilities on the raster of fine polygons}
 \usage{
 excProb(x, estimate, lemObjects, bw, threshold = 1, Nboot = 100,
-  ncores = 2, tol = 1e-06, maxIter = 2000, verbose = FALSE)
+  ncores = 2, tol = 1e-06, maxIter = 2000, verbose = FALSE,
+  filename = "")
 }
 \arguments{
 \item{x}{Spatial polygons of case data}

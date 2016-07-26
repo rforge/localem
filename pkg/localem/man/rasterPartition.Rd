@@ -5,8 +5,9 @@
 \title{Generates the partitions by overlaying rasters of the coarse and fine polygons}
 \usage{
 rasterPartition(polyCoarse, polyFine, cellsCoarse = 40, cellsFine = 400, bw,
-  ncores = 2, idFile = paste(tempfile(), "Id.grd", sep = ""),
-  offsetFile = paste(tempfile(), "Offset.grd", sep = ""), verbose = FALSE)
+  focalSize = NULL, ncores = 2, idFile = paste(tempfile(), "Id.grd", sep =
+  ""), offsetFile = paste(tempfile(), "Offset.grd", sep = ""),
+  verbose = FALSE)
 }
 \arguments{
 \item{polyCoarse}{Spatial polygons of case data}
@@ -18,6 +19,8 @@ rasterPartition(polyCoarse, polyFine, cellsCoarse = 40, cellsFine = 400, bw,
 \item{cellsFine}{Horizontal/vertical resolution of raster applied to fine polygons}
 
 \item{bw}{Vector of bandwidths}
+
+\item{focalSize}{Distance to truncate Gaussian kernels, defaults to 3 times the bandwith}
 
 \item{ncores}{Number of cores/threads for parallel processing}
 

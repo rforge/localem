@@ -7,6 +7,7 @@
 #' @param polyCoarse Spatial polygons of case data
 #' @param polyFine Spatial polygons of population data
 #' @param bw Vector of bandwidths
+#' @param focalSize Distance to truncate Gaussian kernels, defaults to 3 times the bandwith
 #' @param cellsCoarse Horizontal/vertical resolution of raster applied to coarse polygons
 #' @param cellsFine Horizontal/vertical resolution of raster applied to fine polygons
 #' @param ncores Number of cores/threads for parallel processing
@@ -42,7 +43,7 @@ rasterPartition = function(
   	polyFine, 
   	cellsCoarse = 40, 
   	cellsFine = 400, 
-  	bw, 
+  	bw, focalSize=NULL,
   	ncores = 2, 
   	idFile = paste(tempfile(), 'Id.grd', sep = ''), 
   	offsetFile = paste(tempfile(), 'Offset.grd', sep = ''), 
@@ -70,8 +71,14 @@ rasterPartition = function(
 	names(rasterFine) = 'cellCoarse'
 	
 	# coarse poly ID's for fine raster
+	
+	polyCoarseIdCol = grep("^id$", names(polyCoarse), value=TRUE)
+	if(!length(polyCoarseIdCol)) {
+		polyCoarseIdCol = names(polyCoarse)[1]
+	}
+	
 	idCoarse = 1:length(polyCoarse)
-  names(idCoarse) = polyCoarse$id
+  names(idCoarse) = polyCoarse@data[[polyCoarseIdCol]]
   polyCoarse$idCoarse = idCoarse
 	
 	rasterIdCoarse = rasterize(
@@ -114,7 +121,7 @@ rasterPartition = function(
       overwrite=file.exists(idFile))
 	
 	
-  theFocal = focalFromBw(bw = bw, rasterFine, ncores=ncores)
+  theFocal = focalFromBw(bw = bw, rasterFine, focalSize=focalSize, ncores=ncores)
 	
   Sagg = sort(setdiff(unique(theFocal$bw$fact), 1))
   offsetAgg = parallel::mcmapply(
@@ -160,7 +167,7 @@ rasterPartition = function(
     	rasterFine=rasterFineId,
     	focal=theFocal,
     	offset=offsetStack,
-    	polyCoarse = polyCoarse[,grep("^id", names(polyCoarse))]
+    	polyCoarse = polyCoarse[,c(polyCoarseIdCol, 'idCoarse')]
   )
   
   return(result)

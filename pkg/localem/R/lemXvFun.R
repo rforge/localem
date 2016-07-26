@@ -61,17 +61,26 @@ lemXv = function(x,
   
   trainSmoothingMat = lemObjects$smoothingArray / ((Nxv - 1) / Nxv)
   
-  idCoarse = lemObjects$polyCoarse$id
+		idCoarseCol = names(lemObjects$polyCoarse)[1]
+  idCoarse = lemObjects$polyCoarse[[idCoarseCol]]
   
-  if(any(names(x)=='count')){
-	  countcol = 'count'
+	 countcol = grep('^(count|cases)$', names(x), value=TRUE, ignore.case=TRUE)
+  if(length(countcol)){
+			countcol = countcol[1]
   } else {
 	  countcol = grep(
-			  "^id", names(x), 
+			  "^(id|name)", names(x), 
 			  invert=TRUE, value=TRUE
 			  )[1]
   }
-  
+
+  idColX = grep("^id", names(x), value=TRUE)
+		if(length(idColX)) {
+			idColX = idColX[1]
+		} else {
+			idColX = names(x)[1]
+		}
+		
   if(any(class(x)=='SpatialPolygonsDataFrame')) {
 	  x = data.frame(x)
   }
@@ -127,7 +136,7 @@ lemXv = function(x,
     idCoarse = idMatch
     
   } else {
-    countCoarse = x[match(idCoarse, x[['id']]),countcol]
+    countCoarse = x[match(idCoarse, x[[idColX]]),countcol]
   }
   
   #partition area

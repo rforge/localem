@@ -3,6 +3,26 @@
 library("Pmisc")
 
 
+# rates
+lungRates = diseasemapping::cancerRates(
+		'usa', 2000, 'F', 'Lung'
+)
+
+# table of counties and fips codes
+
+countyTable = read.table(
+		url('http://www2.census.gov/geo/docs/reference/codes/files/national_county.txt'),
+		header=FALSE, stringsAsFactors=FALSE, sep=',', quote="\"",
+		col.names=c('ab1','id1','subId2','name2','junk'),
+		colClasses=rep('character',5)
+)
+countyTable$id2 = paste(
+		'USA',countyTable$id1,
+		'_0', countyTable$subId2,
+		sep=''
+)		
+
+
 # Kentucky tract
 
 kentuckyTract = gcensus(
@@ -16,10 +36,6 @@ kentuckyTract = gcensus(
 
 
 # expected
-
-lungRates = diseasemapping::cancerRates(
-		'usa', 2000, 'F', 'Lung'
-)
 
 kentuckyTract = diseasemapping::getSMR(
 		kentuckyTract, 
@@ -65,17 +81,6 @@ kentuckyCases = diseasemapping:::usCancer(
   year = c(2003, 2007)
 )
 
-countyTable = read.table(
-		url('http://www2.census.gov/geo/docs/reference/codes/files/national_county.txt'),
-		header=FALSE, stringsAsFactors=FALSE, sep=',', quote="\"",
-		col.names=c('ab1','id1','subId2','name2','junk'),
-		colClasses=rep('character',5)
-)
-countyTable$id2 = paste(
-		'USA',countyTable$id1,
-		'_0', countyTable$subId2,
-		sep=''
-)		
 
 kentuckyCases$ab1 = toupper(kentuckyCases$stateCode)
 kentuckyCases$name2 = paste(kentuckyCases$County, "County", sep=' ')
@@ -151,7 +156,7 @@ californiaTract = gcensus(
 
 californiaTract = diseasemapping::getSMR(
 		californiaTract, 
-		5*lungRates
+		lungRates
 )		
 
 californiaTract = californiaTract[,grep("^(m|f)_", names(californiaTract), invert=TRUE)]		
@@ -181,19 +186,11 @@ californiaCases = diseasemapping:::usCancer(
   site = 'Lung',
   sex = 'F',
   state = 'California',
-  year = c(2003, 2007)
+  year = 2003
 )
 
 californiaCases$ab1 = toupper(californiaCases$stateCode)
 californiaCases$name2 = paste(californiaCases$County, "County", sep=' ')
-
-californiaCases = merge(
-		californiaCases,
-		countyTable[,c('ab1','id2','name2')],
-		all.x=TRUE, all.y=FALSE
-)
-
-table(is.na(californiaCases$id2))	
 
 # California counties
 
@@ -229,7 +226,7 @@ californiaMerged = rgeos::gUnaryUnion(
 )
 
 rownames(californiaCases) = gsub("[[:space:]]", "", californiaCases$name2)
-californiaMerged = spChFIDs(californiaMerged, gsub("[[:space:]]", "", names(californiaMerged) ))
+californiaMerged = sp::spChFIDs(californiaMerged, gsub("[[:space:]]", "", names(californiaMerged) ))
 
 californiaCases2 = californiaCases[match(
 				gsub("[[:space:]]", "", names(californiaMerged)),
@@ -237,7 +234,7 @@ californiaCases2 = californiaCases[match(
 		), ]				
 
 
-californiaMerged = SpatialPolygonsDataFrame(
+californiaMerged = sp::SpatialPolygonsDataFrame(
 		californiaMerged, californiaCases2[,c('name2','Cases')]
 )
 
