@@ -187,61 +187,109 @@ lemXv = function(x,
                 dimnames = list(dimnames(xvCounts)[[1]], dimnames(xvCounts)[[2]], dimnames(xvLambda)[[3]])
   )
   
-  for(Dbw in dimnames(trainSmoothingMat)[[3]]) {
-    
-    if(verbose) {
-      cat(date(), "\n")
-      cat("obtaining CV for bandwidth: ", gsub("^bw", "", Dbw), "\n")
-    }
-    
-    #risk estimation of training set for finite bandwidths
-    xvLambda[,,Dbw] = simplify2array(
-      parallel::mclapply(1:Nxv, 
-                         xvLemEst, 
-                         trainCounts = trainCounts, 
-                         regionMat = regionMat, 
-                         offsetMat = trainOffsetMat, 
-                         smoothingMat = trainSmoothingMat[,,Dbw], 
-                         tol = tol, 
-                         maxIter = maxIter, 
-                         mc.cores=ncores
-      ))
-    
-    #likelihood cross-validation scores of test set for finite bandwidths
-    xvMeans = t(regionMat) %*% xvOffsetMat %*% xvLambda[,,Dbw]
-    
-    for(D in 1:Nxv) {
-      
-      xvRes[,D,Dbw] = dpois(xvCounts[,D], xvMeans[,D], log = TRUE)
-    }
-  }
+#		stuff= xvLemEstOneBw(
+#				Dbw=dimnames(trainSmoothingMat)[[3]][1],
+#				trainId = 1:Nxv, 
+#  		trainCounts = trainCounts, 
+#  		regionMat = regionMat, 
+#  		offsetMat = trainOffsetMat, 
+#  		smoothingMat = trainSmoothingMat, 
+#  		tol = tol, 
+#  		maxIter = maxIter
+#		)
+
+if(verbose) {
+ cat(date(), "\n")
+ cat("obtaining CV for finite bandwidths\n")
+}
+
+		xvList = parallel::mclapply(
+				dimnames(trainSmoothingMat)[[3]],
+				xvLemEstOneBw,
+				trainId = 1:Nxv, 
+  		trainCounts = trainCounts, 
+  		regionMat = regionMat, 
+  		offsetMat = trainOffsetMat, 
+  		smoothingMat = trainSmoothingMat, 
+				xvOffsetMat = xvOffsetMat,
+  		tol = tol, 
+  		maxIter = maxIter,
+				mc.cores=ncores
+		)
+		
+		if(verbose) {
+ 		cat(date(), "\n")
+ 		cat("obtaining CV for infinite bandwidth\n")
+		}
+		
+		names(xvList) = dimnames(trainSmoothingMat)[[3]]
+		xvLambda = simplify2array(xvList)
+		
+		xvRes = xvLambda
+
+		xvRes[,,] = dpois(as.vector(xvCounts), as.vector(xvRes), log = TRUE)
+		
+		#cross-validation scores
+  xvCV = -apply(xvRes, 3, sum)
+		
+#  for(Dbw in dimnames(trainSmoothingMat)[[3]]) {
+   
+   
+   #risk estimation of training set for finite bandwidths
+#  xvLambda[,,Dbw] = simplify2array(
+#    parallel::mclapply(1:Nxv, 
+#      xvLemEst, 
+#      trainCounts = trainCounts, 
+#      regionMat = regionMat, 
+#      offsetMat = trainOffsetMat, 
+#      smoothingMat = trainSmoothingMat[,,Dbw], 
+#      tol = tol, 
+#      maxIter = maxIter, 
+#      mc.cores=ncores
+#    ))
+#			xvLambda[,,Dbw] = xvLemEst(
+#					trainId = 1:Nxv, 
+#  			trainCounts = trainCounts, 
+#  			regionMat = regionMat, 
+#  			offsetMat = trainOffsetMat, 
+#  			smoothingMat = trainSmoothingMat[,,Dbw], 
+#  			tol = tol, 
+#  			maxIter = maxIter)
+   
+   #likelihood cross-validation scores of test set for finite bandwidths
+   #xvMeansOld = t(regionMat) %*% xvOffsetMat %*% xvLambda[,,Dbw]
+#   xvMeans = crossprod(regionMat, xvOffsetMat) %*% xvLambda[,,Dbw]
+#			
+#			xvRes[,,Dbw] = dpois(as.vector(xvCounts), as.vector(xvMeans), log = TRUE)
+#  }
   
   #risk estimation of training set for infinity bandwidth
   # Sexpected = diag(trainOffsetMat) * Sarea
   Sexpected = trainOffsetMat@x * Sarea
   
-  xvLambda[,,"bwInf"] = outer(Sarea, apply(trainCounts, 2, sum) / sum(Sexpected), "*")
+  xvLambdaInf = outer(Sarea, apply(trainCounts, 2, sum) / sum(Sexpected), "*")
   
   #likelihood cross-validation scores of test set for infinity bandwidth
-  xvMeans = t(regionMat) %*% xvOffsetMat %*% xvLambda[,,"bwInf"]
+  xvMeans = crossprod(regionMat, xvOffsetMat) %*% xvLambdaInf
+		xvResInf = xvMeans
+		xvResInf[,] = dpois(as.vector(xvCounts), as.vector(xvMeans), log = TRUE)
   
-  for(D in 1:Nxv) {
-    
-    xvRes[,D,"bwInf"] = dpois(xvCounts[,D], xvMeans[,D], log = TRUE)
-  }
   
-  #cross-validation scores
-  xvCV = -apply(xvRes, 3, sum)
+		#cross-validation scores
+  xvCVInf = -sum(xvResInf)
+		
   
   result = data.frame(
-    bw = as.numeric(gsub("^bw", "", dimnames(xvLambda)[[3]])), 
-    cv = xvCV
+    bw = c(
+						as.numeric(gsub("^bw", "", dimnames(xvLambda)[[3]])), Inf), 
+    cv = c(xvCV, xvCVInf)
   )
-
+  
+		if(verbose) { 
+   cat(date(), "\n")
+   cat("done\n")
+  }
+		
   return(result)
   
-  if(verbose) { 
-    cat(date(), "\n")
-    cat("done\n")
-  }
 }

@@ -3,18 +3,51 @@ oneLemIter = function(
   Lambda, smoothingMat, regionMat, offsetMat, counts
 ){
 
-  denom = t(regionMat) %*% offsetMat %*% Lambda
+	
+	regionOffset = crossprod(regionMat, offsetMat)
+	
+#  denomOld = t(regionMat) %*% offsetMat %*% Lambda
 
-  em = t(t(counts/denom) %*% t(regionMat) %*% offsetMat) * Lambda
-  em[as.vector(!is.finite(em))] = 0
+	 denom = regionOffset %*% Lambda
+	
+#  emOld = t(t(counts/denom) %*% t(regionMat) %*% offsetMat) * Lambda
+ 
+	em = crossprod(regionOffset, counts/denom) * Lambda
+	
+ em[as.vector(!is.finite(em))] = 0
 
-  result = as.matrix(
-    t(smoothingMat) %*% em
-  )
+#  resultOld = as.matrix(t(smoothingMat) %*% em)
 
+	result = crossprod(smoothingMat, em)
+	
 	attributes(result)$em = em
 	
   return(result)
+}
+
+
+xvLemEstOneBw = function(
+		Dbw,
+		trainId,
+  trainCounts,
+  regionMat,
+  offsetMat,
+  smoothingMat,
+		xvOffsetMat,
+  tol,
+  maxIter) {
+	
+	xvLambda = xvLemEst(
+			trainId,
+   trainCounts,
+   regionMat,
+   offsetMat,
+   smoothingMat = Matrix(drop(smoothingMat[,,Dbw])),
+   tol,
+   maxIter)
+	
+	as.matrix(crossprod(regionMat, xvOffsetMat) %*% xvLambda)
+	
 }
 
 # Computes the risk estimation of the training set
@@ -26,12 +59,14 @@ xvLemEst = function(trainId,
                     tol,
                     maxIter) {
 
-  obsCounts = as.matrix(trainCounts[,trainId])
+		if(missing(trainId))
+			trainId = 1:ncol(trainCounts)
+  obsCounts = as.matrix(trainCounts[,trainId, drop=FALSE])
 
   oldRes = offsetMat %*%
     matrix(1,
            nrow = dim(offsetMat)[1],
-           ncol = 1
+           ncol = ncol(obsCounts)
     )
 
   Diter = 1
@@ -53,7 +88,7 @@ xvLemEst = function(trainId,
     Diter = Diter + 1
   }
 
-  result = as.vector(newRes)
+  result = as.matrix(newRes)
 
   return(result)
 }
