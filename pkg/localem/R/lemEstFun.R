@@ -202,6 +202,8 @@ riskEst = function(x,
 	
 #	smoothingMat = smoothingMat / prod(res(lemObjects$offset))
 	
+smoothingMat = Matrix(smoothingMat)
+
  while((absdiff > tol) && (Diter < maxIter)) {
 		
   Lambda = oneLemIter(
