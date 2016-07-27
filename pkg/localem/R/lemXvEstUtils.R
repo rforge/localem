@@ -1,10 +1,8 @@
 # Computes the risk estimation aggregated to the partitions for one iteration
 oneLemIter = function(
-  Lambda, smoothingMat, regionMat, offsetMat, counts
+  Lambda, smoothingMat, regionMat, offsetMat, counts,
+		regionOffset = crossprod(regionMat, offsetMat)
 ){
-
-	
-	regionOffset = crossprod(regionMat, offsetMat)
 	
 #  denomOld = t(regionMat) %*% offsetMat %*% Lambda
 
@@ -30,44 +28,45 @@ xvLemEstOneBw = function(
 		Dbw,
 		trainId,
   trainCounts,
-  regionMat,
-  offsetMat,
+  regionOffset, # = crossprod(regionMat, offsetMat)
   smoothingMat,
-		xvOffsetMat,
+		regionXvOffset, # = crossprod(regionMat, xvOffsetMat) 
+		startingValue,
   tol,
   maxIter) {
 	
 	xvLambda = xvLemEst(
-			trainId,
-   trainCounts,
-   regionMat,
-   offsetMat,
+			trainId=trainId,
+   trainCounts=trainCounts,
+   regionOffset =regionOffset,
    smoothingMat = Matrix(drop(smoothingMat[,,Dbw])),
-   tol,
-   maxIter)
+			startingValue = startingValue,
+   tol=tol,
+   maxIter = maxIter)
 	
-	as.matrix(crossprod(regionMat, xvOffsetMat) %*% xvLambda)
+	as.matrix(regionXvOffset %*% xvLambda)
 	
 }
 
 # Computes the risk estimation of the training set
-xvLemEst = function(trainId,
-                    trainCounts,
-                    regionMat,
-                    offsetMat,
-                    smoothingMat,
-                    tol,
-                    maxIter) {
-
+xvLemEst = function(
+		trainId,
+  trainCounts,
+  regionOffset,
+  smoothingMat,
+		offsetMat,
+		startingValue = matrix(
+				apply(regionOffset, 2, sum),
+				ncol(regionOffset), length(trainId)
+				),
+  tol,
+  maxIter) {
+	
 		if(missing(trainId))
 			trainId = 1:ncol(trainCounts)
   obsCounts = as.matrix(trainCounts[,trainId, drop=FALSE])
 
-  oldRes = offsetMat %*%
-    matrix(1,
-           nrow = dim(offsetMat)[1],
-           ncol = ncol(obsCounts)
-    )
+  oldRes = startingValue
 
   Diter = 1
   absdiff = 1
@@ -77,8 +76,7 @@ xvLemEst = function(trainId,
     newRes = oneLemIter(
       Lambda = oldRes,
       smoothingMat = smoothingMat,
-      regionMat = regionMat,
-      offsetMat = offsetMat,
+      regionOffset = regionOffset,
       counts = obsCounts
     )
 

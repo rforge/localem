@@ -203,14 +203,14 @@ riskEst = function(x,
 #	smoothingMat = smoothingMat / prod(res(lemObjects$offset))
 	
 smoothingMat = Matrix(smoothingMat)
+regionOffset = crossprod(regionMat, offsetMat)
 
  while((absdiff > tol) && (Diter < maxIter)) {
 		
   Lambda = oneLemIter(
     Lambda = oldLambda,
     smoothingMat = smoothingMat,
-    regionMat = regionMat,
-    offsetMat = offsetMat,
+    regionOffset = regionOffset,
     counts = obsCounts)
 		
   absdiff = mean(abs(oldLambda - Lambda))

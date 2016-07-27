@@ -198,6 +198,15 @@ lemXv = function(x,
 #  		maxIter = maxIter
 #		)
 
+
+trainRegionOffset = crossprod(regionMat, trainOffsetMat)
+regionXvOffset = crossprod(regionMat, xvOffsetMat) 
+
+startingValue = matrix(
+		apply(trainRegionOffset, 2, sum),
+		ncol(trainRegionOffset), Nxv
+)
+
 if(verbose) {
  cat(date(), "\n")
  cat("obtaining CV for finite bandwidths\n")
@@ -208,10 +217,10 @@ if(verbose) {
 				xvLemEstOneBw,
 				trainId = 1:Nxv, 
   		trainCounts = trainCounts, 
-  		regionMat = regionMat, 
-  		offsetMat = trainOffsetMat, 
+  		regionOffset = trainRegionOffset, 
   		smoothingMat = trainSmoothingMat, 
-				xvOffsetMat = xvOffsetMat,
+				regionXvOffset = regionXvOffset,
+				startingValue=startingValue,
   		tol = tol, 
   		maxIter = maxIter,
 				mc.cores=ncores
@@ -226,7 +235,6 @@ if(verbose) {
 		xvLambda = simplify2array(xvList)
 		
 		xvRes = xvLambda
-
 		xvRes[,,] = dpois(as.vector(xvCounts), as.vector(xvRes), log = TRUE)
 		
 		#cross-validation scores
@@ -270,7 +278,7 @@ if(verbose) {
   xvLambdaInf = outer(Sarea, apply(trainCounts, 2, sum) / sum(Sexpected), "*")
   
   #likelihood cross-validation scores of test set for infinity bandwidth
-  xvMeans = crossprod(regionMat, xvOffsetMat) %*% xvLambdaInf
+  xvMeans = regionXvOffset %*% xvLambdaInf
 		xvResInf = xvMeans
 		xvResInf[,] = dpois(as.vector(xvCounts), as.vector(xvMeans), log = TRUE)
   
