@@ -1,23 +1,20 @@
 #' @title Computes the relative risk estimation on the raster of fine polygons
 #'
-#' @description The \code{lemEst} function first creates the smoothing matrix at the final iteration with the input bandwidth, and then,
-#'  computes the estimates of the relative risk on the cells of the fine raster.
+#' @description The \code{riskEst} function computes the estimations of the relative risk on the cells of the fine raster.
 #'
 #' @param x Spatial polygons of case data
 #' @param lemObjects List of arrays for the smoothing matrix and
 #'  raster stacks for the partition and smoothed offsets
 #' @param bw Numeric value of bandwidth
 #' @param ncores Number of cores/threads for parallel processing
-#' @param tol tolerance for convergence
-#' @param maxIter maximum number of iterations
-#' @param verbose verbose output
-#' @param filename passed to writeRaster
+#' @param tol Tolerance for convergence
+#' @param maxIter Maximum number of iterations
+#' @param verbose Verbose output
+#' @param filename Passed to writeRaster
 #'
-#' @details After using the \code{lemEst} function, the raster of risk estimations is done on cells of the raster on the fine polygons.
+#' @details After using the \code{riskEst} function, the raster of risk estimations is done on cells of the raster on the fine polygons.
 
-#' @return The \code{lemEst} function returns a list containing the raster of risk estimations,
-#'  array of smoothing matrix at the final iteration, and
-#'  input rasters of partitions and smoothed offsets.
+#' @return The \code{riskEst} function returns a the raster of risk estimations for input bandwidth.
 #'
 #' @examples
 #' data(kentuckyCounty)
@@ -26,7 +23,7 @@
 #'
 #' \dontrun{
 #' lemRaster = rasterPartition(polyCoarse = kentuckyCounty, polyFine = kentuckyTract,
-#'                    cellsCoarse = 40, cellsFine = 400,
+#'                    cellsCoarse = 6, cellsFine = 100,
 #'                    bw = c(10, 15, 20, 25) * 1000,
 #'                    ncores = 4,
 #'                    idFile = 'id.grd', offsetFile = 'offset.grd')
@@ -37,58 +34,15 @@
 #' lemCv = lemXv(x = kentuckyCounty,
 #'                    lemObjects = lemSmoothMat,
 #'                    ncores = 4)
+#' bestBw = lemCv$bw[which.min(lemCv$cv)]
 #'
-#' lemRisk = lemEst(x = kentuckyCounty,
+#' lemRisk = riskEst(x = kentuckyCounty,
 #'                    lemObjects = lemSmoothMat,
-#'                    bw = 15000,
-#'                    ncores = 4)
+#'                    bw = bestBw)
 #'
-#' plot(lemRisk$risk)
+#' plot(lemRisk)
 #'}
 #'
-#' @export
-lemEst = function(x,
-  lemObjects,
-  bw,
-  ncores = 2,
-  tol = 1e-6,
-  maxIter = 2000,
-  verbose = FALSE
-) {
-	
- if(length(bw) > 1) {
-  stop("Bandwidth must be numeric and length 1")
- }
-	
-	
- if(verbose) {
-  cat(date(), "\n")
-  cat("obtaining risk estimation at final iteration\n")
- }
-	
- #risk estimation
- theRisk = riskEst(
-   x=x,
-   lemObjects=lemObjects,
-   bw=bwdimnames(theFinalMat$smoothingArray)[[3]],
-   tol=tol,
-   maxIter=maxIter
- )
-	
- result = c(
-   list(risk = theRisk),
-   theFinalMat
- )
-	
- return(result)
-	
- if(verbose) {
-  cat(date(), "\n")
-  cat("done\n")
- }
-}
-
-# Computes the relative risk estimation on the raster of fine polygons
 #' @export
 riskEst = function(x,
 		lemObjects,
@@ -98,6 +52,10 @@ riskEst = function(x,
 		ncores=1,
 		filename=''
 ) {
+
+ if(length(bw) > 1) {
+  stop("Bandwidth must be numeric and length 1")
+ }
 	
  regionMat = lemObjects$regionMat
  offsetMat = lemObjects$offsetMat
@@ -314,13 +272,4 @@ regionOffset = crossprod(regionMat, offsetMat)
 	names(result) = gsub("^emScale", "risk", theNames)
 	
  return(result)
-}
-
-oneLastStepSmooth = function(Dlayer, emScale, w, offsetSmooth) {
-	result = focal(
-			x=emScale[[Dlayer]],
-			w=w, na.rm=TRUE, pad=TRUE
-	)/offsetSmooth
-	names(result) = as.character(Dlayer)
-	result
 }

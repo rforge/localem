@@ -20,7 +20,7 @@
 #' 
 #' \dontrun{
 #' lemRaster = rasterPartition(polyCoarse = kentuckyCounty, polyFine = kentuckyTract, 
-#'                    cellsCoarse = 40, cellsFine = 400, 
+#'                    cellsCoarse = 6, cellsFine = 100, 
 #'                    bw = c(10, 15, 20, 25) * 1000, 
 #'                    ncores = 4, 
 #'                    idFile = 'id.grd', offsetFile = 'offset.grd')

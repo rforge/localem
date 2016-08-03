@@ -1,4 +1,5 @@
-
+# Sets the size of sigma for Gaussian density kernel
+# The default is 3 times sigma
 focalWeightWithSize = function(x, bw, size=NULL) {
 	
 	if(!length(size))
@@ -11,7 +12,8 @@ focalWeightWithSize = function(x, bw, size=NULL) {
 	
 }
 
-# Computes focal weight matrix for specified bandwidth
+
+# Computes focal weight matrix for a Gaussian density kernel with specified bandwidth and size of sigma
 focalFromBw = function(
   bw, fine, ncores=1, minDim = 60, focalSize = NULL
 ){
@@ -81,7 +83,7 @@ focalFromBw = function(
       bw=bwHere,
       MoreArgs=list(
         x=fineAgg,
-								size = focalSize
+		size = focalSize
       )
     )
   names(focalListD) = paste("bw",

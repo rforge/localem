@@ -8,10 +8,10 @@
 #'  raster stacks for the partition and smoothed offsets
 #' @param Nxv Number of cross-validation datasets
 #' @param ncores Number of cores/threads for parallel processing
-#' @param tol tolerance for convergence
-#' @param maxIter maximum number of iterations
-#' @param verbose verbose output
-#' @param randomSeed seed for radom number generator
+#' @param tol Tolerance for convergence
+#' @param maxIter Maximum number of iterations
+#' @param verbose Verbose output
+#' @param randomSeed Seed for radom number generator
 #' 
 #' @importFrom stats dpois rmultinom
 #' @import sp 

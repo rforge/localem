@@ -17,13 +17,13 @@ raster stacks for the partition and smoothed offsets}
 
 \item{ncores}{Number of cores/threads for parallel processing}
 
-\item{tol}{tolerance for convergence}
+\item{tol}{Tolerance for convergence}
 
-\item{maxIter}{maximum number of iterations}
+\item{maxIter}{Maximum number of iterations}
 
-\item{randomSeed}{seed for radom number generator}
+\item{randomSeed}{Seed for radom number generator}
 
-\item{verbose}{verbose output}
+\item{verbose}{Verbose output}
 }
 \value{
 The \code{lemXv} function returns a data frame of specified bandwidths and cross-validation scores.

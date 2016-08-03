@@ -24,15 +24,16 @@ raster stacks for the partition and smoothed offsets}
 
 \item{ncores}{Number of cores/threads for parallel processing}
 
-\item{tol}{tolerance for convergence}
+\item{tol}{Tolerance for convergence}
 
-\item{maxIter}{maximum number of iterations}
+\item{maxIter}{Maximum number of iterations}
 
-\item{verbose}{verbose output}
+\item{verbose}{Verbose output}
+
+\item{filename}{Passed to writeRaster}
 }
 \value{
-The \code{excProb} function returns a raster stack of the risk estimation and 
- exceedance probabilities of specified risk thresholds.
+The \code{excProb} function returns a raster stack of exceedance probabilities of specified risk thresholds.
 }
 \description{
 The \code{excProb} function first bootstraps cases with the input risk thresholds, and then, 
@@ -47,27 +48,27 @@ data(kentuckyCounty)
 data(kentuckyTract)
 
 \dontrun{
-lemRaster = rasterPartition(polyCoarse = kentuckyCounty, polyFine = kentuckyTract, 
-                   cellsCoarse = 40, cellsFine = 400, 
-                   bw = c(10, 15, 20, 25) * 1000, 
-                   ncores = 4, 
+lemRaster = rasterPartition(polyCoarse = kentuckyCounty, polyFine = kentuckyTract,
+                   cellsCoarse = 6, cellsFine = 100,
+                   bw = c(10, 15, 20, 25) * 1000,
+                   ncores = 4,
                    idFile = 'id.grd', offsetFile = 'offset.grd')
-                   
-lemSmoothMat = smoothingMatrix(rasterObjects = lemRaster, 
-                   ncores = 4) 
-                   
-lemCv = lemXv(x = kentuckyCounty, 
-                   lemObjects = lemSmoothMat, 
-                   ncores = 4) 
-                   
-lemRisk = riskEst(x = kentuckyCounty, 
-                   lemObjects = lemSmoothMat, 
-                   bw = 15000, 
-                   ncores = 4) 
+
+lemSmoothMat = smoothingMatrix(rasterObjects = lemRaster,
+                   ncores = 4)
+
+lemCv = lemXv(x = kentuckyCounty,
+                   lemObjects = lemSmoothMat,
+                   ncores = 4)
+bestBw = lemCv$bw[which.min(lemCv$cv)]
+
+lemRisk = riskEst(x = kentuckyCounty,
+                   lemObjects = lemSmoothMat,
+                   bw = bestBw)
                    
 lemExcProb = excProb(x = kentuckyCounty, 
                    lemObjects = lemSmoothMat, 
-										estimate=lemRisk,
+					estimate=lemRisk,
                    threshold = c(1, 1.1, 1.25), 
                    Nboot = 100, 
                    ncores = 4) 

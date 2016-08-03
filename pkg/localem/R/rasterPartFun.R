@@ -13,7 +13,7 @@
 #' @param ncores Number of cores/threads for parallel processing
 #' @param idFile Filename (must have .grd extension) of the raster of partitions
 #' @param offsetFile Filename (must have .grd extension) of the rasters of smoothed offsets
-#' @param verbose verbose output
+#' @param verbose Verbose output
 #' 
 #' 
 #' @details After using the \code{rasterPartition} function, the fine raster is a raster stack containing the IDs for the partitions created by overlaying the coarse and fine rasters. 
@@ -31,7 +31,7 @@
 #' 
 #' \dontrun{
 #' lemRaster = rasterPartition(polyCoarse = kentuckyCounty, polyFine = kentuckyTract, 
-#'                    cellsCoarse = 40, cellsFine = 400, 
+#'                    cellsCoarse = 6, cellsFine = 100, 
 #'                    bw = c(10, 15, 20, 25) * 1000, 
 #'                    ncores = 4, 
 #'                    idFile = 'id.grd', offsetFile = 'offset.grd')
@@ -41,8 +41,8 @@
 rasterPartition = function(
   	polyCoarse, 
   	polyFine, 
-  	cellsCoarse = 40, 
-  	cellsFine = 400, 
+  	cellsCoarse = 6, 
+  	cellsFine = 100, 
   	bw, focalSize=NULL,
   	ncores = 2, 
   	idFile = paste(tempfile(), 'Id.grd', sep = ''), 

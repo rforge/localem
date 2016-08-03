@@ -4,7 +4,7 @@
 \alias{rasterPartition}
 \title{Generates the partitions by overlaying rasters of the coarse and fine polygons}
 \usage{
-rasterPartition(polyCoarse, polyFine, cellsCoarse = 40, cellsFine = 400, bw,
+rasterPartition(polyCoarse, polyFine, cellsCoarse = 6, cellsFine = 100, bw,
   focalSize = NULL, ncores = 2, idFile = paste(tempfile(), "Id.grd", sep =
   ""), offsetFile = paste(tempfile(), "Offset.grd", sep = ""),
   verbose = FALSE)
@@ -28,7 +28,7 @@ rasterPartition(polyCoarse, polyFine, cellsCoarse = 40, cellsFine = 400, bw,
 
 \item{offsetFile}{Filename (must have .grd extension) of the rasters of smoothed offsets}
 
-\item{verbose}{verbose output}
+\item{verbose}{Verbose output}
 }
 \value{
 The \code{rasterPartition} function returns a list containing the raster of the coarse polygons, 
@@ -52,7 +52,7 @@ data(kentuckyTract)
 
 \dontrun{
 lemRaster = rasterPartition(polyCoarse = kentuckyCounty, polyFine = kentuckyTract, 
-                   cellsCoarse = 40, cellsFine = 400, 
+                   cellsCoarse = 6, cellsFine = 100, 
                    bw = c(10, 15, 20, 25) * 1000, 
                    ncores = 4, 
                    idFile = 'id.grd', offsetFile = 'offset.grd')

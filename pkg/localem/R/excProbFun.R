@@ -11,15 +11,15 @@
 #' @param threshold Vector of risk thresholds
 #' @param Nboot Number of bootstraps
 #' @param ncores Number of cores/threads for parallel processing
-#' @param tol tolerance for convergence
-#' @param maxIter maximum number of iterations
-#' @param verbose verbose output
+#' @param tol Tolerance for convergence
+#' @param maxIter Maximum number of iterations
+#' @param verbose Verbose output
+#' @param filename Passed to writeRaster
 #' 
 #' 
 #' @details After using the \code{excProb} function, the raster of exceedance probabilities is done on cells of the raster on the fine polygons. 
 #' 
-#' @return The \code{excProb} function returns a raster stack of the risk estimation and 
-#'  exceedance probabilities of specified risk thresholds. 
+#' @return The \code{excProb} function returns a raster stack of exceedance probabilities of specified risk thresholds. 
 #' 
 #' @examples 
 #' data(kentuckyCounty)
@@ -27,27 +27,27 @@
 #' data(kentuckyTract)
 #' 
 #' \dontrun{
-#' lemRaster = rasterPartition(polyCoarse = kentuckyCounty, polyFine = kentuckyTract, 
-#'                    cellsCoarse = 40, cellsFine = 400, 
-#'                    bw = c(10, 15, 20, 25) * 1000, 
-#'                    ncores = 4, 
+#' lemRaster = rasterPartition(polyCoarse = kentuckyCounty, polyFine = kentuckyTract,
+#'                    cellsCoarse = 6, cellsFine = 100,
+#'                    bw = c(10, 15, 20, 25) * 1000,
+#'                    ncores = 4,
 #'                    idFile = 'id.grd', offsetFile = 'offset.grd')
-#'                    
-#' lemSmoothMat = smoothingMatrix(rasterObjects = lemRaster, 
-#'                    ncores = 4) 
-#'                    
-#' lemCv = lemXv(x = kentuckyCounty, 
-#'                    lemObjects = lemSmoothMat, 
-#'                    ncores = 4) 
-#'                    
-#' lemRisk = riskEst(x = kentuckyCounty, 
-#'                    lemObjects = lemSmoothMat, 
-#'                    bw = 15000, 
-#'                    ncores = 4) 
+#'
+#' lemSmoothMat = smoothingMatrix(rasterObjects = lemRaster,
+#'                    ncores = 4)
+#'
+#' lemCv = lemXv(x = kentuckyCounty,
+#'                    lemObjects = lemSmoothMat,
+#'                    ncores = 4)
+#' bestBw = lemCv$bw[which.min(lemCv$cv)]
+#'
+#' lemRisk = riskEst(x = kentuckyCounty,
+#'                    lemObjects = lemSmoothMat,
+#'                    bw = bestBw)
 #'                    
 #' lemExcProb = excProb(x = kentuckyCounty, 
 #'                    lemObjects = lemSmoothMat, 
-#' 										estimate=lemRisk,
+#' 					estimate=lemRisk,
 #'                    threshold = c(1, 1.1, 1.25), 
 #'                    Nboot = 100, 
 #'                    ncores = 4) 
