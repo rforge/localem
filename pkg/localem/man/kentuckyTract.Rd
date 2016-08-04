@@ -16,7 +16,7 @@ The lung cancer case data are obtained from www.cancer-rates.info and were simul
 }
 \examples{
 data(kentuckyTract)
-spplot(kentuckyTract, 'logOffset')
+spplot(kentuckyTract, 'logExpected_surfaceArea')
 
 }
 \keyword{datasets}

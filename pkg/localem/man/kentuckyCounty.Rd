@@ -16,8 +16,7 @@ The lung cancer case data are obtained from www.cancer-rates.info and were simul
 }
 \examples{
 data(kentuckyCounty)
-kentuckyCounty
-spplot(kentuckyCounty, 'count')
+spplot(kentuckyCounty, 'Cases')
 
 }
 \keyword{datasets}

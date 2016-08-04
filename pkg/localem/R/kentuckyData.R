@@ -16,8 +16,7 @@
 #'
 #' @examples
 #' data(kentuckyCounty)
-#' kentuckyCounty
-#' spplot(kentuckyCounty, 'count')
+#' spplot(kentuckyCounty, 'Cases')
 #'
 NULL
 
@@ -39,7 +38,7 @@ NULL
 #'
 #' @examples
 #' data(kentuckyTract)
-#' spplot(kentuckyTract, 'logOffset')
+#' spplot(kentuckyTract, 'logExpected_surfaceArea')
 #'
 NULL
 
