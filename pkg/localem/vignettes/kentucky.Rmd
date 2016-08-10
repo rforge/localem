@@ -7,7 +7,7 @@
 	
 ## Introduction 
 
-The `localEM` package contains functions to implement the kernel smoothing local-EM algorithm^1 of disease data aggregated to geographical regions. This algorithm provides an nonparametric alternative to the standard geospatial models, such as the Besag-York-Mollie (BYM) model^2 , for estimating spatial risk of areal disease data. With disease cases typically aggregated to highly coarse geographical regions (e.g., census counties, or census subdivisions), the local-EM method creates a tessellation of distinct regions by overlaying the map of these coarse regions with another map containing fine geographical regions (e.g., census tracts, census blocks, or census dissemination areas) of population data. This allows for the spatial risk to be estimated at a better resolution with the fine regions. 
+The `localEM` package contains functions to implement the kernel smoothing local-EM algorithm$^1$ of disease data aggregated to geographical regions. This algorithm provides an nonparametric alternative to the standard geospatial models, such as the Besag-York-Mollie (BYM) model$^2$, for estimating spatial risk of areal disease data. With disease cases typically aggregated to highly coarse geographical regions (e.g., census counties, or census subdivisions), the local-EM method creates a tessellation of distinct regions by overlaying the map of these coarse regions with another map containing fine geographical regions (e.g., census tracts, census blocks, or census dissemination areas) of population data. This allows for the spatial risk to be estimated at a better resolution with the fine regions. 
 
 The methodology of this package is demonstrated on simulated lung cancer cases for the state of Kentucky, USA. The spatial polygons for the census counties and tracts of Kentucky are included with this package. 
 
@@ -21,7 +21,7 @@ data('kentuckyTract')
 data('kMap')
 
 # number of cores for computations in parallel (only applicable to UNIX operating systems)
-ncores = ifelse(.Platform$OS.type == 'unix', ceiling(0.25 * parallel::detectCores()), 1)
+ncores = ifelse(.Platform$OS.type == 'unix', min(parallel::detectCores(), 4), 1)
 
 ```
 
@@ -40,7 +40,7 @@ sum(kentuckyTract$expected, na.rm = TRUE)
 lemRaster = rasterPartition(
 	polyCoarse = kentuckyCounty, 
 	polyFine = kentuckyTract, 
-    cellsCoarse = 15, 
+    cellsCoarse = 10, 
 	cellsFine = 120, 
     bw = c(8, 10, 12.5, 15, 17.5, 20, 25, 30) * 1000, 
     ncores = ncores,
@@ -75,7 +75,7 @@ plot(kMap, add = TRUE)
 
 legendBreaks('topleft', 
 	breaks = oCol$breaks * 10^6, col = oCol$col, 
-	title = expression(plain('cases/km') ^2), 
+	title = expression(plain('cases/km')^2), 
 	bg = 'white' 
 )
 	
@@ -96,7 +96,7 @@ Using the `simLgcp()` function from the `geostatsp` package, case locations are 
 * variance: 0.16
 * shape: 2
 * range: 120 km
-* offsets: log of expected cases/m^2 of the census tracts
+* offsets: log of expected cases/m$^2$ of the census tracts
 
 The simulated cases are then aggregated to the appropriate counties. 
 
@@ -216,13 +216,13 @@ plot(do.call(cbind, lemCv[is.finite(lemCv$bw),]),
 	pch = 16, col = 'red', type = 'o' 
 )
 abline(v = bestBw, lty = 3)
-bestBw
+
 ```
 
 
 # Risk Estimation
 
-The local-EM risk estimation is done with the `riskEst()` function for the optimal bandwidth of 17.5 km found in the CV analysis. The risk is estimated at the same resolution as the fine raster. 
+The local-EM risk estimation is done with the `riskEst()` function for the optimal bandwidth found in the CV analysis. The risk is estimated with the same resolution as the fine raster. 
 
 ```{r riskEst}
 
@@ -269,7 +269,9 @@ scaleBar(kentuckyCounty,
 
 ## Exceedance Probabilities
 
-Exceedance probabilities are computed with the `excProb()` function to measure the uncertainty of the local-EM risk estimation. Under the assumption that cases are a realisation from the background population and constant risk threshold $\lambda(s) = c$, cases are bootstrapped and randomly aggregated to the counties. The local-EM risk is estimated for the bootstrapped data using the same bandwidth as the observed data. Exceedance probabilities are then computed as the percentage of the observed risk estimates at least as large as the ones of the bootstrap data at locations $s$. Large exceedance probabilities are consistent with the risk being greater than the specified threshold (i.e., $\lambda(s) > c$). 
+Exceedance probabilities are computed with the `excProb()` function to measure the uncertainty of the local-EM risk estimation. Bootstrapping is used to obtain these exceedance probabilities for the local-EM algorithm. 
+
+Specifically, under the assumption that disease events are a realisation from the background population and constant risk threshold, cases are bootstrapped and randomly aggregated to the counties. Using the same bandwidth as the observed data, the local-EM risk is then estimated for each of the bootstrapped data. Afterwards, exceedance probabilities are computed as the proportion of the observed risk estimate at least as large as the ones of the bootstrap data. Large exceedance probabilities are consistent with the risk being greater than the specified threshold. 
 
 ```{r excProb}
 
@@ -298,7 +300,7 @@ for(Dthreshold in names(lemExcProb)) {
 	threshold = gsub('threshold\\.', '', Dthreshold)
 	map.new(kentuckyTract, 
 		mar = c(0, 0, 1, 0), 
-		main = bquote(paste('Exceedance Probabilities, ', lambda(s), ' = ', .(threshold), sep = ''))
+		main = paste('Exceedance Probabilities, t = ', threshold, sep = '')
 	)
 	plot(lemExcProb[[Dthreshold]], 
 		col = pCol$col, breaks = pCol$breaks, 
@@ -324,6 +326,6 @@ for(Dthreshold in names(lemExcProb)) {
 
 ## References
 
-1. Nguyen P, Brown PE, Stafford J. Mapping cancer risk in southwestern Ontario with changing census boundaries. Biometrics. 2012; 68(4): 1229–37. 
+1. Nguyen P, Brown PE, Stafford J. Mapping cancer risk in southwestern Ontario with changing census boundaries. Biometrics. 2012; 68(4): 1229-37. 
 
 2. Besag J, York J, Mollie A. Bayesian image restoration, with two applications in spatial statistics. Ann Inst Statist Math. 1991; 43(1): 1-59. 
