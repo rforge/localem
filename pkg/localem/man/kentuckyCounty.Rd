@@ -3,21 +3,39 @@
 \docType{data}
 \name{kentuckyCounty}
 \alias{kentuckyCounty}
-\title{Lung cancer cases in Kentucky}
-\format{A SpatialPolygonsDataFrame of Kentucky county boundaries, populations and cancer cases.}
+\title{Observed cancer case data in Kentucky}
+\format{A SpatialPolygonsDataFrame of Kentucky county boundaries and observed cancer cases.}
 \usage{
 data(kentuckyCounty)
 }
 \description{
-The dataset contains lung cancer cases for the counties of Kentucky.
+The dataset contains simulated lung cancer cases for the counties of Kentucky.
 }
 \details{
-The lung cancer case data are obtained from www.cancer-rates.info and were simulated from a log Gaussian Cox process for deliberately unspecified years.
+The observed lung cancer case data are simulated from a log Gaussian Cox process with cancer rates obtained from www.cancer-rates.info for deliberately unspecified years.
 }
 \examples{
 data(kentuckyCounty)
-spplot(kentuckyCounty, 'Cases')
 
+countyBrks = classInt::classIntervals(kentuckyCounty$count, 
+		n = 7, style = 'quantile'
+)
+countyCol = classInt::findColours(countyBrks, 
+		pal = rev(brewer.pal(7, 'RdYlBu'))
+)
+
+mapmisc::map.new(kentuckyCounty)
+plot(kentuckyCounty, 
+		col = countyCol, 
+		axes = FALSE, border = FALSE
+)
+plot(kMap, add = TRUE)
+
+legend('topleft', 
+		legend = rev(names(attr(countyCol, 'table'))), 
+		fill = rev(attr(countyCol, 'palette')), 
+		bg = 'white'
+)
 }
 \keyword{datasets}
 

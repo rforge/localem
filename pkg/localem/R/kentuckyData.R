@@ -1,6 +1,6 @@
-#' @title Lung cancer cases in Kentucky
+#' @title Observed cancer case data in Kentucky
 #'
-#' @description The dataset contains lung cancer cases for the counties of Kentucky.
+#' @description The dataset contains simulated lung cancer cases for the counties of Kentucky.
 #'
 #' @name kentuckyCounty
 #'
@@ -8,21 +8,39 @@
 #'
 #' @usage data(kentuckyCounty)
 #'
-#' @format A SpatialPolygonsDataFrame of Kentucky county boundaries, populations and cancer cases.
+#' @format A SpatialPolygonsDataFrame of Kentucky county boundaries and observed cancer cases.
 #'
-#' @details The lung cancer case data are obtained from www.cancer-rates.info and were simulated from a log Gaussian Cox process for deliberately unspecified years.
+#' @details The observed lung cancer case data are simulated from a log Gaussian Cox process with cancer rates obtained from www.cancer-rates.info for deliberately unspecified years.
 #'
 #' @keywords datasets
 #'
 #' @examples
 #' data(kentuckyCounty)
-#' spplot(kentuckyCounty, 'Cases')
 #'
+#' countyBrks = classInt::classIntervals(kentuckyCounty$count, 
+#' 		n = 7, style = 'quantile'
+#' )
+#' countyCol = classInt::findColours(countyBrks, 
+#' 		pal = rev(brewer.pal(7, 'RdYlBu'))
+#' )
+#' 
+#' mapmisc::map.new(kentuckyCounty)
+#' plot(kentuckyCounty, 
+#' 		col = countyCol, 
+#' 		axes = FALSE, border = FALSE
+#' )
+#' plot(kMap, add = TRUE)
+#' 
+#' legend('topleft', 
+#' 		legend = rev(names(attr(countyCol, 'table'))), 
+#' 		fill = rev(attr(countyCol, 'palette')), 
+#' 		bg = 'white'
+#' )
 NULL
 
-#' @title Population data in Kentucky
+#' @title Population and expected cancer case data in Kentucky
 #'
-#' @description The dataset contains population data for the census tracts of Kentucky.
+#' @description The dataset contains population data and expected lung cancer cases for the census tracts of Kentucky.
 #'
 #' @name kentuckyTract
 #'
@@ -30,16 +48,35 @@ NULL
 #'
 #' @usage data(kentuckyTract)
 #'
-#' @format A SpatialPolygonsDataFrame of Kentucky census tract boundaries and populations.
+#' @format A SpatialPolygonsDataFrame of Kentucky census tract boundaries, population and expected cancer cases.
 #'
-#' @details The lung cancer case data are obtained from www.cancer-rates.info and were simulated from a log Gaussian Cox process for deliberately unspecified years.
+#' @details The expected lung cancer case data are computed with the age-sex population and cancer rates obtained from www.cancer-rates.info for deliberately unspecified years.
 #'
 #' @keywords datasets
 #'
 #' @examples
 #' data(kentuckyTract)
-#' spplot(kentuckyTract, 'logExpected_surfaceArea')
+#' kentuckyTract$expected[is.na(kentuckyTract$expected)] = 0
 #'
+#' ctBrks = classInt::classIntervals(kentuckyTract$expected, 
+#'		n = 7, style = 'fixed', fixedBreaks = c(0, 1, 1.5, 2, 3, 4, 6, 9.2)
+#' )
+#' ctCol = classInt::findColours(ctBrks, 
+#'		pal = rev(brewer.pal(7, 'RdYlBu'))
+#' )
+#'
+#' mapmisc::map.new(kentuckyTract)
+#' plot(kentuckyTract, 
+#'		col = ctCol, 
+#'		axes = FALSE, border = FALSE
+#' )
+#' plot(kMap, add = TRUE)
+#'
+#' legend('topleft', 
+#' 		legend = rev(names(attr(ctCol, 'table'))), 
+#'		fill = rev(attr(ctCol, 'palette')), 
+#'		bg = 'white'
+#' )
 NULL
 
 #' @title Map of Kentucky
@@ -52,17 +89,55 @@ NULL
 #'
 #' @usage data('kMap')
 #'
-#' @format A SpatialPolygonsDataFrame of Kentucky census tract boundaries and populations.
+#' @format A RayerLayer of Kentucky and surrounding areas. 
 #'
-#' @details The lung cancer case data are obtained from www.cancer-rates.info and were simulated from a log Gaussian Cox process for deliberately unspecified years.
+#' @details The Stamen toner map is a detailed black and white background map to use with colorful overlays. 
 #'
 #' @keywords datasets
 #'
 #' @examples
-#' data('kentuckyTract')
-#' data('kMap')
+#' data(kentuckyCounty)
+#'
+#' countyBrks = classInt::classIntervals(kentuckyCounty$count, 
+#' 		n = 7, style = 'quantile'
+#' )
+#' countyCol = classInt::findColours(countyBrks, 
+#' 		pal = rev(brewer.pal(7, 'RdYlBu'))
+#' )
+#' 
+#' mapmisc::map.new(kentuckyCounty)
+#' plot(kentuckyCounty, 
+#' 		col = countyCol, 
+#' 		axes = FALSE, border = FALSE
+#' )
+#' plot(kMap, add = TRUE)
+#' 
+#' legend('topleft', 
+#' 		legend = rev(names(attr(countyCol, 'table'))), 
+#' 		fill = rev(attr(countyCol, 'palette')), 
+#' 		bg = 'white'
+#' )
+#'
+#' data(kentuckyTract)
+#' kentuckyTract$expected[is.na(kentuckyTract$expected)] = 0
+#'
+#' ctBrks = classInt::classIntervals(kentuckyTract$expected, 
+#'		n = 7, style = 'fixed', fixedBreaks = c(0, 1, 1.5, 2, 3, 4, 6, 9.2)
+#' )
+#' ctCol = classInt::findColours(ctBrks, 
+#'		pal = rev(brewer.pal(7, 'RdYlBu'))
+#' )
+#'
 #' mapmisc::map.new(kentuckyTract)
-#' plot(kentuckyTract, col='yellow', border='#00FF0020', add=TRUE)
-#' plot(kMap, add=TRUE)
-#' mapmisc::scaleBar(kentuckyTract, 'topleft', bg='white')
+#' plot(kentuckyTract, 
+#'		col = ctCol, 
+#'		axes = FALSE, border = FALSE
+#' )
+#' plot(kMap, add = TRUE)
+#'
+#' legend('topleft', 
+#' 		legend = rev(names(attr(ctCol, 'table'))), 
+#'		fill = rev(attr(ctCol, 'palette')), 
+#'		bg = 'white'
+#' )
 NULL

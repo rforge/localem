@@ -3,21 +3,40 @@
 \docType{data}
 \name{kentuckyTract}
 \alias{kentuckyTract}
-\title{Population data in Kentucky}
-\format{A SpatialPolygonsDataFrame of Kentucky census tract boundaries and populations.}
+\title{Population and expected cancer case data in Kentucky}
+\format{A SpatialPolygonsDataFrame of Kentucky census tract boundaries, population and expected cancer cases.}
 \usage{
 data(kentuckyTract)
 }
 \description{
-The dataset contains population data for the census tracts of Kentucky.
+The dataset contains population data and expected lung cancer cases for the census tracts of Kentucky.
 }
 \details{
-The lung cancer case data are obtained from www.cancer-rates.info and were simulated from a log Gaussian Cox process for deliberately unspecified years.
+The expected lung cancer case data are computed with the age-sex population and cancer rates obtained from www.cancer-rates.info for deliberately unspecified years.
 }
 \examples{
 data(kentuckyTract)
-spplot(kentuckyTract, 'logExpected_surfaceArea')
+kentuckyTract$expected[is.na(kentuckyTract$expected)] = 0
 
+ctBrks = classInt::classIntervals(kentuckyTract$expected, 
+	n = 7, style = 'fixed', fixedBreaks = c(0, 1, 1.5, 2, 3, 4, 6, 9.2)
+)
+ctCol = classInt::findColours(ctBrks, 
+	pal = rev(brewer.pal(7, 'RdYlBu'))
+)
+
+mapmisc::map.new(kentuckyTract)
+plot(kentuckyTract, 
+	col = ctCol, 
+	axes = FALSE, border = FALSE
+)
+plot(kMap, add = TRUE)
+
+legend('topleft', 
+		legend = rev(names(attr(ctCol, 'table'))), 
+	fill = rev(attr(ctCol, 'palette')), 
+	bg = 'white'
+)
 }
 \keyword{datasets}
 

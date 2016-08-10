@@ -4,7 +4,7 @@
 \name{kMap}
 \alias{kMap}
 \title{Map of Kentucky}
-\format{A SpatialPolygonsDataFrame of Kentucky census tract boundaries and populations.}
+\format{A RayerLayer of Kentucky and surrounding areas.}
 \usage{
 data('kMap')
 }
@@ -12,15 +12,53 @@ data('kMap')
 Stamen toner map of Kentucky
 }
 \details{
-The lung cancer case data are obtained from www.cancer-rates.info and were simulated from a log Gaussian Cox process for deliberately unspecified years.
+The Stamen toner map is a detailed black and white background map to use with colorful overlays.
 }
 \examples{
-data('kentuckyTract')
-data('kMap')
+data(kentuckyCounty)
+
+countyBrks = classInt::classIntervals(kentuckyCounty$count, 
+		n = 7, style = 'quantile'
+)
+countyCol = classInt::findColours(countyBrks, 
+		pal = rev(brewer.pal(7, 'RdYlBu'))
+)
+
+mapmisc::map.new(kentuckyCounty)
+plot(kentuckyCounty, 
+		col = countyCol, 
+		axes = FALSE, border = FALSE
+)
+plot(kMap, add = TRUE)
+
+legend('topleft', 
+		legend = rev(names(attr(countyCol, 'table'))), 
+		fill = rev(attr(countyCol, 'palette')), 
+		bg = 'white'
+)
+
+data(kentuckyTract)
+kentuckyTract$expected[is.na(kentuckyTract$expected)] = 0
+
+ctBrks = classInt::classIntervals(kentuckyTract$expected, 
+	n = 7, style = 'fixed', fixedBreaks = c(0, 1, 1.5, 2, 3, 4, 6, 9.2)
+)
+ctCol = classInt::findColours(ctBrks, 
+	pal = rev(brewer.pal(7, 'RdYlBu'))
+)
+
 mapmisc::map.new(kentuckyTract)
-plot(kentuckyTract, col='yellow', border='#00FF0020', add=TRUE)
-plot(kMap, add=TRUE)
-mapmisc::scaleBar(kentuckyTract, 'topleft', bg='white')
+plot(kentuckyTract, 
+	col = ctCol, 
+	axes = FALSE, border = FALSE
+)
+plot(kMap, add = TRUE)
+
+legend('topleft', 
+		legend = rev(names(attr(ctCol, 'table'))), 
+	fill = rev(attr(ctCol, 'palette')), 
+	bg = 'white'
+)
 }
 \keyword{datasets}
 
