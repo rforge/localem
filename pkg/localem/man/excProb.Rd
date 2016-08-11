@@ -5,8 +5,7 @@
 \title{Computes the exceedance probabilities on the raster of fine polygons}
 \usage{
 excProb(x, estimate, lemObjects, bw, threshold = 1, Nboot = 100,
-  ncores = 2, tol = 1e-06, maxIter = 2000, verbose = FALSE,
-  filename = "")
+  ncores = 2, tol = 1e-06, maxIter = 2000, filename = "")
 }
 \arguments{
 \item{x}{Spatial polygons of case data}
@@ -27,8 +26,6 @@ raster stacks for the partition and smoothed offsets}
 \item{tol}{Tolerance for convergence}
 
 \item{maxIter}{Maximum number of iterations}
-
-\item{verbose}{Verbose output}
 
 \item{filename}{Passed to writeRaster}
 }

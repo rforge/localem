@@ -9,7 +9,6 @@
 #' @param ncores Number of cores/threads for parallel processing
 #' @param tol Tolerance for convergence
 #' @param maxIter Maximum number of iterations
-#' @param verbose Verbose output
 #' @param filename Passed to writeRaster
 #'
 #' @details After using the \code{riskEst} function, the raster of risk estimations is done on cells of the raster on the fine polygons.

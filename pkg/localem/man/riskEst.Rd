@@ -22,8 +22,6 @@ raster stacks for the partition and smoothed offsets}
 \item{ncores}{Number of cores/threads for parallel processing}
 
 \item{filename}{Passed to writeRaster}
-
-\item{verbose}{Verbose output}
 }
 \value{
 The \code{riskEst} function returns a the raster of risk estimations for input bandwidth.

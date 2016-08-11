@@ -29,6 +29,8 @@ plot(kentuckyCounty,
 		col = countyCol, 
 		axes = FALSE, border = FALSE
 )
+
+data(kMap)
 plot(kMap, add = TRUE)
 
 legend('topleft', 

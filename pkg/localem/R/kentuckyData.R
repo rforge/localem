@@ -29,6 +29,8 @@
 #' 		col = countyCol, 
 #' 		axes = FALSE, border = FALSE
 #' )
+#' 
+#' data(kMap)
 #' plot(kMap, add = TRUE)
 #' 
 #' legend('topleft', 
@@ -70,6 +72,8 @@ NULL
 #'		col = ctCol, 
 #'		axes = FALSE, border = FALSE
 #' )
+#'
+#' data(kMap)
 #' plot(kMap, add = TRUE)
 #'
 #' legend('topleft', 
@@ -96,6 +100,8 @@ NULL
 #' @keywords datasets
 #'
 #' @examples
+#' data(kMap)
+#' 
 #' data(kentuckyCounty)
 #'
 #' countyBrks = classInt::classIntervals(kentuckyCounty$count, 

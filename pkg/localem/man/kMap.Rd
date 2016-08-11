@@ -15,6 +15,8 @@ Stamen toner map of Kentucky
 The Stamen toner map is a detailed black and white background map to use with colorful overlays.
 }
 \examples{
+data(kMap)
+
 data(kentuckyCounty)
 
 countyBrks = classInt::classIntervals(kentuckyCounty$count, 
