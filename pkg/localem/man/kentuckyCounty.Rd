@@ -21,7 +21,7 @@ countyBrks = classInt::classIntervals(kentuckyCounty$count,
 		n = 7, style = 'quantile'
 )
 countyCol = classInt::findColours(countyBrks, 
-		pal = rev(brewer.pal(7, 'RdYlBu'))
+		pal = rev(RColorBrewer::brewer.pal(7, 'RdYlBu'))
 )
 
 mapmisc::map.new(kentuckyCounty)

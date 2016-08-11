@@ -21,7 +21,7 @@ countyBrks = classInt::classIntervals(kentuckyCounty$count,
 		n = 7, style = 'quantile'
 )
 countyCol = classInt::findColours(countyBrks, 
-		pal = rev(brewer.pal(7, 'RdYlBu'))
+		pal = rev(RColorBrewer::brewer.pal(7, 'RdYlBu'))
 )
 
 mapmisc::map.new(kentuckyCounty)
@@ -44,7 +44,7 @@ ctBrks = classInt::classIntervals(kentuckyTract$expected,
 	n = 7, style = 'fixed', fixedBreaks = c(0, 1, 1.5, 2, 3, 4, 6, 9.2)
 )
 ctCol = classInt::findColours(ctBrks, 
-	pal = rev(brewer.pal(7, 'RdYlBu'))
+	pal = rev(RColorBrewer::brewer.pal(7, 'RdYlBu'))
 )
 
 mapmisc::map.new(kentuckyTract)
