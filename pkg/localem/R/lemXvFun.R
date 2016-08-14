@@ -81,7 +81,7 @@ lemXv = function(x,
 			idColX = names(x)[1]
 		}
 		
-  if(any(class(x)=='SpatialPolygonsDataFrame')) {
+  if(class(x) == 'SpatialPolygonsDataFrame') {
 	  x = data.frame(x)
   }
   
@@ -93,7 +93,9 @@ lemXv = function(x,
     idMatch = idCoarse[as.numeric(dimnames(regionMat)[[2]])]
     idNotMatch = idCoarse[!(idCoarse %in% idMatch)]
     
-    countCoarse = x$count[match(idMatch, x[['id']])]
+#   countCoarse = x$count[match(idMatch, x[['id']])]
+
+    countCoarse = x[match(idMatch, x[[idColX]]),countcol]
     
     for(inD in idNotMatch) {
       
@@ -109,9 +111,12 @@ lemXv = function(x,
       
       #re-assign counts
       if(length(idNeighNotMatch) == 1) {
-        
+
+#        countCoarse[idMatch == idNeighNotMatch] = 
+#          countCoarse[idMatch == idNeighNotMatch] + x$count[x$id == inD]
+	  
         countCoarse[idMatch == idNeighNotMatch] = 
-          countCoarse[idMatch == idNeighNotMatch] + x$count[x$id == inD]
+          countCoarse[idMatch == idNeighNotMatch] + x[x[[idColX]] == inD,countcol]
         
       } else if(length(idNeighNotMatch) > 1) {
         
@@ -128,8 +133,12 @@ lemXv = function(x,
         
         distNeighNotMatch = apply((coordsNeighNotMatch - coordsNotMatch)^2, 1, sum)
         
+#        countCoarse[idMatch == idNeighNotMatch[which.min(distNeighNotMatch)]] = 
+#          countCoarse[idMatch == idNeighNotMatch[which.min(distNeighNotMatch)]] + x$count[x$id == inD]
+		  
         countCoarse[idMatch == idNeighNotMatch[which.min(distNeighNotMatch)]] = 
-          countCoarse[idMatch == idNeighNotMatch[which.min(distNeighNotMatch)]] + x$count[x$id == inD]
+          countCoarse[idMatch == idNeighNotMatch[which.min(distNeighNotMatch)]] + x[x[[idColX]] == inD,countcol]
+
       }
     }
     

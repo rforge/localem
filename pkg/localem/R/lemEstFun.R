@@ -62,87 +62,173 @@ riskEst = function(x,
 			paste('bw', bw, sep='')]
 	
 	idCoarseCol = names(lemObjects$polyCoarse)[1]
-	
  idCoarse = lemObjects$polyCoarse@data[[idCoarseCol]]
 	
- 
+	# if(is.matrix(x)) {
+		# # probably simulated data
+		# obsCounts = x[idCoarse,, drop=FALSE]
+	# } else if(length(idCoarse) != dim(regionMat)[2]) {
+		
+  # #fine raster did not include all regions in the coarse shapefile
+		
+  # polyNeigh = spdep::poly2nb(lemObjects$polyCoarse, row.names = idCoarse)
+		
+  # idMatch = idCoarse[as.numeric(dimnames(regionMat)[[2]])]
+  # idNotMatch = idCoarse[!(idCoarse %in% idMatch)]
+		
+  # obsCounts = as.matrix(x$count[match(idMatch, x[['id']])])
+		
+  # for(inD in idNotMatch) {
+			
+   # polyNotMatch = lemObjects$polyCoarse[idCoarse == inD,]
+   # idNeighNotMatch = idCoarse[values(intersect(lemObjects$rasterFine[["idCoarse"]], polyNotMatch))]
+   # idNeighNotMatch = idNeighNotMatch[!is.na(idNeighNotMatch)]
+			
+   # #if no match found in fine raster, use neighbouring coarse shapefile regions
+   # if(length(idNeighNotMatch) == 0) {
+    # idNeighNotMatch = idCoarse[polyNeigh[[which(idCoarse == inD)]]]
+    # idNeighNotMatch = idMatch[idMatch %in% idNeighNotMatch]
+   # }
+			
+   # #re-assign counts
+   # if(length(idNeighNotMatch) == 1) {
+				
+    # obsCounts[idMatch == idNeighNotMatch,] =
+      # obsCounts[idMatch == idNeighNotMatch,] + x$count[x$id == inD]
+				
+   # } else if(length(idNeighNotMatch) > 1) {
+				
+    # #if conflict, assign counts to coarse shapefile region whose centroid is closest to the one of interest
+    # polyNeighNotMatch = lemObjects$polyCoarse[idCoarse %in% idNeighNotMatch,]
+    # coordsNeighNotMatch = coordinates(rgeos::gCentroid(polyNeighNotMatch, byid = TRUE))
+				
+    # coordsNotMatch = matrix(
+      # rep(coordinates(rgeos::gCentroid(polyNotMatch, byid = TRUE)), each = length(polyNeighNotMatch)),
+      # nrow = length(polyNeighNotMatch),
+      # ncol = 2,
+      # dimnames = list(1:length(polyNeighNotMatch), c("x","y"))
+    # )
+				
+    # distNeighNotMatch = apply((coordsNeighNotMatch - coordsNotMatch)^2, 1, sum)
+				
+    # obsCounts[idMatch == idNeighNotMatch[which.min(distNeighNotMatch)],] =
+      # obsCounts[idMatch == idNeighNotMatch[which.min(distNeighNotMatch)],] + x$count[x$id == inD]
+   # }
+  # }
+ # } else {
+		# #fine raster does include all regions in the coarse shapefile
+		
+		# countcol = grep('^(count|cases)$', names(x), value=TRUE, ignore.case=TRUE)
+ 	# if(length(countcol)){
+			# countcol = countcol[1]
+ 	# } else {
+	 	# countcol = grep(
+			 	# "^(id|name)", names(x), 
+			 	# invert=TRUE, value=TRUE
+			# )[1]
+ 	# }
+		
+		
+  # idColX = grep("^id", names(x), value=TRUE)
+		# if(length(idColX)) {
+			# idColX = idColX[1]
+		# } else {
+			# idColX = names(x)[1]
+		# }
+		
+		
+		# obsCounts = as.matrix(x@data[match(idCoarse, x[[idColX]]), 
+						# countcol])
+		# colnames(obsCounts) = bw
+ # }
+	
+	# simulated bootstrap data 
 	if(is.matrix(x)) {
-		# probably simulated data
-		obsCounts = x[idCoarse,, drop=FALSE]
-	} else if(length(idCoarse) != dim(regionMat)[2]) {
 		
-  #fine raster did not include all regions in the coarse shapefile
+		if(length(idCoarse) != dim(regionMat)[2]) {		
+
+			#fine raster did not include all regions in the coarse shapefile
+			idMatch = idCoarse[as.numeric(dimnames(regionMat)[[2]])]
 		
-  polyNeigh = spdep::poly2nb(lemObjects$polyCoarse, row.names = idCoarse)
+			obsCounts = x[idMatch,, drop=FALSE]
+	
+		} else {
 		
-  idMatch = idCoarse[as.numeric(dimnames(regionMat)[[2]])]
-  idNotMatch = idCoarse[!(idCoarse %in% idMatch)]
-		
-  obsCounts = as.matrix(x$count[match(idMatch, x[['id']])])
-		
-  for(inD in idNotMatch) {
-			
-   polyNotMatch = lemObjects$polyCoarse[idCoarse == inD,]
-   idNeighNotMatch = idCoarse[values(intersect(lemObjects$rasterFine[["idCoarse"]], polyNotMatch))]
-   idNeighNotMatch = idNeighNotMatch[!is.na(idNeighNotMatch)]
-			
-   #if no match found in fine raster, use neighbouring coarse shapefile regions
-   if(length(idNeighNotMatch) == 0) {
-    idNeighNotMatch = idCoarse[polyNeigh[[which(idCoarse == inD)]]]
-    idNeighNotMatch = idMatch[idMatch %in% idNeighNotMatch]
-   }
-			
-   #re-assign counts
-   if(length(idNeighNotMatch) == 1) {
-				
-    obsCounts[idMatch == idNeighNotMatch,] =
-      obsCounts[idMatch == idNeighNotMatch,] + x$count[x$id == inD]
-				
-   } else if(length(idNeighNotMatch) > 1) {
-				
-    #if conflict, assign counts to coarse shapefile region whose centroid is closest to the one of interest
-    polyNeighNotMatch = lemObjects$polyCoarse[idCoarse %in% idNeighNotMatch,]
-    coordsNeighNotMatch = coordinates(rgeos::gCentroid(polyNeighNotMatch, byid = TRUE))
-				
-    coordsNotMatch = matrix(
-      rep(coordinates(rgeos::gCentroid(polyNotMatch, byid = TRUE)), each = length(polyNeighNotMatch)),
-      nrow = length(polyNeighNotMatch),
-      ncol = 2,
-      dimnames = list(1:length(polyNeighNotMatch), c("x","y"))
-    )
-				
-    distNeighNotMatch = apply((coordsNeighNotMatch - coordsNotMatch)^2, 1, sum)
-				
-    obsCounts[idMatch == idNeighNotMatch[which.min(distNeighNotMatch)],] =
-      obsCounts[idMatch == idNeighNotMatch[which.min(distNeighNotMatch)],] + x$count[x$id == inD]
-   }
-  }
- } else {
-		#fine raster does include all regions in the coarse shapefile
+			obsCounts = x[idCoarse,, drop=FALSE]
+		}
+	
+	} else if(class(x) == 'SpatialPolygonsDataFrame') {
+	  
+		x = data.frame(x)
 		
 		countcol = grep('^(count|cases)$', names(x), value=TRUE, ignore.case=TRUE)
- 	if(length(countcol)){
+		if(length(countcol)){
 			countcol = countcol[1]
- 	} else {
-	 	countcol = grep(
-			 	"^(id|name)", names(x), 
-			 	invert=TRUE, value=TRUE
-			)[1]
- 	}
+		} else {
+			countcol = grep("^(id|name)", names(x), invert=TRUE, value=TRUE)[1]
+		}
 		
-		
-  idColX = grep("^id", names(x), value=TRUE)
+		idColX = grep("^id", names(x), value=TRUE)
 		if(length(idColX)) {
 			idColX = idColX[1]
 		} else {
 			idColX = names(x)[1]
 		}
-		
-		
-		obsCounts = as.matrix(x@data[match(idCoarse, x[[idColX]]), 
-						countcol])
-		colnames(obsCounts) = bw
- }
+	
+		#fine raster did not include all regions in the coarse shapefile
+		if(length(idCoarse) != dim(regionMat)[2]) {
+			
+			polyNeigh = spdep::poly2nb(lemObjects$polyCoarse, row.names = idCoarse)
+				
+			idMatch = idCoarse[as.numeric(dimnames(regionMat)[[2]])]
+			idNotMatch = idCoarse[!(idCoarse %in% idMatch)]
+			
+			obsCounts = as.matrix(x[match(idMatch, x[[idColX]]),countcol])
+			dimnames(obsCounts) = list(idMatch, bw)
+			
+			for(inD in idNotMatch) {
+					
+				polyNotMatch = lemObjects$polyCoarse[idCoarse == inD,]
+				idNeighNotMatch = idCoarse[values(intersect(lemObjects$rasterFine[["idCoarse"]], polyNotMatch))]
+				idNeighNotMatch = idNeighNotMatch[!is.na(idNeighNotMatch)]
+					
+				#if no match found in fine raster, use neighbouring coarse shapefile regions
+				if(length(idNeighNotMatch) == 0) {
+					idNeighNotMatch = idCoarse[polyNeigh[[which(idCoarse == inD)]]]
+					idNeighNotMatch = idMatch[idMatch %in% idNeighNotMatch]
+				}
+					
+				#re-assign counts
+				if(length(idNeighNotMatch) == 1) {
+						
+					obsCounts[idMatch == idNeighNotMatch,] =
+						obsCounts[idMatch == idNeighNotMatch,] + x[x[[idColX]] == inD,countcol]
+						
+				} else if(length(idNeighNotMatch) > 1) {
+						
+					#if conflict, assign counts to coarse shapefile region whose centroid is closest to the one of interest
+					polyNeighNotMatch = lemObjects$polyCoarse[idCoarse %in% idNeighNotMatch,]
+					coordsNeighNotMatch = coordinates(rgeos::gCentroid(polyNeighNotMatch, byid = TRUE))
+						
+					coordsNotMatch = matrix(
+						rep(coordinates(rgeos::gCentroid(polyNotMatch, byid = TRUE)), each = length(polyNeighNotMatch)),
+						nrow = length(polyNeighNotMatch),
+						ncol = 2,
+						dimnames = list(1:length(polyNeighNotMatch), c("x","y"))
+					)
+						
+					distNeighNotMatch = apply((coordsNeighNotMatch - coordsNotMatch)^2, 1, sum)
+						
+					obsCounts[idMatch == idNeighNotMatch[which.min(distNeighNotMatch)],] =
+						obsCounts[idMatch == idNeighNotMatch[which.min(distNeighNotMatch)],] + x[x[[idColX]] == inD,countcol]
+				}
+			}
+		} else {
+	
+			obsCounts = as.matrix(x[match(idCoarse, x[[idColX]]),countcol])
+			dimnames(obsCounts) = list(idCoarse, bw)
+		}
+	}
 	
  #risk estimation for aggregated regions
  oldLambda = offsetMat %*%
