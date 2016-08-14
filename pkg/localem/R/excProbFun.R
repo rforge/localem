@@ -3,8 +3,7 @@
 #' @description The \code{excProb} function first bootstraps cases with the input risk thresholds, and then, 
 #'  computes the exceedance probablities with the same bandwidth as the risk estimation on the cells of the fine raster. 
 #' 
-#' @param x Spatial polygons of case data
-#' @param estimate Estimated intensity surface
+#' @param lemEst Estimated intensity surface
 #' @param lemObjects List of arrays for the smoothing matrix and 
 #'  raster stacks for the partition and smoothed offsets
 #' @param bw bandwidth, specifying which smoothing matrix in \code{lemObjects} to use
@@ -44,10 +43,9 @@
 #'                    lemObjects = lemSmoothMat,
 #'                    bw = bestBw)
 #'                    
-#' lemExcProb = excProb(x = kentuckyCounty, 
+#' lemExcProb = excProb(lemEst = lemRisk, 
 #'                    lemObjects = lemSmoothMat, 
-#' 					estimate=lemRisk,
-#'                    threshold = c(1, 1.1, 1.25), 
+#' 					  threshold = c(1, 1.1, 1.25), 
 #'                    Nboot = 100, 
 #'                    ncores = 4) 
 #'                    
@@ -56,10 +54,9 @@
 #'
 #' @export
 excProb = function(
-		x, 
-  	estimate,
+  	lemEst,
     lemObjects,
-		bw,
+	bw,
     threshold = 1, 
     Nboot = 100, 
     ncores = 2, 
@@ -68,12 +65,12 @@ excProb = function(
     filename=''
 ){
   
-  #observed risk surface
-  theLemRisk = estimate
+  # #observed risk surface
+  # theLemRisk = estimate
   
-  #risk and exceedance probabilities
-  result = theLemRisk
-  names(result) = paste("risk.", bw, sep = "")
+  # #risk and exceedance probabilities
+  # result = theLemRisk
+  # names(result) = paste("risk.", bw, sep = "")
   
 	offset = stats::na.omit(as.data.frame(
 					stack(
@@ -109,7 +106,7 @@ excProb = function(
 			bw=bw, tol=tol, maxIter=maxIter, ncores=ncores
 	)
 	
-	values(estRiskBoot)  = values(estRiskBoot) < rep(values(estimate), nlayers(estRiskBoot))		
+	values(estRiskBoot)  = values(estRiskBoot) < rep(values(lemEst), nlayers(estRiskBoot))		
 
 	tIndex = gsub(
 			"^risk.threshold.|.sim.[[:digit:]]+$", "", 
@@ -123,6 +120,11 @@ excProb = function(
 	
 	
 	names(excProb) = paste("threshold.", levels(tIndex), sep='')		
+
+#	excProb
 	
-	excProb
+	result = do.call(brick, 
+			c(unstack(excProb), list(filename=filename)))		
+	
+	return(result)
 }
