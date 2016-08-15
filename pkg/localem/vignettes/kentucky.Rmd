@@ -34,19 +34,20 @@ The tessellation of distinct regions, also known as partitions, is generated wit
 ```{r rasters}
 
 # total expected events with fine polygons
-kentuckyTract$expected = (3000 / sum(kentuckyTract$expected, na.rm = TRUE)) * kentuckyTract$expected
+kentuckyTract$expected = (3000 / sum(kentuckyTract$expected, na.rm = TRUE)) * 
+  kentuckyTract$expected
 sum(kentuckyTract$expected, na.rm = TRUE)
 
 lemRaster = rasterPartition(
 	polyCoarse = kentuckyCounty, 
 	polyFine = kentuckyTract, 
-    cellsCoarse = 10, 
+  cellsCoarse = 10, 
 	cellsFine = 120, 
-    bw = c(8, 10, 12.5, 15, 17.5, 20, 25, 30) * 1000, 
-    ncores = ncores,
+  bw = c(8, 10, 12.5, 15, 17.5, 20, 25, 30) * 1000, 
+  ncores = ncores,
 	idFile = 'id.grd', 
 	offsetFile = 'off.grd', 
-	verbose = FALSE
+	verbose = TRUE
 )
 
 # total expected events with fine raster
@@ -182,7 +183,7 @@ The smoothing matrix for the partitions and specified bandwidths are generated w
 lemSmoothMat = smoothingMatrix(
 	rasterObjects = lemRaster, 
 	ncores = ncores, 
-	verbose = FALSE
+	verbose = TRUE
 )
 
 dim(lemSmoothMat$smoothingArray)
@@ -196,10 +197,10 @@ Afterwards, the likelihood cross-validation (CV) approach is implemented with th
 
 lemCv = lemXv(
 	x = kentuckyCounty, 
-    lemObjects = lemSmoothMat, 
+  lemObjects = lemSmoothMat, 
 	Nxv = 5, 
-    ncores = ncores, 
-	verbose = FALSE
+  ncores = ncores, 
+	verbose = TRUE
 )
 
 bestBw = lemCv$bw[which.min(lemCv$cv)]
@@ -228,8 +229,8 @@ The local-EM risk estimation is done with the `riskEst()` function for the optim
 
 lemRisk = riskEst(
 	x = kentuckyCounty, 
-    lemObjects = lemSmoothMat,
-    bw = bestBw, 
+  lemObjects = lemSmoothMat,
+  bw = bestBw, 
 	ncores = ncores
 )
 
@@ -276,13 +277,12 @@ Specifically, under the assumption that disease events are a realisation from th
 ```{r excProb}
 
 lemExcProb = excProb(
-	x = kentuckyCounty, 
+  lemEst = lemRisk, 
 	lemObjects = lemSmoothMat, 
-	estimate = lemRisk, 
 	bw = bestBw,
-    threshold = c(1, 1.25, 1.5, 2), 
-    Nboot = 200, 
-    ncores = ncores
+  threshold = c(1, 1.25, 1.5, 2), 
+  Nboot = 200, 
+  ncores = ncores
 )
 
 ```
