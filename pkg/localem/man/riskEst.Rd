@@ -10,53 +10,66 @@ riskEst(x, lemObjects, bw, tol = 1e-06, maxIter = 2000, ncores = 1,
 \arguments{
 \item{x}{Spatial polygons of case data}
 
-\item{lemObjects}{List of arrays for the smoothing matrix and
-raster stacks for the partition and smoothed offsets}
+\item{lemObjects}{List of arrays for the smoothing matrix, and raster stacks for the partition and smoothed offsets}
 
-\item{bw}{Numeric value of bandwidth}
+\item{bw}{Bandwidth specifying which smoothing matrix in \code{lemObjects} to use}
 
 \item{tol}{Tolerance for convergence}
 
-\item{maxIter}{Maximum number of iterations}
+\item{maxIter}{Maximum number of iterations for convergence}
 
 \item{ncores}{Number of cores/threads for parallel processing}
 
 \item{filename}{Passed to writeRaster}
 }
 \value{
-The \code{riskEst} function returns a the raster of risk estimations for input bandwidth.
+The \code{riskEst} function returns a raster of risk estimations for the input bandwidth.
 }
 \description{
 The \code{riskEst} function computes the estimations of the relative risk on the cells of the fine raster.
 }
 \details{
-After using the \code{riskEst} function, the raster of risk estimations is done on cells of the raster on the fine polygons.
+After using the \code{riskEst} function, the risk estimations are computed on the raster cells of the fine polygons.
 }
 \examples{
+\dontrun{ 
 data(kentuckyCounty)
-
 data(kentuckyTract)
 
-\dontrun{
-lemRaster = rasterPartition(polyCoarse = kentuckyCounty, polyFine = kentuckyTract,
-                   cellsCoarse = 6, cellsFine = 100,
-                   bw = c(10, 15, 20, 25) * 1000,
-                   ncores = 4,
-                   idFile = 'id.grd', offsetFile = 'offset.grd')
+ncores = 1 + (.Platform$OS.type == 'unix')
 
-lemSmoothMat = smoothingMatrix(rasterObjects = lemRaster,
-                   ncores = 4)
+lemRaster = rasterPartition(polyCoarse = kentuckyCounty, 
+                           polyFine = kentuckyTract, 
+                           cellsCoarse = 6, 
+                           cellsFine = 100, 
+                           bw = c(10, 12, 15, 17, 20, 25) * 1000, 
+                           ncores = ncores, 
+                           idFile = 'id.grd', 
+                           offsetFile = 'offset.grd', 
+                           verbose = TRUE)
 
-lemCv = lemXv(x = kentuckyCounty,
-                   lemObjects = lemSmoothMat,
-                   ncores = 4)
+
+lemSmoothMat = smoothingMatrix(rasterObjects = lemRaster, 
+                               ncores = ncores, 
+                               verbose = TRUE)
+
+lemCv = lemXv(x = kentuckyCounty, 
+             lemObjects = lemSmoothMat, 
+             Nxv = 5, 
+             ncores = ncores, 
+             verbose = TRUE)
 bestBw = lemCv$bw[which.min(lemCv$cv)]
 
-lemRisk = riskEst(x = kentuckyCounty,
-                   lemObjects = lemSmoothMat,
-                   bw = bestBw)
+lemRisk = riskEst(x = kentuckyCounty, 
+                 lemObjects = lemSmoothMat, 
+                 bw = bestBw, 
+                 ncores = ncores)
 
-plot(lemRisk)
+rCol = mapmisc::colourScale(lemRisk, 
+                           breaks = 10, style = 'equal', dec = 1)
+plot(lemRisk, 
+    col = rCol$col, breaks = rCol$breaks, 
+    legend = TRUE)
 }
 
 }

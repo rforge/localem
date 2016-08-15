@@ -4,41 +4,45 @@
 \alias{smoothingMatrix}
 \title{Generates the smoothing matrix for the partitions and bandwidths}
 \usage{
-smoothingMatrix(rasterObjects, ncores = 2, verbose = FALSE)
+smoothingMatrix(rasterObjects, ncores = 1, verbose = FALSE)
 }
 \arguments{
 \item{rasterObjects}{Raster objects of partitions and smoothed offsets}
 
-\item{ncores}{Number of cores}
+\item{ncores}{Number of cores/threads for parallel processing}
 
-\item{verbose}{print additional output}
+\item{verbose}{Verbose output}
 }
 \value{
-The \code{smoothingMatrix} function returns a list containing an array of smoothing matrix entries, and 
- the input rasters of partitions and smoothed offsets.
+The \code{smoothingMatrix} function returns a list containing an array of smoothing matrix entries, and the input rasters of partitions and smoothed offsets.
 }
 \description{
-The \code{smoothingMatrix} function computes the entries of the smoothing matrix for the local-EM algorithm for the input bandwidths based on 
- the partitions created by rasterizing the coarse and fine polygons, and 
- their smoothed offsets created by applying the kernel smoothing function with input bandwidths.
+The \code{smoothingMatrix} function computes the entries of the smoothing matrix for the local-EM algorithm for the input bandwidths based on the partitions created by rasterizing the coarse and fine polygons, and their smoothed offsets created by applying the kernel smoothing function with input bandwidths.
 }
 \details{
 After using the \code{smoothingMatrix} function, the smoothing matrix is an array containing the integrated kernel smoothing entries of the partitions divided by the integrated kernel smoothing entries of the study region for each specified bandwidth.
 }
 \examples{
+\dontrun{ 
 data(kentuckyCounty)
-
 data(kentuckyTract)
 
-\dontrun{
-lemRaster = rasterPartition(polyCoarse = kentuckyCounty, polyFine = kentuckyTract, 
-                   cellsCoarse = 6, cellsFine = 100, 
-                   bw = c(10, 15, 20, 25) * 1000, 
-                   ncores = 4, 
-                   idFile = 'id.grd', offsetFile = 'offset.grd')
-                   
+ncores = 1 + (.Platform$OS.type == 'unix')
+
+lemRaster = rasterPartition(polyCoarse = kentuckyCounty, 
+                           polyFine = kentuckyTract, 
+                           cellsCoarse = 6, 
+                           cellsFine = 100, 
+                           bw = c(10, 12, 15, 17, 20, 25) * 1000, 
+                           ncores = ncores, 
+                           idFile = 'id.grd', 
+                           offsetFile = 'offset.grd', 
+                           verbose = TRUE)
+
+
 lemSmoothMat = smoothingMatrix(rasterObjects = lemRaster, 
-                   ncores = 4) 
+                               ncores = ncores, 
+                               verbose = TRUE)
 }
 
 }

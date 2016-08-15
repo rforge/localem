@@ -1,55 +1,69 @@
 #' @title Computes the relative risk estimation on the raster of fine polygons
 #'
-#' @description The \code{riskEst} function computes the estimations of the relative risk on the cells of the fine raster.
+#' @description The \code{riskEst} function computes the estimations of the relative risk on the cells of the fine raster. 
 #'
 #' @param x Spatial polygons of case data
-#' @param lemObjects List of arrays for the smoothing matrix and
-#'  raster stacks for the partition and smoothed offsets
-#' @param bw Numeric value of bandwidth
+#' @param lemObjects List of arrays for the smoothing matrix, and raster stacks for the partition and smoothed offsets
+#' @param bw Bandwidth specifying which smoothing matrix in \code{lemObjects} to use
 #' @param ncores Number of cores/threads for parallel processing
 #' @param tol Tolerance for convergence
-#' @param maxIter Maximum number of iterations
+#' @param maxIter Maximum number of iterations for convergence
 #' @param filename Passed to writeRaster
 #'
-#' @details After using the \code{riskEst} function, the raster of risk estimations is done on cells of the raster on the fine polygons.
+#' @details After using the \code{riskEst} function, the risk estimations are computed on the raster cells of the fine polygons.
 
-#' @return The \code{riskEst} function returns a the raster of risk estimations for input bandwidth.
+#' @return The \code{riskEst} function returns a raster of risk estimations for the input bandwidth.
 #'
 #' @examples
+#' \dontrun{ 
 #' data(kentuckyCounty)
-#'
 #' data(kentuckyTract)
+#' 
+#' ncores = 1 + (.Platform$OS.type == 'unix')
+#' 
+#' lemRaster = rasterPartition(polyCoarse = kentuckyCounty, 
+#'                            polyFine = kentuckyTract, 
+#'                            cellsCoarse = 6, 
+#'                            cellsFine = 100, 
+#'                            bw = c(10, 12, 15, 17, 20, 25) * 1000, 
+#'                            ncores = ncores, 
+#'                            idFile = 'id.grd', 
+#'                            offsetFile = 'offset.grd', 
+#'                            verbose = TRUE)
 #'
-#' \dontrun{
-#' lemRaster = rasterPartition(polyCoarse = kentuckyCounty, polyFine = kentuckyTract,
-#'                    cellsCoarse = 6, cellsFine = 100,
-#'                    bw = c(10, 15, 20, 25) * 1000,
-#'                    ncores = 4,
-#'                    idFile = 'id.grd', offsetFile = 'offset.grd')
 #'
-#' lemSmoothMat = smoothingMatrix(rasterObjects = lemRaster,
-#'                    ncores = 4)
+#' lemSmoothMat = smoothingMatrix(rasterObjects = lemRaster, 
+#'                                ncores = ncores, 
+#'                                verbose = TRUE)
 #'
-#' lemCv = lemXv(x = kentuckyCounty,
-#'                    lemObjects = lemSmoothMat,
-#'                    ncores = 4)
+#' lemCv = lemXv(x = kentuckyCounty, 
+#'              lemObjects = lemSmoothMat, 
+#'              Nxv = 5, 
+#'              ncores = ncores, 
+#'              verbose = TRUE)
 #' bestBw = lemCv$bw[which.min(lemCv$cv)]
 #'
-#' lemRisk = riskEst(x = kentuckyCounty,
-#'                    lemObjects = lemSmoothMat,
-#'                    bw = bestBw)
+#' lemRisk = riskEst(x = kentuckyCounty, 
+#'                  lemObjects = lemSmoothMat, 
+#'                  bw = bestBw, 
+#'                  ncores = ncores)
 #'
-#' plot(lemRisk)
+#' rCol = mapmisc::colourScale(lemRisk, 
+#'                            breaks = 10, style = 'equal', dec = 1)
+#' plot(lemRisk, 
+#'     col = rCol$col, breaks = rCol$breaks, 
+#'     legend = TRUE)
 #'}
 #'
 #' @export
-riskEst = function(x,
-		lemObjects,
-		bw,
-		tol = 1e-6,
-		maxIter = 2000,
-		ncores=1,
-		filename=''
+riskEst = function(
+  x, 
+  lemObjects, 
+  bw, 
+  tol = 1e-6, 
+  maxIter = 2000,
+  ncores = 1,
+  filename = ''
 ) {
 
  if(length(bw) > 1) {
@@ -348,7 +362,8 @@ regionOffset = crossprod(regionMat, offsetMat)
 			SIMPLIFY=FALSE,
 #			USE.NAMES=FALSE,
 			# for some reason ncores=4 fails
-			mc.cores=pmin(2,ncores)
+#			mc.cores=pmin(2,ncores)
+			mc.cores=ncores
 	)
 	theNames = names(emSmooth)
 	names(emSmooth) = NULL

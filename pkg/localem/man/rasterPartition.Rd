@@ -4,8 +4,8 @@
 \alias{rasterPartition}
 \title{Generates the partitions by overlaying rasters of the coarse and fine polygons}
 \usage{
-rasterPartition(polyCoarse, polyFine, cellsCoarse = 6, cellsFine = 100, bw,
-  focalSize = NULL, ncores = 2, idFile = paste(tempfile(), "Id.grd", sep =
+rasterPartition(polyCoarse, polyFine, cellsCoarse, cellsFine, bw,
+  focalSize = NULL, ncores = 1, idFile = paste(tempfile(), "Id.grd", sep =
   ""), offsetFile = paste(tempfile(), "Offset.grd", sep = ""),
   verbose = FALSE)
 }
@@ -20,7 +20,7 @@ rasterPartition(polyCoarse, polyFine, cellsCoarse = 6, cellsFine = 100, bw,
 
 \item{bw}{Vector of bandwidths}
 
-\item{focalSize}{Distance to truncate Gaussian kernels, defaults to 3 times the bandwith}
+\item{focalSize}{Distance to truncate Gaussian kernel bandwidth (default is 3 times of the bandwidth)}
 
 \item{ncores}{Number of cores/threads for parallel processing}
 
@@ -31,31 +31,30 @@ rasterPartition(polyCoarse, polyFine, cellsCoarse = 6, cellsFine = 100, bw,
 \item{verbose}{Verbose output}
 }
 \value{
-The \code{rasterPartition} function returns a list containing the raster of the coarse polygons, 
- raster stacks of the partitions and offsets, 
- focal weight matrix, and 
- the coarse spatial polygons.
+The \code{rasterPartition} function returns a list containing the raster of the coarse polygons, raster stacks of the partitions and offsets, focal weight matrix of the Gaussian kernel, and the input coarse polygons.
 }
 \description{
-The \code{rasterPartition} function first rasterizes the coarse and fine spatial polygons based on their respective input resolutions, and then, 
- overlays these rasters to generate the raster of partitions of the local-EM algorithm. 
- It also applies the kernel smoothing function with input bandwidths to the expected counts of the fine polygons to obtain the smoothed offsets (i.e., smoothed expected counts / cell area) of the partitions.
+The \code{rasterPartition} function first rasterizes the coarse and fine spatial polygons based on their respective input resolutions, and then, overlays these rasters to generate the raster of partitions of the local-EM algorithm. It also applies the kernel smoothing function with input bandwidths to the expected counts of the fine polygons to obtain the smoothed offsets (i.e., smoothed expected counts / cell area) of the partitions.
 }
 \details{
-After using the \code{rasterPartition} function, the fine raster is a raster stack containing the IDs for the partitions created by overlaying the coarse and fine rasters. 
- The offset raster is a raster stack containing the offsets of the partitions smoothed with the specified bandwidths. These values represent the denominator of the kernel smoothing matrix.
+After using the \code{rasterPartition} function, the fine raster is a raster stack containing the IDs for the partitions created by overlaying the coarse and fine rasters. The offset raster is a raster stack containing the offsets of the partitions smoothed with the specified bandwidths. These values represent the denominator of the kernel smoothing matrix.
 }
 \examples{
+\dontrun{ 
 data(kentuckyCounty)
-
 data(kentuckyTract)
 
-\dontrun{
-lemRaster = rasterPartition(polyCoarse = kentuckyCounty, polyFine = kentuckyTract, 
-                   cellsCoarse = 6, cellsFine = 100, 
-                   bw = c(10, 15, 20, 25) * 1000, 
-                   ncores = 4, 
-                   idFile = 'id.grd', offsetFile = 'offset.grd')
+ncores = 1 + (.Platform$OS.type == 'unix')
+
+lemRaster = rasterPartition(polyCoarse = kentuckyCounty, 
+                           polyFine = kentuckyTract, 
+                           cellsCoarse = 6, 
+                           cellsFine = 100, 
+                           bw = c(10, 12, 15, 17, 20, 25) * 1000, 
+                           ncores = ncores, 
+                           idFile = 'id.grd', 
+                           offsetFile = 'offset.grd', 
+                           verbose = TRUE)
 }
 
 }

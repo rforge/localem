@@ -4,18 +4,13 @@
 \alias{excProb}
 \title{Computes the exceedance probabilities on the raster of fine polygons}
 \usage{
-excProb(x, estimate, lemObjects, bw, threshold = 1, Nboot = 100,
-  ncores = 2, tol = 1e-06, maxIter = 2000, filename = "")
+excProb(lemEst, lemObjects, threshold = 1, Nboot = 100, ncores = 1,
+  tol = 1e-06, maxIter = 2000, filename = "")
 }
 \arguments{
-\item{x}{Spatial polygons of case data}
+\item{lemEst}{Estimated risk intensity surface}
 
-\item{estimate}{Estimated intensity surface}
-
-\item{lemObjects}{List of arrays for the smoothing matrix and 
-raster stacks for the partition and smoothed offsets}
-
-\item{bw}{bandwidth, specifying which smoothing matrix in \code{lemObjects} to use}
+\item{lemObjects}{List of arrays for the smoothing matrix, and raster stacks for the partition and smoothed offsets}
 
 \item{threshold}{Vector of risk thresholds}
 
@@ -25,52 +20,66 @@ raster stacks for the partition and smoothed offsets}
 
 \item{tol}{Tolerance for convergence}
 
-\item{maxIter}{Maximum number of iterations}
+\item{maxIter}{Maximum number of iterations for convergence}
 
 \item{filename}{Passed to writeRaster}
 }
 \value{
-The \code{excProb} function returns a raster stack of exceedance probabilities of specified risk thresholds.
+The \code{excProb} function returns a raster brick of exceedance probabilities of input risk thresholds.
 }
 \description{
-The \code{excProb} function first bootstraps cases with the input risk thresholds, and then, 
- computes the exceedance probablities with the same bandwidth as the risk estimation on the cells of the fine raster.
+The \code{excProb} function first bootstraps cases with the input risk thresholds and expected counts of the fine raster, and then, computes the exceedance probablities with the same bandwidth as the risk estimation on the cells of the fine raster.
 }
 \details{
-After using the \code{excProb} function, the raster of exceedance probabilities is done on cells of the raster on the fine polygons.
+After using the \code{excProb} function, the exceedance probabilities are computed on the raster cells of the fine polygons.
 }
 \examples{
+\dontrun{ 
 data(kentuckyCounty)
-
 data(kentuckyTract)
 
-\dontrun{
-lemRaster = rasterPartition(polyCoarse = kentuckyCounty, polyFine = kentuckyTract,
-                   cellsCoarse = 6, cellsFine = 100,
-                   bw = c(10, 15, 20, 25) * 1000,
-                   ncores = 4,
-                   idFile = 'id.grd', offsetFile = 'offset.grd')
+ncores = 1 + (.Platform$OS.type == 'unix')
 
-lemSmoothMat = smoothingMatrix(rasterObjects = lemRaster,
-                   ncores = 4)
+lemRaster = rasterPartition(polyCoarse = kentuckyCounty, 
+                           polyFine = kentuckyTract, 
+                           cellsCoarse = 6, 
+                           cellsFine = 100, 
+                           bw = c(10, 12, 15, 17, 20, 25) * 1000, 
+                           ncores = ncores, 
+                           idFile = 'id.grd', 
+                           offsetFile = 'offset.grd', 
+                           verbose = TRUE)
 
-lemCv = lemXv(x = kentuckyCounty,
-                   lemObjects = lemSmoothMat,
-                   ncores = 4)
+
+lemSmoothMat = smoothingMatrix(rasterObjects = lemRaster, 
+                               ncores = ncores, 
+                               verbose = TRUE)
+
+lemCv = lemXv(x = kentuckyCounty, 
+             lemObjects = lemSmoothMat, 
+             Nxv = 5, 
+             ncores = ncores, 
+             verbose = TRUE)
 bestBw = lemCv$bw[which.min(lemCv$cv)]
 
-lemRisk = riskEst(x = kentuckyCounty,
-                   lemObjects = lemSmoothMat,
-                   bw = bestBw)
+lemRisk = riskEst(x = kentuckyCounty, 
+                 lemObjects = lemSmoothMat, 
+                 bw = bestBw, 
+                 ncores = ncores)
                    
-lemExcProb = excProb(x = kentuckyCounty, 
-                   lemObjects = lemSmoothMat, 
-					estimate=lemRisk,
-                   threshold = c(1, 1.1, 1.25), 
-                   Nboot = 100, 
-                   ncores = 4) 
-                   
-plot(lemExcProb)
+lemExcProb = excProb(lemEst = lemRisk, 
+                    lemObjects = lemSmoothMat, 
+                    threshold = c(1, 1.25, 1.5), 
+                    Nboot = 200, 
+                    ncores = ncores)
+
+pCol = mapmisc::colourScale(lemExcProb, 
+                           breaks = c(0, 0.2, 0.8, 0.95, 1), style = 'fixed', 
+                           col = c('green', 'yellow', 'orange', 'red'))								
+plot(lemExcProb[[1]], 
+    main = 'Exceedance Probabilities, t = 1', 
+    col = pCol$col, breaks = pCol$breaks, 
+    legend = TRUE)
 }
 
 }

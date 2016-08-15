@@ -1,13 +1,11 @@
 #' @title Generates the partitions by overlaying rasters of the coarse and fine polygons
 #'
-#' @description The \code{rasterPartition} function first rasterizes the coarse and fine spatial polygons based on their respective input resolutions, and then, 
-#'  overlays these rasters to generate the raster of partitions of the local-EM algorithm. 
-#'  It also applies the kernel smoothing function with input bandwidths to the expected counts of the fine polygons to obtain the smoothed offsets (i.e., smoothed expected counts / cell area) of the partitions. 
+#' @description The \code{rasterPartition} function first rasterizes the coarse and fine spatial polygons based on their respective input resolutions, and then, overlays these rasters to generate the raster of partitions of the local-EM algorithm. It also applies the kernel smoothing function with input bandwidths to the expected counts of the fine polygons to obtain the smoothed offsets (i.e., smoothed expected counts / cell area) of the partitions. 
 #' 
 #' @param polyCoarse Spatial polygons of case data
 #' @param polyFine Spatial polygons of population data
 #' @param bw Vector of bandwidths
-#' @param focalSize Distance to truncate Gaussian kernels, defaults to 3 times the bandwith
+#' @param focalSize Distance to truncate Gaussian kernel bandwidth (default is 3 times of the bandwidth)
 #' @param cellsCoarse Horizontal/vertical resolution of raster applied to coarse polygons
 #' @param cellsFine Horizontal/vertical resolution of raster applied to fine polygons
 #' @param ncores Number of cores/threads for parallel processing
@@ -16,38 +14,40 @@
 #' @param verbose Verbose output
 #' 
 #' 
-#' @details After using the \code{rasterPartition} function, the fine raster is a raster stack containing the IDs for the partitions created by overlaying the coarse and fine rasters. 
-#'  The offset raster is a raster stack containing the offsets of the partitions smoothed with the specified bandwidths. These values represent the denominator of the kernel smoothing matrix. 
+#' @details After using the \code{rasterPartition} function, the fine raster is a raster stack containing the IDs for the partitions created by overlaying the coarse and fine rasters. The offset raster is a raster stack containing the offsets of the partitions smoothed with the specified bandwidths. These values represent the denominator of the kernel smoothing matrix. 
 #'
-#'@return The \code{rasterPartition} function returns a list containing the raster of the coarse polygons, 
-#'  raster stacks of the partitions and offsets, 
-#'  focal weight matrix, and 
-#'  the coarse spatial polygons. 
+#' @return The \code{rasterPartition} function returns a list containing the raster of the coarse polygons, raster stacks of the partitions and offsets, focal weight matrix of the Gaussian kernel, and the input coarse polygons. 
 #'  
 #' @examples 
+#' \dontrun{ 
 #' data(kentuckyCounty)
-#' 
 #' data(kentuckyTract)
 #' 
-#' \dontrun{
-#' lemRaster = rasterPartition(polyCoarse = kentuckyCounty, polyFine = kentuckyTract, 
-#'                    cellsCoarse = 6, cellsFine = 100, 
-#'                    bw = c(10, 15, 20, 25) * 1000, 
-#'                    ncores = 4, 
-#'                    idFile = 'id.grd', offsetFile = 'offset.grd')
+#' ncores = 1 + (.Platform$OS.type == 'unix')
+#' 
+#' lemRaster = rasterPartition(polyCoarse = kentuckyCounty, 
+#'                            polyFine = kentuckyTract, 
+#'                            cellsCoarse = 6, 
+#'                            cellsFine = 100, 
+#'                            bw = c(10, 12, 15, 17, 20, 25) * 1000, 
+#'                            ncores = ncores, 
+#'                            idFile = 'id.grd', 
+#'                            offsetFile = 'offset.grd', 
+#'                            verbose = TRUE)
 #'}
 #'
 #' @export
 rasterPartition = function(
-  	polyCoarse, 
-  	polyFine, 
-  	cellsCoarse = 6, 
-  	cellsFine = 100, 
-  	bw, focalSize=NULL,
-  	ncores = 2, 
-  	idFile = paste(tempfile(), 'Id.grd', sep = ''), 
-  	offsetFile = paste(tempfile(), 'Offset.grd', sep = ''), 
-  	verbose = FALSE
+  polyCoarse, 
+  polyFine, 
+  cellsCoarse, 
+  cellsFine, 
+  bw, 
+  focalSize = NULL,
+  ncores = 1, 
+  idFile = paste(tempfile(), 'Id.grd', sep = ''), 
+  offsetFile = paste(tempfile(), 'Offset.grd', sep = ''), 
+  verbose = FALSE
 ){
 	
   if(verbose) {
@@ -170,11 +170,12 @@ rasterPartition = function(
     	offset=offsetStack,
     	polyCoarse = polyCoarse[,c(polyCoarseIdCol, 'idCoarse')]
   )
-  
-  return(result)
-  
+
   if(verbose) {
     cat(date(), "\n")
     cat("done\n")
   }
+  
+  return(result)
+
 }
