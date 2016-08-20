@@ -83,10 +83,6 @@ excProb = function(
  # result = theLemRisk
   # names(result) = paste("risk.", bw, sep = "")
 
-  # bandwidth of the risk estimate
-  bw = as.numeric(
-    gsub("^risk.", "", names(lemEst))
-  )
   
   # bootstrap cases
 	offset = stats::na.omit(as.data.frame(
@@ -118,6 +114,11 @@ excProb = function(
 			)
 	)
 
+	 # bandwidth of the risk estimate
+  bw = as.numeric(
+    gsub("^risk.", "", names(lemEst))
+  )
+
 	#risk and exceedance probabilities
 	estRiskBoot = riskEst(
 			x=bootCounts, lemObjects=lemObjects,
@@ -131,18 +132,16 @@ excProb = function(
 					names(estRiskBoot))
 	
 	tIndex = factor(tIndex)		
-	excProb = stackApply(
+	theExcProb = stackApply(
 			estRiskBoot,
 			as.numeric(tIndex),
 			mean)		
 	
 	
-	names(excProb) = paste("threshold.", levels(tIndex), sep='')		
+	names(theExcProb) = paste("threshold.", levels(tIndex), sep='')		
 
-#	excProb
-	
 	result = do.call(brick, 
-			c(unstack(excProb), list(filename=filename)))		
+			c(unstack(theExcProb), list(filename=filename)))		
 	
 	return(result)
 }
