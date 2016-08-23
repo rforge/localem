@@ -21,8 +21,9 @@ data('kentuckyCounty')
 data('kentuckyTract')
 data('kMap')
 
-# number of cores for computations in parallel (only applicable to UNIX operating systems)
-ncores = ifelse(.Platform$OS.type == 'unix', min(detectCores(), 4), 1)
+# number of cores for computations in parallel 
+# (only applicable to UNIX operating systems)
+ncores = ifelse(.Platform$OS.type == 'unix', min(detectCores(), 2), 1)
 
 ```
 
