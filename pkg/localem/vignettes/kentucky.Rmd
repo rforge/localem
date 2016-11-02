@@ -1,6 +1,6 @@
 <!--
-		%\VignetteEngine{knitr::docco_linear}
-		%\VignetteIndexEntry{Local-EM Example with Cancer Cases in Kentucky}
+%\VignetteEngine{knitr::docco_linear}
+%\VignetteIndexEntry{Local-EM Example with Cancer Cases in Kentucky}
 -->
 	
 # Local-EM Example with Cancer Cases in Kentucky
