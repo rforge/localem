@@ -61,13 +61,20 @@ rasterPartition = function(
   if(!(length(grep("\\.grd$", idFile)))){
     warning("idFile should have .grd extension")
   }
-	
-  rasterCoarse=geostatsp::squareRaster(polyCoarse, cellsCoarse)
+	if(is.numeric(cellsCoarse)) {
+		rasterCoarse=geostatsp::squareRaster(polyCoarse, cellsCoarse)
+	} else {
+		rasterCoarse = raster(cellsCoarse)
+	}
   values(rasterCoarse) = seq(1, ncell(rasterCoarse))
   names(rasterCoarse) = "cellCoarse"
 	
-  rasterFine = disaggregate(rasterCoarse,
-      ceiling(cellsFine/ncol(rasterCoarse)))
+	if(is.numeric(cellsFine)) {
+  	rasterFine = disaggregate(rasterCoarse,
+      	ceiling(cellsFine/ncol(rasterCoarse)))
+	} else {
+		rasterFine = raster(cellsFine)
+	}
 	names(rasterFine) = 'cellCoarse'
 	
 	# coarse poly ID's for fine raster
