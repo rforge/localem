@@ -63,19 +63,19 @@ rasterPartition = function(
   }
 	if(is.numeric(cellsCoarse)) {
 		rasterCoarse=geostatsp::squareRaster(polyCoarse, cellsCoarse)
+  	values(rasterCoarse) = seq(1, ncell(rasterCoarse))
+  	names(rasterCoarse) = "cellCoarse"
 	} else {
-		rasterCoarse = raster(cellsCoarse)
+		rasterCoarse = cellsCoarse
 	}
-  values(rasterCoarse) = seq(1, ncell(rasterCoarse))
-  names(rasterCoarse) = "cellCoarse"
 	
 	if(is.numeric(cellsFine)) {
   	rasterFine = disaggregate(rasterCoarse,
       	ceiling(cellsFine/ncol(rasterCoarse)))
+		names(rasterFine) = 'cellCoarse'
 	} else {
-		rasterFine = raster(cellsFine)
+		rasterFine = cellsFine
 	}
-	names(rasterFine) = 'cellCoarse'
 	
 	# coarse poly ID's for fine raster
 	
