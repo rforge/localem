@@ -13,19 +13,161 @@ The methodology of this package is demonstrated on simulated lung cancer cases f
 
 ```{r setup, message = FALSE}
 
-library('localEM')
 library('mapmisc')
-library('parallel')
 
-data('kentuckyCounty') 
-data('kentuckyTract')
-data('kMap')
+data('kentuckyCounty', package='localEM') 
+data('kentuckyTract', package='localEM')
+data('kMap', package='localEM')
 
 # number of cores for computations in parallel 
 # (only applicable to UNIX operating systems)
-ncores = ifelse(.Platform$OS.type == 'unix', min(detectCores(), 2), 1)
+ncores = ifelse(.Platform$OS.type == 'unix', 2, 1)
 
 ```
+
+
+
+## Simulate Cases
+
+Using the `simLgcp()` function from the `geostatsp` package, case locations are
+simulated with the log Gaussian Cox process and  following parameters: 
+
+* mean: 0
+* variance: 0.16
+* shape: 2
+* range: 120 km
+* offsets: log of expected cases/m$^2$ of the census tracts
+
+The simulated cases are then aggregated to the appropriate counties. 
+
+```{r simcases, message = FALSE}
+
+kentuckyOffset = geostatsp::spdfToBrick(
+  kentuckyTract,
+  squareRaster(kentuckyTract, 400),
+  pattern = '^expected$',
+  logSumExpected=TRUE
+  )
+
+
+set.seed(0)
+kCases = geostatsp::simLgcp(
+  param = c(mean = 0, variance = 0.4^2, 
+    range = 120 * 1000, shape = 2),
+   covariates = list(logExpected = kentuckyOffset), 
+  offset = 'logExpected')
+#'
+```
+
+Aggregate events to counties
+
+```{r aggSim}
+
+kCases$events = SpatialPointsDataFrame(
+  kCases$events,
+  data=over(kCases$events, kentuckyCounty)[,'id',drop=FALSE]
+)
+countyCounts = table(kCases$events$id,exclude=NULL)
+kentuckyCounty$count = as.vector(countyCounts[kentuckyCounty$id])
+```
+
+
+Remove events simulated outside a county.  
+
+```{r totalEvents}
+sum(kentuckyCounty$count)
+length(kCases$events)
+sum(is.na(kCases$events$id))
+kCases$events = kCases$events[!is.na(kCases$events$id), ]
+length(kCases$events)
+```
+
+```{r plotOffset, echo = FALSE, fig.cap='simulated events', fig.subcap = c('offset','relative intensity', 'events', 'counts')}
+
+# offset map
+oCol = colourScale(
+  c(0, exp(maxValue(kentuckyOffset))), 
+  breaks = 10, 
+  style = 'equal', dec = 7, 
+  transform = 'sqrt')
+
+map.new(kentuckyTract)
+plot(kentuckyOffset, 
+  col = oCol$col, 
+  breaks = pmax(-100,log(oCol$breaks)), 
+  legend = FALSE, 
+  add = TRUE)
+plot(kMap, add = TRUE)
+
+legendBreaks('topleft', 
+  breaks = oCol$breaks * 10^6, col = oCol$col, 
+  title = expression(plain('cases/km')^2), 
+  bg = 'white')
+
+
+  
+# simulated risk map
+  iCol = colourScale(
+    kCases$raster$relativeIntensity, 
+  breaks = 8, style = 'equal', dec = -log10(0.5))
+  
+  map.new(kentuckyTract)
+  
+  plot(kCases$raster$relativeIntensity, 
+  col = iCol$col, breaks = iCol$breaks, 
+  legend = FALSE, 
+  add = TRUE)
+  plot(kMap, add = TRUE)
+  
+  legendBreaks('topleft', 
+  col = iCol$col, breaks = iCol$breaks, 
+  title = 'relative risk', 
+  bg = 'white')
+
+  
+# simulated events map
+  map.new(kentuckyTract)
+  plot(kMap, add = TRUE)
+  
+  points(kCases$events, col = '#FF000030', pch = 20, cex=0.5)
+  
+  scaleBar(kentuckyCounty, 
+  pos = 'topleft',   bg = 'white')
+  
+# simulated counts
+cCol = colourScale(
+  kentuckyCounty$count, 
+  breaks = 10, 
+  style = 'quantile', dec = -1)
+
+map.new(kentuckyTract)
+plot(kentuckyCounty, col=cCol$plot, add=TRUE)
+plot(kMap, add = TRUE)
+legendBreaks("topleft", cCol)
+
+
+scaleBar(kentuckyCounty, 
+  pos = 'topleft',   bg = 'white')
+```
+
+
+
+## Cross-validation
+
+```{r cvNew}
+lemCvNewKentucky = lemXv(   
+  polyCoarse = kentuckyCounty,   
+  polyFine = kentuckyTract,   
+  cellsCoarse = 10,   
+  cellsFine = 120,   
+  bw = seq(5, 40, by = 5) * 1000,
+  Nxv = 4, 
+  ncores = ncores,   
+  tol = 1e-6,   
+  maxIter = 20,    
+  verbose = TRUE)
+```
+
 
 ## Rasters
 
@@ -41,125 +183,22 @@ kentuckyTract$expected = (3000 / sum(kentuckyTract$expected, na.rm = TRUE)) *
 sum(kentuckyTract$expected, na.rm = TRUE)
 
 lemRaster = rasterPartition(
-	polyCoarse = kentuckyCounty, 
-	polyFine = kentuckyTract, 
+  polyCoarse = kentuckyCounty, 
+  polyFine = kentuckyTract, 
   cellsCoarse = 10, 
-	cellsFine = 120, 
+  cellsFine = 120, 
   bw = c(8, 10, 12.5, 15, 17.5, 20, 25, 30) * 1000, 
   ncores = ncores,
-	idFile = 'id.grd', 
-	offsetFile = 'off.grd', 
-	verbose = TRUE)
+  idFile = 'id.grd', 
+  offsetFile = 'off.grd', 
+  verbose = TRUE)
 
 # total expected events with fine raster
 sum(values(lemRaster$offset$offset), na.rm = TRUE) * prod(res(lemRaster$offset))
 
 ```
 
-```{r plotOffset, echo = FALSE}
 
-# offset map
-oCol = colourScale(lemRaster$offset$offset, 
-	breaks = 10, style = 'equal', dec = 8, 
-	transform = 'sqrt')
-
-map.new(kentuckyTract, 
-	mar = c(0, 0, 1, 0), 
-	main = 'Expected Counts')
-plot(lemRaster$offset$offset, 
-	col = oCol$col, breaks = oCol$breaks, 
-	legend = FALSE, 
-	add = TRUE)
-plot(kMap, add = TRUE)
-
-legendBreaks('topleft', 
-	breaks = oCol$breaks * 10^6, col = oCol$col, 
-	title = expression(plain('cases/km')^2), 
-	bg = 'white')
-	
-scaleBar(kentuckyCounty,
-	pos = 'topleft', 
-	inset = c(0.3, 0.1), 
-	bg = 'white')
-
-```
-
-
-## Simulate Cases
-
-Using the `simLgcp()` function from the `geostatsp` package, case locations are simulated with the log Gaussian Cox process and  following parameters: 
-
-* mean: 0
-* variance: 0.16
-* shape: 2
-* range: 120 km
-* offsets: log of expected cases/m$^2$ of the census tracts
-
-The simulated cases are then aggregated to the appropriate counties. 
-
-```{r simcases, message = FALSE}
-
-# expected counts per squared meter
-kLogOffset = log(lemRaster$offset$offset)
-names(kLogOffset) = 'logOffset'
-
-# log Gaussian Cox process simulation
-set.seed(0)
-kCases = geostatsp::simLgcp(
-	param = c(mean = 0, variance = 0.4^2, range = 120 * 1000, shape = 2),
-	covariates = kLogOffset, 
-	offset = 'logOffset')
-	
-# simulated events aggregated to coarse polygons
-countyCounts = table(over(kCases$events, kentuckyCounty)$id)
-kentuckyCounty$count = countyCounts[kentuckyCounty$id]
-kentuckyCounty$count[is.na(kentuckyCounty$count)] = 0
-
-# total simulated events
-sum(kentuckyCounty$count)
-
-```
-
-```{r plotCases, echo = FALSE}
-
-# simulated risk map
-iCol = colourScale(kCases$raster$relativeIntensity, 
-	breaks = 8, style = 'equal', dec = 1)
-
-map.new(kentuckyTract, 
-	mar = c(0, 0, 1, 0), 
-	main = 'Simulated Relative Risk')
-
-plot(kCases$raster$relativeIntensity, 
-	col = iCol$col, breaks = iCol$breaks, 
-	legend = FALSE, 
-	add = TRUE)
-plot(kMap, add = TRUE)
-		
-legendBreaks('topleft', 
-	col = iCol$col, breaks = iCol$breaks, 
-	title = 'relative risk', 
-	bg = 'white')
-
-scaleBar(kentuckyCounty, 
-	pos = 'topleft', 
-	inset = c(0.3, 0.1), 
-	bg = 'white')
-		
-# simulated events map
-map.new(kentuckyTract, 
-	mar = c(0, 0, 1, 0), 
-	main = 'Simulated Events')
-plot(kMap, add = TRUE)
-
-points(kCases$events, col = '#FF000030', pch = 20)
-
-scaleBar(kentuckyCounty, 
-	pos = 'topleft', 
-	inset = c(0.3, 0.1), 
-	bg = 'white')
-
-```
 
 
 ## Smoothing Matrix and Cross-validation
@@ -169,9 +208,9 @@ The smoothing matrix for the partitions and specified bandwidths are generated w
 ```{r smoothingMatrix}
 
 lemSmoothMat = smoothingMatrix(
-	rasterObjects = lemRaster, 
-	ncores = ncores, 
-	verbose = TRUE)
+  rasterObjects = lemRaster, 
+  ncores = ncores, 
+  verbose = TRUE)
 
 dim(lemSmoothMat$smoothingArray)
 dimnames(lemSmoothMat$smoothingArray)[[3]]
@@ -183,11 +222,11 @@ Afterwards, the likelihood cross-validation (CV) approach is implemented with th
 ```{r cv}
 
 lemCv = lemXv(
-	x = kentuckyCounty, 
+  x = kentuckyCounty, 
   lemObjects = lemSmoothMat, 
-	Nxv = 5, 
+  Nxv = 5, 
   ncores = ncores, 
-	verbose = TRUE)
+  verbose = TRUE)
 
 bestBw = lemCv$bw[which.min(lemCv$cv)]
 
@@ -197,10 +236,10 @@ bestBw = lemCv$bw[which.min(lemCv$cv)]
 
 par(mar = c(5, 5, 1, 1))
 plot(do.call(cbind, lemCv[is.finite(lemCv$bw),]), 
-	xlab = 'Bandwidth (m)', ylab = 'CV', 
-	main = 'CV Scores', 
-	log = 'x', 
-	pch = 16, col = 'red', type = 'o')
+  xlab = 'Bandwidth (m)', ylab = 'CV', 
+  main = 'CV Scores', 
+  log = 'x', 
+  pch = 16, col = 'red', type = 'o')
 abline(v = bestBw, lty = 3)
 
 ```
@@ -213,36 +252,36 @@ The local-EM risk estimation is done with the `riskEst()` function for the optim
 ```{r riskEst}
 
 lemRisk = riskEst(
-	x = kentuckyCounty, 
+  x = kentuckyCounty, 
   lemObjects = lemSmoothMat,
   bw = bestBw, 
-	ncores = ncores)
+  ncores = ncores)
 
 ```
 
 ```{r plotRisk, echo = FALSE}
 
 rCol = colourScale(lemRisk, 
-	breaks = 10, style = 'equal', dec = 1)
+  breaks = 10, style = 'equal', dec = 1)
 
 map.new(kentuckyTract, 
-	mar = c(0, 0, 1, 0), 
-	main = 'Risk Estimation')
+  mar = c(0, 0, 1, 0), 
+  main = 'Risk Estimation')
 plot(lemRisk, 
-	col = rCol$col, breaks = rCol$breaks, 
-	legend = FALSE, 
-	add = TRUE)
+  col = rCol$col, breaks = rCol$breaks, 
+  legend = FALSE, 
+  add = TRUE)
 plot(kMap, add = TRUE)
 
 legendBreaks('topleft', 
-	col = rCol$col, breaks = rCol$breaks, 
-	title = 'relative risk', 
-	bg = 'white')
+  col = rCol$col, breaks = rCol$breaks, 
+  title = 'relative risk', 
+  bg = 'white')
 
 scaleBar(kentuckyCounty, 
-	pos = 'topleft', 
-	inset = c(0.3, 0.1), 
-	bg = 'white')
+  pos = 'topleft', 
+  inset = c(0.3, 0.1), 
+  bg = 'white')
 
 ```
 
@@ -257,7 +296,7 @@ Specifically, under the assumption that disease events are a realisation from th
 
 lemExcProb = excProb(
   lemEst = lemRisk, 
-	lemObjects = lemSmoothMat, 
+  lemObjects = lemSmoothMat, 
   threshold = c(1, 1.25, 1.5, 2), 
   Nboot = 200, 
   ncores = ncores)
@@ -268,31 +307,31 @@ lemExcProb = excProb(
 
 #exceedance probability maps
 pCol = colourScale(lemExcProb, 
-	breaks = c(0, 0.2, 0.8, 0.95, 1), style = 'fixed', 
-	col = c('green', 'yellow', 'orange', 'red')
+  breaks = c(0, 0.2, 0.8, 0.95, 1), style = 'fixed', 
+  col = c('green', 'yellow', 'orange', 'red')
 )								
 
 for(Dthreshold in names(lemExcProb)) {
-	
-	threshold = gsub('threshold\\.', '', Dthreshold)
-	map.new(kentuckyTract, 
-		mar = c(0, 0, 1, 0), 
-		main = paste('Exceedance Probabilities, t = ', threshold, sep = ''))
-	plot(lemExcProb[[Dthreshold]], 
-		col = pCol$col, breaks = pCol$breaks, 
-		legend = FALSE, 
-		add = TRUE)
-	plot(kMap, add = TRUE)
-	
-	legendBreaks('topleft', 
-		col = pCol$col, breaks = pCol$breaks, 
-		title = 'prob', 
-		bg = 'white')
-	
-	scaleBar(kentuckyCounty, 
-		pos = 'topleft', 
-		inset = c(0.3, 0.1), 
-		bg = 'white')
+  
+  threshold = gsub('threshold\\.', '', Dthreshold)
+  map.new(kentuckyTract, 
+    mar = c(0, 0, 1, 0), 
+    main = paste('Exceedance Probabilities, t = ', threshold, sep = ''))
+  plot(lemExcProb[[Dthreshold]], 
+    col = pCol$col, breaks = pCol$breaks, 
+    legend = FALSE, 
+    add = TRUE)
+  plot(kMap, add = TRUE)
+  
+  legendBreaks('topleft', 
+    col = pCol$col, breaks = pCol$breaks, 
+    title = 'prob', 
+    bg = 'white')
+  
+  scaleBar(kentuckyCounty, 
+    pos = 'topleft', 
+    inset = c(0.3, 0.1), 
+    bg = 'white')
 }
 
 ```
