@@ -65,7 +65,8 @@ smoothingMatrix = function(
       		fine=rasterObjects$rasterFine,
       		offsetRaster=rasterObjects$offset
     	),
-    	mc.cores=ncores, SIMPLIFY=FALSE
+    	mc.cores=ncores, SIMPLIFY=FALSE,
+      mc.preschedule=FALSE
   )
 	
   if(verbose) {
@@ -106,7 +107,7 @@ smoothingMatrix = function(
     theMat$smoothingArray = theMat$smoothingArray[,,!smoothingArrayInf,drop=FALSE]
   }
 	
-  result = c(theMat, rasterObjects)
+  result = c(theMat, rasterObjects[setdiff(names(rasterObjects), names(theMat))])
 
   if(verbose) {
     cat(date(), "\n")

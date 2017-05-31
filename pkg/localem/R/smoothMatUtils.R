@@ -78,7 +78,7 @@ smoothingMatrixEntries = function(
   }
   
 
-  
+  offsetBwNames = grep("^bw", names(offsetRaster), value=TRUE)
   # extract data for extent of coarse cells from fine rasters
   cellInfo1=getCellInfo(
     	cell1, coarse,
@@ -225,9 +225,6 @@ smoothingMatrixDiag = function(
     	coarse=rasterCoarse,
     	reorder=FALSE,
       xv = names(offsetRaster))
-  
-	
-  
  
   diagBlocks = parallel::mcmapply(
     	smoothingMatrixEntries,
@@ -266,15 +263,15 @@ smoothingMatrixDiag = function(
   # raster with partition ID's
   
   partitionRaster = calc(rasterFine, function(x) which(
-            x[1]==partitions[,1] &
-                x[2] == partitions[,2] &
-                x[3] == partitions[,3]
+            x[1]==partitions[,'idCoarse'] &
+                x[2] == partitions[,'idFine'] &
+                x[3] == partitions[,'cellCoarse']
             )[1])
   levels(partitionRaster)[[1]] = partitions
   
   meanOffsets = as.data.frame(zonal(
       offsetRaster[[grep("^bw", names(offsetRaster), invert=TRUE)]],
-      rasterPartition,
+      partitionRaster,
       'mean', na.rm=TRUE
       ))
   meanOffsets$partition = partitions[match(
@@ -283,7 +280,7 @@ smoothingMatrixDiag = function(
   
   offsetMat = apply(meanOffsets[,grep("[oO]ffset", colnames(meanOffsets))], 2, 
       function(x) {
-        res = Diagonal(nrow(meanOffsets), x)
+        res = Matrix::Diagonal(nrow(meanOffsets), x)
         dimnames(res) = list(meanOffsets$partition, meanOffsets$partition) 
         res
       })
@@ -374,6 +371,7 @@ smoothingMatrixDiag = function(
 	
   list(smoothingArray=smoothingArray,
       regionMat=expandCountMat,
+      rasterFine = partitionRaster,
       offsetMat = offsetMat,
       cells=allCells,
       uniqueDist = unique(allCells$dist))

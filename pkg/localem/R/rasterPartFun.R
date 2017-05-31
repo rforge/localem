@@ -100,7 +100,7 @@ rasterPartition = function(
 	
   
   if(length(Nxv)==1) {
-    xvMat = getXvMat(polyCoarse[[idColX]], Nxv)
+    xvMat = getXvMat(polyCoarse$idCoarse, Nxv)
   } else {
     if(is.null(Nxv)) {
       xvMat = matrix()
@@ -150,7 +150,12 @@ rasterPartition = function(
 	
   rasterFineId = writeRaster(rasterFineId, idFile,
       overwrite=file.exists(idFile))
-	
+
+  if(verbose) {
+    cat(date(), "\n")
+    cat("smoothing offsets\n")
+  }
+  
   theFocal = focalFromBw(
       bw = bw, 
       fine=rasterFine, 
