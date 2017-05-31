@@ -137,6 +137,7 @@ lemXv = function(
   
   # now compute the CV scores
 
+  xvPartitions = xvSmoothMat$xv[levels(xvSmoothMat$rasterFine)[[1]][,'idCoarse'], ]
 
   # old code below.
   
