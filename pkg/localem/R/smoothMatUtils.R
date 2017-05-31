@@ -76,14 +76,9 @@ smoothingMatrixEntries = function(
     # a kernel array was supplied
     kernelArray = focalList
   }
-	
-  if(is.function(kernelArray)) {
-    Sbw = dimnames(kernelArray('q1x'))[[3]]
-  } else {
-    Sbw = dimnames(kernelArray)[[3]]
-  }
-  offsetBwNames = paste("offset.", Sbw, sep="")
-	
+  
+
+  
   # extract data for extent of coarse cells from fine rasters
   cellInfo1=getCellInfo(
     	cell1, coarse,
@@ -105,6 +100,7 @@ smoothingMatrixEntries = function(
   Sarea1 = cellInfo1$partition$Freq * Scw2
 	
   for(Dcell2 in cell2) {
+
     if(cellsAreEqual){
       cellInfo2=cellInfo1
       thisKernelArray = kernelArray
@@ -144,7 +140,9 @@ smoothingMatrixEntries = function(
 		
     smoothedOffset2 = cellInfo2$offset[, offsetBwNames, drop=FALSE]
     smoothedOffset2 = array(smoothedOffset2,
-        c(dim(smoothedOffset2),cellInfo1$Ncells))
+        c(dim(smoothedOffset2),cellInfo1$Ncells),
+        dimnames = c(dimnames(smoothedOffset2), 
+            list(1:cellInfo1$Ncells)))
     smoothedOffset2 = aperm(smoothedOffset2, c(3,1,2))
 		
     # the smoothing matrix (or part thereof)
@@ -155,23 +153,21 @@ smoothingMatrixEntries = function(
       	paste("c", Dcell2, "p",						
 						cellInfo2$partition$coarse, '.', 
 						cellInfo2$partition$fine, sep=''),
-      	Sbw,
+        dimnames(smoothedOffset2)[[3]],
       	c('straightup', 'transpose')
     )
 		
-    theDim = c(
-      	nrow(cellInfo1$partition),
-      	nrow(cellInfo2$partition),
-      	length(Sbw),2)
 		
-    smoothingMatrix = array(NA, theDim,
+    smoothingMatrix = array(NA, 
+        unlist(lapply(theDimnames, length)),
         dimnames=theDimnames
     )
-    smoothingMatrixOne = array(NA, theDim[-4],
+    smoothingMatrixOne = array(NA, 
+        dim(smoothingMatrix)[-4],
         dimnames=theDimnames[-4]
     )
 		
-    for(D1 in 1:theDim[1]){
+    for(D1 in 1:dim(smoothingMatrix)[1]){
       inD1 = which(
 							(cellInfo1$id[,'idCoarse']==cellInfo1$partition[D1,'coarse']) &
 							(cellInfo1$id[,'idFine']==cellInfo1$partition[D1,'fine'])
@@ -181,17 +177,20 @@ smoothingMatrixEntries = function(
           c(dim(smoothedOffset1),cellInfo2$Ncells))
       smoothedOffset1 = aperm(smoothedOffset1,c(1,3,2))
 			
-      for(D2 in 1:theDim[2]){
+      for(D2 in 1:dim(smoothingMatrix)[2]){
       	inD2 = which(
 						(cellInfo2$id[,'idCoarse']==cellInfo2$partition[D2,'coarse']) &
 								(cellInfo2$id[,'idFine']==cellInfo2$partition[D2,'fine'])
 				)
+
         numerator = thisKernelArray[inD1, inD2,,drop=FALSE]
-        smoothingMatrixOne[D1,D2,] =
-          	apply(numerator/smoothedOffset2[1:length(inD1),inD2,,drop=FALSE], 3, sum) * Scw2 / Sarea1[D1]
+        smoothingMatrixOne[D1,D2,] = apply(
+            numerator/smoothedOffset2[1:length(inD1),inD2,,drop=FALSE], 
+            3, sum) * Scw2 / Sarea1[D1]
         if(!cellsAreEqual){
-          smoothingMatrix[D1,D2,,'transpose'] =
-            	apply(numerator/smoothedOffset1[inD1,1:length(inD2),,drop=FALSE], 3, sum) * Scw2 / Sarea2[D2]
+          smoothingMatrix[D1,D2,,'transpose'] =	apply(
+              numerator/smoothedOffset1[inD1,1:length(inD2),,drop=FALSE], 
+              3, sum) * Scw2 / Sarea2[D2]
         } #cells Equal
       } #loop Spart22
     } # loop Spart1
@@ -217,16 +216,19 @@ smoothingMatrixDiag = function(
   	rasterCoarse,rasterFine,
   	focalList,offsetRaster, ncores
 ) {
+  
   kernelArrayD = kernMat(
     	cellDist=c(0,0),
     	focalList=focalList,
     	fineRelativeRes=rasterFine,
     	cell1=c(0,0),
     	coarse=rasterCoarse,
-    	reorder=FALSE
-  )
+    	reorder=FALSE,
+      xv = names(offsetRaster))
+  
 	
-	
+  
+ 
   diagBlocks = parallel::mcmapply(
     	smoothingMatrixEntries,
     	cell1 = 1:ncell(rasterCoarse),
@@ -255,28 +257,45 @@ smoothingMatrixDiag = function(
       	diagBlocks[[D]]
   }
 	
-  # matrices for local-EM M bit
-  Scells = ifelse(
-			is.na(values(rasterFine[["cellCoarse"]])) | is.na(values(rasterFine[["idCoarse"]])),
-      NA,
-      paste("c", values(rasterFine[["cellCoarse"]]), "p", 
-					values(rasterFine[["idCoarse"]]),
-  				'.', values(rasterFine[["idFine"]]), sep = "")
-  )
-  meanOffsets = tapply(values(offsetRaster[['offset']]),
-      list(Scells),
-      mean, na.rm=TRUE)
-  meanOffsets = meanOffsets[match(Spartitions, names(meanOffsets))]
-  offsetMat = Diagonal(length(Spartitions), meanOffsets)
+
+  # create list of partitions
+  partitions = as.data.frame(na.omit(unique(rasterFine)))
+  partitions$partition = paste('c', partitions$cellCoarse, 'p', partitions$idCoarse,
+      '.', partitions$idFine, sep='')
+  partitions = cbind(ID = 1:nrow(partitions), partitions)
+  # raster with partition ID's
+  
+  partitionRaster = calc(rasterFine, function(x) which(
+            x[1]==partitions[,1] &
+                x[2] == partitions[,2] &
+                x[3] == partitions[,3]
+            )[1])
+  levels(partitionRaster)[[1]] = partitions
+  
+  meanOffsets = as.data.frame(zonal(
+      offsetRaster[[grep("^bw", names(offsetRaster), invert=TRUE)]],
+      rasterPartition,
+      'mean', na.rm=TRUE
+      ))
+  meanOffsets$partition = partitions[match(
+          meanOffsets$zone, partitions$ID
+          ), 'partition']    
+  
+  offsetMat = apply(meanOffsets[,grep("[oO]ffset", colnames(meanOffsets))], 2, 
+      function(x) {
+        res = Diagonal(nrow(meanOffsets), x)
+        dimnames(res) = list(meanOffsets$partition, meanOffsets$partition) 
+        res
+      })
 	
-  regions = gsub("^c[[:digit:]]+p|\\.[[:digit:]]+$", "", Spartitions)
+  regions = gsub("^c[[:digit:]]+p|\\.[[:digit:]]+$", "", meanOffsets$partition)
   regions = as.integer(regions)
   regionMat = outer(regions, regions, '==')
   regionMat = Matrix(regionMat)
 	
-  dimnames(regionMat)=dimnames(offsetMat) =
-    	list(Spartitions,Spartitions)
-	
+  dimnames(regionMat)=
+    	list(meanOffsets$partition, meanOffsets$partition)
+
   expandCountMat = regionMat
   expandCountMat = expandCountMat[,!duplicated(regions),drop=FALSE]
   colnames(expandCountMat) = gsub("^c[[:digit:]]+p|\\.[[:digit:]]+$", 
@@ -372,8 +391,10 @@ smoothingMatrixOneDist = function(
     	focalList=focal,
     	coarse=coarse,
     	fineRelativeRes=fine,
-    	reorder=TRUE)
-	
+    	reorder=TRUE,
+      xv = names(offsetRaster))
+  
+  
   whichCells = allCells[which(allCells[,'dist']==x),]
 	
   whichCellsRev = whichCells

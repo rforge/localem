@@ -42,11 +42,13 @@ rasterPartition = function(
   polyFine, 
   cellsCoarse, 
   cellsFine, 
-  bw, 
+  bw,
   focalSize = NULL,
+  xv = NULL, 
   ncores = 1, 
-  idFile = paste(tempfile(), 'Id.grd', sep = ''), 
-  offsetFile = paste(tempfile(), 'Offset.grd', sep = ''), 
+  path = tempdir(),
+  idFile = paste(tempfile('lemId', path), '.grd', sep=''), 
+  offsetFile = paste(tempfile('lemOffset', path), '.grd', sep=''),
   verbose = FALSE
 ){
 	
@@ -96,86 +98,115 @@ rasterPartition = function(
 	
   polyFine@data[is.na(polyFine@data[,'expected']),'expected'] = 0
 	
+  
+  if(length(Nxv)==1) {
+    xvMat = getXvMat(polyCoarse[[idColX]], Nxv)
+  } else {
+    if(is.null(Nxv)) {
+      xvMat = matrix()
+    } else {
+      xvMat = Nxv
+    }
+  }
+  
+  
 	rasterOffset = geostatsp::spdfToBrick(
 			x=polyFine,
       template=rasterFine,
       pattern='^expected$')
   names(rasterOffset) = 'offset'
-	
-  rasterOffset = raster::mask(rasterOffset, rasterIdCoarse[['idCoarse']])
-	
-  rasterOffset = writeRaster(rasterOffset,
-      paste(tempfile(), ".grd"))
-	
-	
-	
-	
-	# fine ID (iffset
-	# scale the offsets to cases per cell
+
+  # fine ID (iffset
+  # scale the offsets to cases per cell
   # times 10 (roughly)
-	# then create fine ID's with homogeneous offsets
+  # then create fine ID's with homogeneous offsets
   maxOffset = 10^5 / maxValue(rasterOffset)
   ratifyOffset = ratify(round(rasterOffset*maxOffset), count=FALSE)
-	stuff= levels(ratifyOffset)[[1]]
-	stuff$idFine = seq(1, nrow(stuff))
-	levels(ratifyOffset) = stuff
-	rasterIdFine = deratify(ratifyOffset, 'idFine')
+  stuff= levels(ratifyOffset)[[1]]
+  stuff$idFine = seq(1, nrow(stuff))
+  levels(ratifyOffset) = stuff
+  
+  rasterIdFine = deratify(ratifyOffset, 'idFine')
+  
+  for(Dxv in 1:ncol(xvMat)) {
+    xvHere = which(xvMat[,Dxv])
+    maskHere = calc(rasterIdCoarse, 
+        function(x) ! x %in% xvHere )
+    rasterOffset = addLayer(
+        rasterOffset, 
+        rasterOffset[[1]] * maskHere
+        )
+  }
+  names(rasterOffset) = c("offset", 
+      paste('xvOffset', colnames(xvMat), sep=''))
+  
+  offsetTempFile = paste(tempfile(), '.grd', sep='')
+  
+  rasterOffset = raster::mask(rasterOffset, rasterIdCoarse[['idCoarse']],
+      filename=offsetTempFile, overwrite = file.exists(offsetTempFile))
+	
 	
 	rasterFineId = brick(rasterIdCoarse, rasterIdFine, rasterFine)	
-	
 	
   rasterFineId = writeRaster(rasterFineId, idFile,
       overwrite=file.exists(idFile))
 	
+  theFocal = focalFromBw(
+      bw = bw, 
+      fine=rasterFine, 
+			focalSize=focalSize, 
+      ncores=ncores)
 	
-  theFocal = focalFromBw(bw = bw, fine=rasterFine, 
-				focalSize=focalSize, ncores=ncores)
+  
+  forSmooth = expand.grid(
+      bw=names(theFocal$focal),
+      layer=names(rasterOffset))
 	
-  Sagg = sort(setdiff(unique(theFocal$bw$fact), 1))
-  offsetAgg = parallel::mcmapply(
-    	aggregate,
-    	fact = Sagg,
-    	MoreArgs=list(
-      		x=rasterOffset[['offset']])
-  )
-  for(D in names(offsetAgg)){
-    offsetAgg[[D]] = addLayer(offsetAgg[[D]], raster(offsetAgg[[D]]))
-    names(offsetAgg[[D]]) = 'offset'
-    offsetAgg[[D]] = writeRaster(offsetAgg[[D]],
-        paste(tempfile(), ".grd"))
+  focalArray = array(
+      unlist(theFocal$focal),
+      c(dim(theFocal$focal[[1]]), length(theFocal$focal)),
+      dimnames = list(NULL,NULL, names(theFocal$focal))
+      )
+  focalArray = focalArray[,,forSmooth[,'bw']]
+  dimnames(focalArray)[[3]] = paste(
+      forSmooth[,'bw'], 
+      gsub("offset", "", forSmooth[,'layer'], ignore.case=TRUE),
+      sep=''
+      )
+  theFocal$array = focalArray   
+
+  Scvsets = match(forSmooth[,'layer'],names(rasterOffset))
+  
+  focalFunction = function(x)  {
+    
+  apply(focalArray*x[,,Scvsets], 
+      3, sum, na.rm=TRUE)
   }
-	
-  forSmooth = expand.grid(bw=names(theFocal$focal),
-      layer='offset')
-	
-  smoothedOffset = parallel::mcmapply(
-    	Dbw=forSmooth[,'bw'],
-    	Dlayer = forSmooth[,'layer'],
-    	function(Dbw,Dlayer){
-      	res = raster::focal(
-        		x=rasterOffset[[Dlayer]],
-        		w=theFocal$focal[[Dbw]],
-        		na.rm=TRUE,pad=TRUE)
-      	names(res) = paste(Dlayer,Dbw,sep='.')
-      	res
-    	},
-    	mc.cores=ncores)
-	
-  offsetStack = rasterOffset
-  for(D in 1:length(smoothedOffset))
-    offsetStack = addLayer(offsetStack, smoothedOffset[[D]])
-	
-  theNames = names(offsetStack)
-  offsetStack = raster::mask(offsetStack, rasterFineId[['idCoarse']])
-  offsetStack = writeRaster(offsetStack, offsetFile,overwrite=TRUE)
-  names(offsetStack) = theNames
-	
+  
+  rasterOffset = setMinMax(rasterOffset)
+  
+  suppressWarnings(
+  smoothedOffset <- spatial.tools::rasterEngine(
+      rasterOffset, focalFunction, 
+      window_dims = dim(theFocal$focal[[1]]),
+      outbands=nrow(forSmooth),
+      outfiles = 1,
+      processing_unit = 'single',
+      setMinMax = TRUE,
+      ))
+  names(smoothedOffset) = dimnames(focalArray)[[3]]
+
+  
+  offsetStack = writeRaster(addLayer(rasterOffset, smoothedOffset),
+    filename = offsetFile, overwrite = file.exists(offsetFile))
+  
   result = list(
     	rasterCoarse=rasterCoarse,
     	rasterFine=rasterFineId,
     	focal=theFocal,
     	offset=offsetStack,
-    	polyCoarse = polyCoarse[,c(polyCoarseIdCol, 'idCoarse')]
+    	polyCoarse = polyCoarse[,c(polyCoarseIdCol, 'idCoarse')],
+      xv = xvMat
   )
 
   if(verbose) {

@@ -4,7 +4,14 @@ options(scipen = 22)
 # devtools::install("../pkg/localem")
 library('localEM')
 
-source('lemXvNewFun.R')
+source('../pkg/localem/R/lemXvFun.R')
+if(Sys.info()['user'] == 'patrick') {
+	cellsFine = 300
+	ncores = 8
+} else {
+	ncores = 2
+	cellsFine = 60
+}
 #'
 
 #+ theData

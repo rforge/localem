@@ -21,7 +21,13 @@ data('kMap', package='localEM')
 
 # number of cores for computations in parallel 
 # (only applicable to UNIX operating systems)
-ncores = ifelse(.Platform$OS.type == 'unix', 2, 1)
+if(Sys.info()['user'] == 'patrick') {
+	cellsFine = 150
+	ncores = 8
+} else {
+	ncores = ifelse(.Platform$OS.type == 'unix', 2, 1)
+	cellsFine = 60
+}
 
 ```
 
@@ -44,7 +50,7 @@ The simulated cases are then aggregated to the appropriate counties.
 
 kentuckyOffset = geostatsp::spdfToBrick(
   kentuckyTract,
-  squareRaster(kentuckyTract, 400),
+  geostatsp::squareRaster(kentuckyTract, 400),
   pattern = '^expected$',
   logSumExpected=TRUE
   )
@@ -155,12 +161,41 @@ scaleBar(kentuckyCounty,
 ## Cross-validation
 
 ```{r cvNew}
+polyCoarse = kentuckyCounty
+polyFine = kentuckyTract 
+cellsCoarse = 10
+cellsFine = cellsFine
+bw = seq(5, 30, by = 5) * 1000
+Nxv = 4
+ncores = ncores
+tol = 1e-6  
+maxIter = 20   
+verbose = TRUE
+path = getwd()
+
+
+
+
+xvMat = getXvMat(polyCoarse[[idColX]], Nxv)
+
+
+
+
+idCoarse = polyCoarse[[idColX]]
+# matrix with columns being xv sets
+# row j has a 1 in the column for the xv set region j belongs to
+
+
+inXv=1
+
+devtools::load_all('../pkg/localem')
+
 lemCvNewKentucky = lemXv(   
   polyCoarse = kentuckyCounty,   
   polyFine = kentuckyTract,   
   cellsCoarse = 10,   
-  cellsFine = 120,   
-  bw = seq(5, 40, by = 5) * 1000,
+  cellsFine = cellsFine,   
+  bw = seq(5, 30, by = 5) * 1000,
   Nxv = 4, 
   ncores = ncores,   
   tol = 1e-6,   

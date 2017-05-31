@@ -1,3 +1,19 @@
+getXvMat = function(coarse, Nxv) {
+  if(length(coarse)>1) {
+  Ncoarse = length(coarse)
+} else{
+  Ncoarse = coarse
+  coarse = as.character(1:Ncoarse)
+}
+
+Matrix::sparseMatrix(
+    i = 1:Ncoarse,
+    j=sample(1:Nxv, length(idCoarse), replace=TRUE),
+    dimnames = list(coarse, as.character(1:Nxv))
+)
+}
+
+
 # Sets the size of sigma for Gaussian density kernel
 # The default is 3 times sigma
 focalWeightWithSize = function(x, bw, size=NULL) {
@@ -29,12 +45,16 @@ focalFromBw = function(
    format(bw, scientific=FALSE)
  )
 	
+ if(is.null(focalSize)) {
+   focalSize = 3*max(bw)
+ }
+ 
  focalList = parallel::mcmapply(
    focalWeightWithSize,
    bw=bw,
    MoreArgs=list(
      x=fine,
-					size = focalSize
+		 size = focalSize
    ),
 	 mc.cores=ncores, SIMPLIFY=FALSE
  )
@@ -122,8 +142,11 @@ kernMat = function(
   fineRelativeRes,
   cell1=c(0,0),
   coarse=NULL,
-  reorder=FALSE
+  reorder=FALSE,
+  xv = NULL
 ) {
+  
+  
  if(length(cell1)==2 & length(cellDist)==2){
   cellDist = cellDist - cell1
  } else if(length(cellDist)== 1 & length(cell1) == 1) {
@@ -179,7 +202,16 @@ kernMat = function(
    } # for Dbw
   } #  for Drow
  } # for Dcol
-	
+
+ if(length(xv)) {
+   offsetBwNames = grep("^bw", xv, value=TRUE)
+   Sbw = gsub("xv[[:digit:]]+", "", offsetBwNames)
+   kernelArray = kernelArray[,,Sbw]
+   dimnames(kernelArray)[[3]] = offsetBwNames
+ } 
+ 
+ 
+ 
  if(reorder){
   resEnv = new.env()
   with(resEnv, kernelArray <- kernelArray)
