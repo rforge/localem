@@ -137,7 +137,9 @@ lemXv = function(
   
   # now compute the CV scores
 
-  xvPartitions = xvSmoothMat$xv[levels(xvSmoothMat$rasterFine)[[1]][,'idCoarse'], ]
+  Sxv = grep("xv[[:digit:]]+$", dimnames(xvSmoothMat$smoothingArray)[[3]], value=TRUE)
+  SxvId = gsub("^bw[[:digit:]]+", "", Sxv)
+  xvPartitions = xvSmoothMat$xv[levels(xvSmoothMat$rasterFine)[[1]][,'idCoarse'], SxvId]
 
   # old code below.
   
