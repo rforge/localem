@@ -1,17 +1,3 @@
-getXvMat = function(coarse, Nxv) {
-  if(length(coarse)>1) {
-  Ncoarse = length(coarse)
-} else{
-  Ncoarse = coarse
-  coarse = as.character(1:Ncoarse)
-}
-
-Matrix::sparseMatrix(
-    i = 1:Ncoarse,
-    j=sample(1:Nxv, length(idCoarse), replace=TRUE),
-    dimnames = list(coarse, as.character(1:Nxv))
-)
-}
 
 
 # Sets the size of sigma for Gaussian density kernel

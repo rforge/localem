@@ -1,3 +1,19 @@
+getXvMat = function(coarse, Nxv) {
+  if(length(coarse)>1) {
+    Ncoarse = length(coarse)
+  } else{
+    Ncoarse = coarse
+    coarse = as.character(1:Ncoarse)
+  }
+  
+  Matrix::sparseMatrix(
+      i = 1:Ncoarse,
+      j=sample(1:Nxv, Ncoarse, replace=TRUE),
+      dimnames = list(coarse, as.character(1:Nxv))
+  )
+}
+
+
 # Computes the risk estimation aggregated to the partitions for one iteration
 oneLemIter = function(
   Lambda, smoothingMat, regionMat, offsetMat, counts,

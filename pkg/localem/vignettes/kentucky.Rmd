@@ -166,7 +166,7 @@ polyFine = kentuckyTract
 cellsCoarse = 10
 cellsFine = cellsFine
 bw = seq(5, 30, by = 5) * 1000
-Nxv = 4
+Nxv = xv = 4
 ncores = ncores
 tol = 1e-6  
 maxIter = 20   

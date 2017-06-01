@@ -97,8 +97,7 @@ rasterPartition = function(
 	names(rasterIdCoarse) = 'idCoarse'
 	
   polyFine@data[is.na(polyFine@data[,'expected']),'expected'] = 0
-	
-  
+	  
   if(length(Nxv)==1) {
     xvMat = getXvMat(polyCoarse$idCoarse, Nxv)
   } else {
