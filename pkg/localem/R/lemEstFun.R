@@ -227,6 +227,7 @@ regionOffset = Matrix::crossprod(regionMat, offsetMat) #
   }
   
   
+  
 	
 	lambdaMult = offsetMat %*% Lambda
 	

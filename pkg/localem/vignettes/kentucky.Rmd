@@ -161,24 +161,24 @@ scaleBar(kentuckyCounty,
 ## Cross-validation
 
 ```{r cvNew}
-
-
-#devtools::load_all('../pkg/localem')
-
 lemCvNewKentucky = lemXv(   
   polyCoarse = kentuckyCounty,   
   polyFine = kentuckyTract,   
   cellsCoarse = 10,   
   cellsFine = cellsFine,   
-  bw = seq(10, 100, by=10) * 1000,
+  bw = seq(20, 200, by=20) * 1000,
   Nxv = 4, 
   ncores = ncores,
   path = tempdir(),
-  tol = 1e-6,   
-  maxIter = 20,    
   verbose = TRUE)
 ```
 
+```{r cvPlotNew}
+
+plot(lemCvNewKentucky$xv[,1]/1000, lemCvNewKentucky$xv[,2], xlab='km', ylab='-log p', 
+    type='o', ylim=quantile(lemCvNewKentucky$xv[,2], c(0,0.5)))
+
+```
 
 ## Rasters
 
