@@ -63,7 +63,7 @@ riskEst = function(
   tol = 1e-6, 
   maxIter = 2000,
   ncores = 1,
-  final = TRUE, 
+  type = c('final','unsmoothed','expected'), 
   filename = ''
 ) {
 
@@ -177,9 +177,13 @@ riskEst = function(
     obsCounts = obsCounts * (!lemObjects$xv[,xvSet])
   }
   
+  # Lambda = \int_{Q_\ell} O(u) du, = O_{\ell} (Lambda in Biometrics paper)
 	
+  partitionAreasMat = Matrix::Diagonal(
+      length(lemObjects$partitionAreas),
+      lemObjects$partitionAreas)
  #risk estimation for aggregated regions
- oldLambda = offsetMat %*%
+ oldLambda = partitionAreasMat %*%
    matrix(1,
      nrow = dim(offsetMat)[1],
      ncol = ncol(obsCounts),
@@ -193,8 +197,8 @@ riskEst = function(
 	
 #	smoothingMat = smoothingMat / prod(res(lemObjects$offset))
 	
-smoothingMat = Matrix::Matrix(smoothingMat)
-regionOffset = Matrix::crossprod(regionMat, offsetMat)
+smoothingMat = Matrix::Matrix(smoothingMat) # K in the biometrics paper
+regionOffset = Matrix::crossprod(regionMat, offsetMat) # 
 
  while((absdiff > tol) && (Diter < maxIter)) {
 		
@@ -209,9 +213,20 @@ regionOffset = Matrix::crossprod(regionMat, offsetMat)
   oldLambda = Lambda
   Diter = Diter + 1
  }
-  if(!final) {
-    return(Lambda)
-  }	
+ 
+ littleLambda = solve(partitionAreasMat) %*% Lambda
+ 
+  if(type[1] == 'expected') {
+    # expected count using full offsets, not xv offests
+    expectedCoarseRegions = 
+        Matrix::crossprod(regionMat, lemObjects$offsetMat[['offset']]) %*% 
+        littleLambda
+    return(list(
+            expected = expectedCoarseRegions,
+            risk = littleLambda))
+  }
+  
+  
 	
 	lambdaMult = offsetMat %*% Lambda
 	

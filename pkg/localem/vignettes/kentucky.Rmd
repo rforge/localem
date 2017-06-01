@@ -161,43 +161,19 @@ scaleBar(kentuckyCounty,
 ## Cross-validation
 
 ```{r cvNew}
-polyCoarse = kentuckyCounty
-polyFine = kentuckyTract 
-cellsCoarse = 10
-cellsFine = cellsFine
-bw = seq(5, 30, by = 5) * 1000
-Nxv = xv = 4
-ncores = ncores
-tol = 1e-6  
-maxIter = 20   
-verbose = TRUE
-path = getwd()
 
 
-
-
-xvMat = getXvMat(polyCoarse[[idColX]], Nxv)
-
-
-
-
-idCoarse = polyCoarse[[idColX]]
-# matrix with columns being xv sets
-# row j has a 1 in the column for the xv set region j belongs to
-
-
-inXv=1
-
-devtools::load_all('../pkg/localem')
+#devtools::load_all('../pkg/localem')
 
 lemCvNewKentucky = lemXv(   
   polyCoarse = kentuckyCounty,   
   polyFine = kentuckyTract,   
   cellsCoarse = 10,   
   cellsFine = cellsFine,   
-  bw = seq(5, 30, by = 5) * 1000,
+  bw = seq(10, 100, by=10) * 1000,
   Nxv = 4, 
-  ncores = ncores,   
+  ncores = ncores,
+  path = tempdir(),
   tol = 1e-6,   
   maxIter = 20,    
   verbose = TRUE)

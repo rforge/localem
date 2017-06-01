@@ -129,261 +129,64 @@ lemXv = function(
           tol = tol, 
           maxIter =maxIter,
           ncores = NULL,
-          final = FALSE),
+          type = 'expected'),
       SIMPLIFY=FALSE
   )
-  estDf = do.call(cbind, estList)
-  colnames(estDf) = names(estList)
+  estListExp = lapply(estList, function(x) x$expected)
+  estListRisk = lapply(estList, function(x) x$risk)
   
-  # now compute the CV scores
-
-  Sxv = grep("xv[[:digit:]]+$", dimnames(xvSmoothMat$smoothingArray)[[3]], value=TRUE)
-  SxvId = gsub("^bw[[:digit:]]+", "", Sxv)
-  xvPartitions = xvSmoothMat$xv[levels(xvSmoothMat$rasterFine)[[1]][,'idCoarse'], SxvId]
-
-  # old code below.
+  estDf = as.matrix(do.call(cbind, estListExp))
+  riskDf = as.matrix(do.call(cbind, estListRisk))
+  colnames(estDf) = colnames(riskDf) = names(estList)
   
   
-  startingValue = simplify2array(lapply(xvSmoothMat$offsetMat, 
-          function(x) apply(x, 2, sum)))
-  rownames(startingValue) = colnames(xvSmoothMat$offsetMat[[1]])
-  colnames(startingValue) = gsub('[oO]ffset', '', colnames(startingValue))
-  startingValue = startingValue[, 
-      match(gsub('^bw[[:digit:]]+', '', dimnames(xvSmoothMat$smoothingArray)[[3]]),
-          colnames(startingValue))]
-  colnames(startingValue) = dimnames(xvSmoothMat$smoothingArray)[[3]]
+  # compute the CV scores
+  
+  # expected counts in left out regions
+  xvEst = estDf[,grep("xv[[:digit:]]+$", colnames(estDf))]
+  Sxv = gsub("^bw[[:digit:]]+xv", "", colnames(xvEst))
+  xvEstMask = xvMat[,Sxv] * xvEst 
+  
+  # observed counts in left out regins
+  xvObs = xvMat * as.matrix(polyCoarse@data[,rep(countcol, ncol(xvMat))])
+  xvObs = xvObs[,Sxv]
   
   
+  logProbCoarse = dpois(as.matrix(xvObs), as.matrix(xvEstMask), log=TRUE)
+  logProb = apply(logProbCoarse, 2, sum)
+  names(logProb) = colnames(xvEst)
   
-  xvList = parallel::mcmapply(
-      xvLemEstOneBw, 
-      trainId = 1, 
-      trainCounts = trainCounts, 
-      regionOffset = trainRegionOffset, 
-      smoothingMat = trainSmoothingMat, 
-      regionXvOffset = xvRegionOffset, 
-      startingValue = startingValue, 
-      tol = tol, 
-      maxIter = maxIter, 
-      mc.cores = ncores
+  logProb = data.frame(
+      bw = as.numeric(gsub("^bw|xv[[:digit:]]+$", "", names(logProb))),
+      fold = gsub("^bw[[:digit:]]+xv", "", names(logProb)),
+      minusLogProb = -logProb 
   )
   
-  
-#linkage for regions in the coarse and fine shapefiles (based on raster)
-  polyFineCentre = SpatialPoints(polyFine, proj4string = polyFine@proj4string)
-  polyFineCell = cellFromXY(xvRasterFine, polyFineCentre@coords)
-  
-  trainLemSmoothMat = trainLemRaster = vector('list', Nxv)
-  
-  
-#counts
-  x = polyCoarse
-  if(class(x) == 'SpatialPolygonsDataFrame') {
-    x = data.frame(x)
-  }
-  
-  for(inXv in 1:Nxv) {
-    if(verbose) cat("cv ", inXv, '\n')
-    # reset training set
-    ##offset and smoothing matrix
-    trainPolyFine = polyFine
-    
-    #test set
-    ##random sample (25% used as testing data)
-    xvId = which(xvIdMat[,inXv])
-    
-    trainRasterIdCoarse = which(values(xvRasterFine[['idCoarse']]) %in% xvId)
-    trainPolyFine$expected[polyFineCell %in% trainRasterIdCoarse] = 0
-    
-    if(is.null(trainLemSmoothMat[[inXv]])) {
-      trainLemRaster[[inXv]] = rasterPartition(
-          polyCoarse = polyCoarse, 
-          polyFine = trainPolyFine, 
-          cellsCoarse = cellsCoarse, 
-          cellsFine = cellsFine, 
-          bw = bw,
-          ncores = ncores, 
-          idFile = file.path(path, paste('idTrain',inXv, '.grd', sep='')),
-          offsetFile = file.path(path, paste('offsetTrain',inXv, '.grd', sep='')),
-          verbose = verbose)
-    }
-  } 
-  
-  trainLemRaster[[inXv]]$rasterFine = xvRasterFine
-  
-  trainLemSmoothMat[[inXv]] = smoothingMatrix(
-      rasterObjects = trainLemRaster[[inXv]], 
-      ncores = ncores, 
-      verbose = verbose)
-  
-  trainOffsetMat = trainLemSmoothMat[[inXv]]$offsetMat
-  trainSmoothingMat = trainLemSmoothMat[[inXv]]$smoothingArray
-  Spartitions = dimnames(trainSmoothingMat)[[1]]
-  
-#test
-  ##offsets
-  xvRasterOffsets = xvLemRaster$offset[['offset']]
-  values(xvRasterOffsets)[!(values(xvRasterFine[['idCoarse']]) %in% xvId)] = 0
-  
-  xvMeanOffsets = tapply(values(xvRasterOffsets), 
-      list(Scells), 
-      mean, na.rm=TRUE)
-  
-  xvMeanOffsets = xvMeanOffsets[match(Spartitions, names(xvMeanOffsets))]
-  xvOffsetMat = Diagonal(length(Spartitions), xvMeanOffsets)
-  
-  ##fine raster did not include all regions in the coarse shapefile
-  regionMat = trainLemSmoothMat[[inXv]]$regionMat
-  
-  if(length(idCoarse) != dim(regionMat)[[2]]) {
-    
-    polyNeigh = spdep::poly2nb(trainLemSmoothMat[[inXv]]$polyCoarse, 
-        row.names = idCoarse)
-    
-    idMatch = idCoarse[as.numeric(dimnames(regionMat)[[2]])]
-    idNotMatch = idCoarse[!(idCoarse %in% idMatch)]
-    
-    countCoarse = x[match(idMatch, x[[idColX]]),countcol]
-    
-    for(inD in idNotMatch) {
-      
-      polyNotMatch = trainLemSmoothMat[[inXv]]$polyCoarse[idCoarse == inD,]
-      idNeighNotMatch = idCoarse[values(intersect(
-                  trainLemSmoothMat[[inXv]]$rasterFine[["idCoarse"]],
-                  polyNotMatch))]
-      idNeighNotMatch = idNeighNotMatch[!is.na(idNeighNotMatch)]
-      
-      #if no match found in fine raster, use neighbouring coarse shapefile regions 
-      if(length(idNeighNotMatch) == 0) {
-        idNeighNotMatch = idCoarse[polyNeigh[[which(idCoarse == inD)]]]
-        idNeighNotMatch = idMatch[idMatch %in% idNeighNotMatch]
-      }
-      
-      #re-assign counts
-      if(length(idNeighNotMatch) == 1) {
-        
-        countCoarse[idMatch == idNeighNotMatch] = 
-            countCoarse[idMatch == idNeighNotMatch] + x[x[[idColX]] == inD,countcol]
-        
-      } else if(length(idNeighNotMatch) > 1) {
-        
-        #if conflict, assign counts to coarse shapefile region whose centroid is closest to the one of interest
-        polyNeighNotMatch = trainLemSmoothMat[[inXv]]$polyCoarse[
-            idCoarse %in% idNeighNotMatch,]
-        coordsNeighNotMatch = coordinates(rgeos::gCentroid(polyNeighNotMatch, byid = TRUE))
-        
-        coordsNotMatch = matrix(
-            rep(coordinates(rgeos::gCentroid(polyNotMatch, byid = TRUE)), each = length(polyNeighNotMatch)), 
-            nrow = length(polyNeighNotMatch), 
-            ncol = 2, 
-            dimnames = list(1:length(polyNeighNotMatch), c("x","y"))
-        )
-        
-        distNeighNotMatch = apply((coordsNeighNotMatch - coordsNotMatch)^2, 1, sum)
-        
-        countCoarse[
-            idMatch == idNeighNotMatch[which.min(distNeighNotMatch)]
-        ] = countCoarse[
-                idMatch == idNeighNotMatch[which.min(distNeighNotMatch)]
-            ] + x[x[[idColX]] == inD,countcol]
-        
-      }
-    }
-    
-    idCoarse = idMatch
-    
-  } else {
-    countCoarse = x[match(idCoarse, x[[idColX]]),countcol]
-  }
-  
-  
-#risk estimation
-  ##finite bandwidths
-  if(verbose) {
-    cat(date(), "\n")
-    cat("obtaining CV for finite bandwidths\n")
-  }
-  
-  ##training counts of interest
-  trainCounts = as.matrix(countCoarse)
-  trainCounts[idCoarse %in% xvId,] = 0
-  
-  ##starting values
-  trainRegionOffset = crossprod(regionMat, trainOffsetMat)
-  xvRegionOffset = crossprod(regionMat, xvOffsetMat) 
-  
-  startingValue = matrix(apply(trainRegionOffset, 2, sum), 
-      ncol(trainRegionOffset), 1)
-  
-  xvList = parallel::mclapply(dimnames(trainSmoothingMat)[[3]], 
-      xvLemEstOneBw, 
-      trainId = 1, 
-      trainCounts = trainCounts, 
-      regionOffset = trainRegionOffset, 
-      smoothingMat = trainSmoothingMat, 
-      regionXvOffset = xvRegionOffset, 
-      startingValue = startingValue, 
-      tol = tol, 
-      maxIter = maxIter, 
-      mc.cores = ncores
+  totalXv = tapply(logProb$minusLogProb, logProb$bw, sum)
+  totalXv = data.frame(
+      bw = as.numeric(names(totalXv)),
+      fold = 'total',
+      minusLogProb = totalXv
   )
   
-  names(xvList) = dimnames(trainSmoothingMat)[[3]]
-  xvMeans = simplify2array(xvList)[,1,]
+  xvScore = rbind(logProb, totalXv[,colnames(logProb)])
   
-#cross-validation scores
-  ##finite bandwidths
+  expCoarse = polyCoarse
+  expCoarse@data = as.data.frame(as.matrix(estDf))
   
-  ##test counts of interest
-  xvCounts = matrix(countCoarse, length(countCoarse), dim(trainSmoothingMat)[3])
-  xvCounts[!(idCoarse %in% xvId),] = 0
-  
-  xvRes = dpois(xvCounts, xvMeans, log = TRUE)
-  dimnames(xvRes) = list(1:length(countCoarse), dimnames(trainSmoothingMat)[[3]])
-  xvCv[dimnames(xvRes)[[2]],inXv] = -apply(xvRes, 2, sum)
-  
-  
-#risk estimation
-  ##infinite bandwidth		
-  if(verbose) {
-    cat(date(), "\n")
-    cat("obtaining CV for infinite bandwidth\n")
-  }
-  
-  Scw2 = prod(res(xvRasterFine))
-  SNcells = tapply(Scells, list(Scells), length)
-  SNcells = SNcells[match(dimnames(trainSmoothingMat)[[1]], names(SNcells))]
-  Sarea = SNcells * Scw2 
-  
-  Sexpected = trainOffsetMat@x * Sarea
-  
-  xvLambdaInf = as.matrix(Sarea * sum(trainCounts) / sum(Sexpected))
-  
-#cross-validation scores
-  ##infinite bandwidths
-  xvMeansInf = xvRegionOffset %*% xvLambdaInf
-  
-  ##test counts of interest
-  xvCountsInf = matrix(countCoarse, length(countCoarse), 1)
-  xvCountsInf[!(idCoarse %in% xvId),] = 0
-  
-  xvResInf = dpois(as.vector(xvCountsInf), as.vector(xvMeansInf), log = TRUE)
-  xvCv["bwInf",inXv] = -sum(xvResInf)
-  
-  theXv = apply(xvCv, 1, sum)
-  
-  result = data.frame(
-      bw = as.numeric(gsub("^bw", "", names(theXv))), 
-      cv = theXv
+  levels(xvSmoothMat$rasterFine)[[1]] = cbind(
+      levels(xvSmoothMat$rasterFine)[[1]], 
+      as.matrix(riskDf[levels(xvSmoothMat$rasterFine)[[1]]$partition,])
   )
   
-  if(verbose) { 
-    cat(date(), "\n")
-    cat("done\n")
-  }
-  
+  result = list(
+      xv = totalXv[totalXv$fold=='total', c('bw','minusLogProb')],
+      xvFull = totalXv,
+      smoothingMatrix = xvSmoothMat,
+      expected = estDf,
+      folds = xvMat
+      )
   return(result)
-  
 }
 
 

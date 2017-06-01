@@ -26,9 +26,10 @@ oneLemIter = function(
 	
 #  emOld = t(t(counts/denom) %*% t(regionMat) %*% offsetMat) * Lambda
  
+  # the script M(Lambda) object
 	em = crossprod(regionOffset, counts/denom) * Lambda
 	
- em[as.vector(!is.finite(em))] = 0
+  em[as.vector(!is.finite(em))] = 0
 
 #  resultOld = as.matrix(t(smoothingMat) %*% em)
 

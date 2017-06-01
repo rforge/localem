@@ -269,30 +269,37 @@ smoothingMatrixDiag = function(
             )[1])
   levels(partitionRaster)[[1]] = partitions
   
-  meanOffsets = as.data.frame(zonal(
+  # offsetMat is the value of the offset at all points in the partition
+  
+  partitionOffsets = as.data.frame(zonal(
       offsetRaster[[grep("^bw", names(offsetRaster), invert=TRUE)]],
       partitionRaster,
       'mean', na.rm=TRUE
       ))
-  meanOffsets$partition = partitions[match(
-          meanOffsets$zone, partitions$ID
+  partitionOffsets$partition = partitions[match(
+          partitionOffsets$zone, partitions$ID
           ), 'partition']    
   
-  offsetMat = apply(meanOffsets[,grep("[oO]ffset", colnames(meanOffsets))], 2, 
+    
+  offsetMat = apply(partitionOffsets[,grep("[oO]ffset", colnames(partitionOffsets))], 2, 
       function(x) {
-        res = Matrix::Diagonal(nrow(meanOffsets), x)
-        dimnames(res) = list(meanOffsets$partition, meanOffsets$partition) 
+        res = Matrix::Diagonal(nrow(partitionOffsets), x*prod(res(offsetRaster)))
+        dimnames(res) = list(partitionOffsets$partition, partitionOffsets$partition) 
         res
       })
 	
-  regions = gsub("^c[[:digit:]]+p|\\.[[:digit:]]+$", "", meanOffsets$partition)
+  regions = gsub("^c[[:digit:]]+p|\\.[[:digit:]]+$", "", partitionOffsets$partition)
   regions = as.integer(regions)
   regionMat = outer(regions, regions, '==')
   regionMat = Matrix(regionMat)
-	
+	  
   dimnames(regionMat)=
-    	list(meanOffsets$partition, meanOffsets$partition)
+    	list(partitionOffsets$partition, partitionOffsets$partition)
 
+  partitionFreq = raster::freq(partitionRaster)
+  rownames(partitionFreq) = levels(partitionRaster)[[1]][partitionFreq[,'value'],'partition']
+  partitionAreas = partitionFreq[,'count'][rownames(regionMat)] * prod(res(partitionRaster))  
+  
   expandCountMat = regionMat
   expandCountMat = expandCountMat[,!duplicated(regions),drop=FALSE]
   colnames(expandCountMat) = gsub("^c[[:digit:]]+p|\\.[[:digit:]]+$", 
@@ -373,6 +380,7 @@ smoothingMatrixDiag = function(
       regionMat=expandCountMat,
       rasterFine = partitionRaster,
       offsetMat = offsetMat,
+      partitionAreas = partitionAreas,
       cells=allCells,
       uniqueDist = unique(allCells$dist))
 }
