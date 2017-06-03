@@ -83,6 +83,9 @@ lemXv = function(
   }
   
   if(missing(lemObjects)) {  
+	  if(verbose) {
+		  cat("computing smoothing matrix\n")
+	  }
   ##raster partition
   xvLemRaster = rasterPartition(
       polyCoarse = polyCoarse, 
@@ -101,6 +104,10 @@ lemXv = function(
       ncores = ncores, 
       verbose = verbose)
 } else{
+	if(verbose) {
+		cat("using supplied smoothing matrix\n")
+	}
+	
   xvSmoothMat = lemObjects
 }
   
@@ -121,7 +128,9 @@ lemXv = function(
   } else {
     idColX = names(polyCoarse)[1]
   }
-  
+  if(verbose) {
+	  cat("running local-EM for validation sets\n")
+  }
   # estimate risk (by partition, not continuous) for each bw/cv combinantion
   estList = parallel::mcmapply(
       riskEst,
@@ -131,7 +140,7 @@ lemXv = function(
           lemObjects = xvSmoothMat,
           tol = tol, 
           maxIter =maxIter,
-          ncores = NULL,
+          ncores = ncores,
           type = 'expected'),
       SIMPLIFY=FALSE
   )
@@ -142,7 +151,9 @@ lemXv = function(
   riskDf = as.matrix(do.call(cbind, estListRisk))
   colnames(estDf) = colnames(riskDf) = names(estList)
   
-  
+  if(verbose) {
+	  cat("computing CV scores\n")
+  }
   # compute the CV scores
   
   # expected counts in left out regions
