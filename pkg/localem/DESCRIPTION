@@ -15,7 +15,8 @@ Imports:
     parallel,
     Matrix,
     geostatsp (>= 1.4.4),
-    stats
+    stats,
+    spatial.tools
 Suggests:
     spdep,
     diseasemapping,

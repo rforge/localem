@@ -38,20 +38,20 @@
 #'
 #' @export
 rasterPartition = function(
-  polyCoarse, 
-  polyFine, 
-  cellsCoarse, 
-  cellsFine, 
-  bw,
-  focalSize = NULL,
-  xv = NULL, 
-  ncores = 1, 
-  path = tempdir(),
-  idFile = paste(tempfile('lemId', path), '.grd', sep=''), 
-  offsetFile = paste(tempfile('lemOffset', path), '.grd', sep=''),
-  verbose = FALSE
+    polyCoarse, 
+    polyFine, 
+    cellsCoarse, 
+    cellsFine, 
+    bw,
+    focalSize = NULL,
+    xv = NULL, 
+    ncores = 1, 
+    path = tempdir(),
+    idFile = paste(tempfile('lemId', path), '.grd', sep=''), 
+    offsetFile = paste(tempfile('lemOffset', path), '.grd', sep=''),
+    verbose = FALSE
 ){
-	
+  
   if(verbose) {
     cat(date(), "\n")
     cat("obtaining rasters\n")
@@ -63,41 +63,41 @@ rasterPartition = function(
   if(!(length(grep("\\.grd$", idFile)))){
     warning("idFile should have .grd extension")
   }
-	if(is.numeric(cellsCoarse)) {
-		rasterCoarse=geostatsp::squareRaster(polyCoarse, cellsCoarse)
-  	values(rasterCoarse) = seq(1, ncell(rasterCoarse))
-  	names(rasterCoarse) = "cellCoarse"
-	} else {
-		rasterCoarse = cellsCoarse
-	}
-	
-	if(is.numeric(cellsFine)) {
-  	rasterFine = disaggregate(rasterCoarse,
-      	ceiling(cellsFine/ncol(rasterCoarse)))
-		names(rasterFine) = 'cellCoarse'
-	} else {
-		rasterFine = cellsFine
-	}
-	
-	# coarse poly ID's for fine raster
-	
-	polyCoarseIdCol = grep("^id$", names(polyCoarse), value=TRUE)
-	if(!length(polyCoarseIdCol)) {
-		polyCoarseIdCol = names(polyCoarse)[1]
-	}
-	
-	idCoarse = 1:length(polyCoarse)
+  if(is.numeric(cellsCoarse)) {
+    rasterCoarse=geostatsp::squareRaster(polyCoarse, cellsCoarse)
+    values(rasterCoarse) = seq(1, ncell(rasterCoarse))
+    names(rasterCoarse) = "cellCoarse"
+  } else {
+    rasterCoarse = cellsCoarse
+  }
+  
+  if(is.numeric(cellsFine)) {
+    rasterFine = disaggregate(rasterCoarse,
+        ceiling(cellsFine/ncol(rasterCoarse)))
+    names(rasterFine) = 'cellCoarse'
+  } else {
+    rasterFine = cellsFine
+  }
+  
+  # coarse poly ID's for fine raster
+  
+  polyCoarseIdCol = grep("^id$", names(polyCoarse), value=TRUE)
+  if(!length(polyCoarseIdCol)) {
+    polyCoarseIdCol = names(polyCoarse)[1]
+  }
+  
+  idCoarse = 1:length(polyCoarse)
   names(idCoarse) = polyCoarse@data[[polyCoarseIdCol]]
   polyCoarse$idCoarse = idCoarse
-	
-	rasterIdCoarse = rasterize(
-			polyCoarse,
+  
+  rasterIdCoarse = rasterize(
+      polyCoarse,
       rasterFine,
       field='idCoarse')
-	names(rasterIdCoarse) = 'idCoarse'
-	
+  names(rasterIdCoarse) = 'idCoarse'
+  
   polyFine@data[is.na(polyFine@data[,'expected']),'expected'] = 0
-	  
+  
   if(length(Nxv)==1) {
     xvMat = getXvMat(polyCoarse$idCoarse, Nxv)
   } else {
@@ -109,12 +109,12 @@ rasterPartition = function(
   }
   
   
-	rasterOffset = geostatsp::spdfToBrick(
-			x=polyFine,
+  rasterOffset = geostatsp::spdfToBrick(
+      x=polyFine,
       template=rasterFine,
       pattern='^expected$')
   names(rasterOffset) = 'offset'
-
+  
   # fine ID (iffset
   # scale the offsets to cases per cell
   # times 10 (roughly)
@@ -134,7 +134,7 @@ rasterPartition = function(
     rasterOffset = addLayer(
         rasterOffset, 
         rasterOffset[[1]] * maskHere
-        )
+    )
   }
   names(rasterOffset) = c("offset", 
       paste('xvOffset', colnames(xvMat), sep=''))
@@ -143,13 +143,13 @@ rasterPartition = function(
   
   rasterOffset = raster::mask(rasterOffset, rasterIdCoarse[['idCoarse']],
       filename=offsetTempFile, overwrite = file.exists(offsetTempFile))
-	
-	
-	rasterFineId = brick(rasterIdCoarse, rasterIdFine, rasterFine)	
-	
+  
+  
+  rasterFineId = brick(rasterIdCoarse, rasterIdFine, rasterFine)	
+  
   rasterFineId = writeRaster(rasterFineId, idFile,
       overwrite=file.exists(idFile))
-
+  
   if(verbose) {
     cat(date(), "\n")
     cat("smoothing offsets\n")
@@ -158,66 +158,129 @@ rasterPartition = function(
   theFocal = focalFromBw(
       bw = bw, 
       fine=rasterFine, 
-			focalSize=focalSize, 
+      focalSize=focalSize, 
       ncores=ncores)
-	
+  
   
   forSmooth = expand.grid(
       bw=names(theFocal$focal),
       layer=names(rasterOffset))
-	
+  
   focalArray = array(
       unlist(theFocal$focal),
       c(dim(theFocal$focal[[1]]), length(theFocal$focal)),
       dimnames = list(NULL,NULL, names(theFocal$focal))
-      )
+  )
   focalArray = focalArray[,,forSmooth[,'bw']]
   dimnames(focalArray)[[3]] = paste(
       forSmooth[,'bw'], 
       gsub("offset", "", forSmooth[,'layer'], ignore.case=TRUE),
       sep=''
-      )
+  )
   theFocal$array = focalArray   
-
+  
   Scvsets = match(forSmooth[,'layer'],names(rasterOffset))
   
-  focalFunction = function(x)  {
+  focalFunction = function(x, focalArray, Scvsets)  {
     
-  apply(focalArray*x[,,Scvsets], 
-      3, sum, na.rm=TRUE)
+    apply(focalArray*x[,,Scvsets], 
+        3, sum, na.rm=TRUE)
   }
   
   rasterOffset = setMinMax(rasterOffset)
   
+  spatial.tools::sfQuickInit(ncores, methods = FALSE)
   suppressWarnings(
-  smoothedOffset <- spatial.tools::rasterEngine(
-      rasterOffset, focalFunction, 
-      window_dims = dim(theFocal$focal[[1]]),
-      outbands=nrow(forSmooth),
-      outfiles = 1,
-      processing_unit = 'single',
-      setMinMax = TRUE,
+      smoothedOffset <- spatial.tools::rasterEngine(
+          rasterOffset, focalFunction, 
+          args = list(Scvsets=Scvsets, focalArray=focalArray),
+          window_dims = dim(theFocal$focal[[1]]),
+          outbands=nrow(forSmooth),
+          outfiles = 1,
+          processing_unit = 'single',
+          setMinMax = TRUE,
       ))
+  spatial.tools::sfQuickStop()
   names(smoothedOffset) = dimnames(focalArray)[[3]]
-
+  
   
   offsetStack = writeRaster(addLayer(rasterOffset, smoothedOffset),
-    filename = offsetFile, overwrite = file.exists(offsetFile))
+      filename = offsetFile, overwrite = file.exists(offsetFile))
+  
+  
+# create list of partitions
+  partitions = as.data.frame(na.omit(unique(rasterFineId)))
+  partitions$partition = paste('c', partitions$cellCoarse, 'p', partitions$idCoarse,
+      '.', partitions$idFine, sep='')
+  partitions = cbind(ID = 1:nrow(partitions), partitions)
+# raster with partition ID's
+  
+  partitionRaster = raster::calc(rasterFineId, 
+      function(x) which(
+            x[1]==partitions[,'idCoarse'] &
+                x[2] == partitions[,'idFine'] &
+                x[3] == partitions[,'cellCoarse']
+        )[1])
+  levels(partitionRaster)[[1]] = partitions
+  
+# offsetMat is the value of the offset at all points in the partition
+  
+  partitionOffsets = as.data.frame(zonal(
+          offsetStack[[grep("^bw", names(offsetStack), invert=TRUE)]],
+          partitionRaster,
+          'mean', na.rm=TRUE
+      ))
+  partitionOffsets$partition = partitions[match(
+          partitionOffsets$zone, partitions$ID
+      ), 'partition']    
+  
+  
+  offsetMat = apply(partitionOffsets[,grep("[oO]ffset", colnames(partitionOffsets))], 2, 
+      function(x) {
+        res = Matrix::Diagonal(nrow(partitionOffsets), x*prod(res(offsetStack)))
+        dimnames(res) = list(partitionOffsets$partition, partitionOffsets$partition) 
+        res
+      })
+  
+  regions = gsub("^c[[:digit:]]+p|\\.[[:digit:]]+$", "", partitionOffsets$partition)
+  regions = as.integer(regions)
+  regionMat = outer(regions, regions, '==')
+  regionMat = Matrix::Matrix(regionMat)
+  
+  dimnames(regionMat)=
+      list(partitionOffsets$partition, partitionOffsets$partition)
+  
+  partitionFreq = raster::freq(partitionRaster)
+  rownames(partitionFreq) = levels(partitionRaster)[[1]][partitionFreq[,'value'],'partition']
+  partitionAreas = partitionFreq[,'count'][rownames(regionMat)] * prod(res(partitionRaster))  
+  
+  expandCountMat = regionMat
+  expandCountMat = expandCountMat[,!duplicated(regions),drop=FALSE]
+  colnames(expandCountMat) = gsub("^c[[:digit:]]+p|\\.[[:digit:]]+$", 
+      "", colnames(expandCountMat) )
+  expandCountMat = expandCountMat[,
+      as.character(sort(as.integer(colnames(expandCountMat)))),
+      drop=FALSE
+  ]
+  
+    
+  partitionRaster = writeRaster(partitionRaster, file=idFile, overwrite=file.exists(idFile))
+  
   
   result = list(
-    	rasterCoarse=rasterCoarse,
-    	rasterFine=rasterFineId,
-    	focal=theFocal,
-    	offset=offsetStack,
-    	polyCoarse = polyCoarse[,c(polyCoarseIdCol, 'idCoarse')],
+      rasterCoarse=rasterCoarse,
+      rasterFine=partitionRaster,
+      focal=theFocal,
+      offset=offsetStack,
+      partitionAreas=partitionAreas,
       xv = xvMat
   )
-
+  
   if(verbose) {
     cat(date(), "\n")
     cat("done\n")
   }
   
   return(result)
-
+  
 }

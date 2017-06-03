@@ -22,11 +22,13 @@ data('kMap', package='localEM')
 # number of cores for computations in parallel 
 # (only applicable to UNIX operating systems)
 if(Sys.info()['user'] == 'patrick') {
-	cellsFine = 150
+	cellsFine = 200
 	ncores = 8
+	cellsCoarse=30
 } else {
 	ncores = ifelse(.Platform$OS.type == 'unix', 2, 1)
 	cellsFine = 60
+	cellsCoarse=15
 }
 
 ```
@@ -164,13 +166,16 @@ scaleBar(kentuckyCounty,
 lemCvNewKentucky = lemXv(   
   polyCoarse = kentuckyCounty,   
   polyFine = kentuckyTract,   
-  cellsCoarse = 10,   
+  cellsCoarse = cellsCoarse,   
   cellsFine = cellsFine,   
   bw = seq(20, 200, by=20) * 1000,
   Nxv = 4, 
   ncores = ncores,
   path = tempdir(),
   verbose = TRUE)
+if(Sys.info()['user'] == 'patrick') {
+	save(lemCvKentucky, file='lemCvKentucky.RData')
+}  
 ```
 
 ```{r cvPlotNew}

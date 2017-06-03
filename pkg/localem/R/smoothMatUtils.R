@@ -29,8 +29,8 @@ getCellInfo = function(
       row=Mrow, nrows=Nrows,
 			col=Mcol,ncols=Ncols)
 	id = cbind(
-			id, 
-			index = 1:nrow(id)
+			factorValues(fine, id), 
+			index = 1:length(id)
 	)
 
   theoffset = getValuesBlock(offsetRaster,
@@ -255,59 +255,7 @@ smoothingMatrixDiag = function(
   }
 	
 
-  # create list of partitions
-  partitions = as.data.frame(na.omit(unique(rasterFine)))
-  partitions$partition = paste('c', partitions$cellCoarse, 'p', partitions$idCoarse,
-      '.', partitions$idFine, sep='')
-  partitions = cbind(ID = 1:nrow(partitions), partitions)
-  # raster with partition ID's
-  
-  partitionRaster = calc(rasterFine, function(x) which(
-            x[1]==partitions[,'idCoarse'] &
-                x[2] == partitions[,'idFine'] &
-                x[3] == partitions[,'cellCoarse']
-            )[1])
-  levels(partitionRaster)[[1]] = partitions
-  
-  # offsetMat is the value of the offset at all points in the partition
-  
-  partitionOffsets = as.data.frame(zonal(
-      offsetRaster[[grep("^bw", names(offsetRaster), invert=TRUE)]],
-      partitionRaster,
-      'mean', na.rm=TRUE
-      ))
-  partitionOffsets$partition = partitions[match(
-          partitionOffsets$zone, partitions$ID
-          ), 'partition']    
-  
-    
-  offsetMat = apply(partitionOffsets[,grep("[oO]ffset", colnames(partitionOffsets))], 2, 
-      function(x) {
-        res = Matrix::Diagonal(nrow(partitionOffsets), x*prod(res(offsetRaster)))
-        dimnames(res) = list(partitionOffsets$partition, partitionOffsets$partition) 
-        res
-      })
-	
-  regions = gsub("^c[[:digit:]]+p|\\.[[:digit:]]+$", "", partitionOffsets$partition)
-  regions = as.integer(regions)
-  regionMat = outer(regions, regions, '==')
-  regionMat = Matrix(regionMat)
-	  
-  dimnames(regionMat)=
-    	list(partitionOffsets$partition, partitionOffsets$partition)
 
-  partitionFreq = raster::freq(partitionRaster)
-  rownames(partitionFreq) = levels(partitionRaster)[[1]][partitionFreq[,'value'],'partition']
-  partitionAreas = partitionFreq[,'count'][rownames(regionMat)] * prod(res(partitionRaster))  
-  
-  expandCountMat = regionMat
-  expandCountMat = expandCountMat[,!duplicated(regions),drop=FALSE]
-  colnames(expandCountMat) = gsub("^c[[:digit:]]+p|\\.[[:digit:]]+$", 
-			"", colnames(expandCountMat) )
-  expandCountMat = expandCountMat[,
-      as.character(sort(as.integer(colnames(expandCountMat)))),
-      drop=FALSE
-  ]
 	
   # matrix of cell distances
   allCells = expand.grid(cellsWithData, cellsWithData)
@@ -376,11 +324,8 @@ smoothingMatrixDiag = function(
   allCells = allCells[order(allCells[,'colDiff'], allCells[,'rowDiff']),]
   allCells = allCells[, c('cell1','cell2','dist','distOf8', 'posY','YgtX')]
 	
-  list(smoothingArray=smoothingArray,
-      regionMat=expandCountMat,
-      rasterFine = partitionRaster,
-      offsetMat = offsetMat,
-      partitionAreas = partitionAreas,
+  list(
+      smoothingArray=smoothingArray,
       cells=allCells,
       uniqueDist = unique(allCells$dist))
 }
