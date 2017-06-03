@@ -163,7 +163,7 @@ scaleBar(kentuckyCounty,
 ## Cross-validation
 
 ```{r cvNew}
-lemCvNewKentucky = lemXv(   
+xvKentucky = lemXv(   
   polyCoarse = kentuckyCounty,   
   polyFine = kentuckyTract,   
   cellsCoarse = cellsCoarse,   
@@ -174,15 +174,14 @@ lemCvNewKentucky = lemXv(
   path = tempdir(),
   verbose = TRUE)
 if(Sys.info()['user'] == 'patrick') {
-	save(lemCvKentucky, file='lemCvKentucky.RData')
+	save(xvKentucky, file='xvKentucky.RData')
 }  
 ```
 
-```{r cvPlotNew}
-
-plot(lemCvNewKentucky$xv[,1]/1000, lemCvNewKentucky$xv[,2], xlab='km', ylab='-log p', 
-    type='o', ylim=quantile(lemCvNewKentucky$xv[,2], c(0,0.5)))
-
+```{r cvPlotNew, fig.cap='cross validation scores', fig.height=4, fig.width=6}
+plot(xvKentucky$xv[,1]/1000, xvKentucky$xv[,2], 
+	xlab='km', ylab='-log p', 
+    type='o', ylim=quantile(xvKentucky$xv[,2], c(0,0.5)))
 ```
 
 ## Rasters
@@ -191,73 +190,11 @@ The case data are observed at the county level (coarse polygon regions) while th
 
 The tessellation of distinct regions, also known as partitions, is generated with the `lemRaster()` function. The census counties and tracts are first rasterized with different resolutions, and then, these coarse and fine rasters are overlayed to create the partitions of interest. This function also generates the focal weight matrix of the Gaussian smoothing kernel for specified bandwidths to be used for the smoothing matrix computations. 
 
-```{r rasters}
-
-# total expected events with fine polygons
-kentuckyTract$expected = (3000 / sum(kentuckyTract$expected, na.rm = TRUE)) * 
-  kentuckyTract$expected
-sum(kentuckyTract$expected, na.rm = TRUE)
-
-lemRaster = rasterPartition(
-  polyCoarse = kentuckyCounty, 
-  polyFine = kentuckyTract, 
-  cellsCoarse = 10, 
-  cellsFine = 120, 
-  bw = c(8, 10, 12.5, 15, 17.5, 20, 25, 30) * 1000, 
-  ncores = ncores,
-  idFile = 'id.grd', 
-  offsetFile = 'off.grd', 
-  verbose = TRUE)
-
-# total expected events with fine raster
-sum(values(lemRaster$offset$offset), na.rm = TRUE) * prod(res(lemRaster$offset))
-
-```
-
-
-
-
-## Smoothing Matrix and Cross-validation
-
-The smoothing matrix for the partitions and specified bandwidths are generated with the `smoothingMatrix()` function. 
-
-```{r smoothingMatrix}
-
-lemSmoothMat = smoothingMatrix(
-  rasterObjects = lemRaster, 
-  ncores = ncores, 
-  verbose = TRUE)
-
-dim(lemSmoothMat$smoothingArray)
-dimnames(lemSmoothMat$smoothingArray)[[3]]
-
-```
 
 Afterwards, the likelihood cross-validation (CV) approach is implemented with the `lemXv()` function to select the optimal bandwidth (i.e., the one that yields the smallest CV score) from the set of specified bandwidths. CV scores are computed with k-fold sampling without replacement of the case data. 
 
 ```{r cv}
-
-lemCv = lemXv(
-  x = kentuckyCounty, 
-  lemObjects = lemSmoothMat, 
-  Nxv = 5, 
-  ncores = ncores, 
-  verbose = TRUE)
-
-bestBw = lemCv$bw[which.min(lemCv$cv)]
-
-```
-
-```{r plotCv, echo = FALSE}
-
-par(mar = c(5, 5, 1, 1))
-plot(do.call(cbind, lemCv[is.finite(lemCv$bw),]), 
-  xlab = 'Bandwidth (m)', ylab = 'CV', 
-  main = 'CV Scores', 
-  log = 'x', 
-  pch = 16, col = 'red', type = 'o')
-abline(v = bestBw, lty = 3)
-
+bestBw = xvKentucky$xv[which.min(lemXvKentucky$xv[,2]),1]
 ```
 
 
