@@ -98,13 +98,13 @@ rasterPartition = function(
   
   polyFine@data[is.na(polyFine@data[,'expected']),'expected'] = 0
   
-  if(length(Nxv)==1) {
-    xvMat = getXvMat(polyCoarse$idCoarse, Nxv)
+  if(length(xv)==1) {
+    xvMat = getXvMat(polyCoarse$idCoarse, xv)
   } else {
-    if(is.null(Nxv)) {
+    if(is.null(xv)) {
       xvMat = matrix()
     } else {
-      xvMat = Nxv
+      xvMat = xv
     }
   }
   

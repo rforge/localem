@@ -19,9 +19,11 @@ data('kentuckyCounty', package='localEM')
 data('kentuckyTract', package='localEM')
 data('kMap', package='localEM')
 
+# specify number of grid cells and
 # number of cores for computations in parallel 
 # (only applicable to UNIX operating systems)
-if(Sys.info()['user'] == 'patrick') {
+if(Sys.info()['user'] == 'patrick' & interactive()) {
+	# this uses about 20GB of memory
 	cellsFine = 200
 	ncores = 8
 	cellsCoarse=30
@@ -163,17 +165,17 @@ scaleBar(kentuckyCounty,
 ## Cross-validation
 
 ```{r cvNew}
-xvKentucky = lemXv(   
+xvKentucky = localEM::lemXv(
   polyCoarse = kentuckyCounty,   
   polyFine = kentuckyTract,   
   cellsCoarse = cellsCoarse,   
   cellsFine = cellsFine,   
   bw = seq(20, 200, by=20) * 1000,
-  Nxv = 4, 
+  xv = 4, 
   ncores = ncores,
   path = tempdir(),
   verbose = TRUE)
-if(Sys.info()['user'] == 'patrick') {
+if(Sys.info()['user'] == 'patrick' & interactive()) {
 	save(xvKentucky, file='xvKentucky.RData')
 }  
 ```
