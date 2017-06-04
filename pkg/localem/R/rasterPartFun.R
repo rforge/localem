@@ -272,6 +272,7 @@ rasterPartition = function(
       rasterFine=partitionRaster,
       focal=theFocal,
       offset=offsetStack,
+      offsetMat = offsetMat,
       partitionAreas=partitionAreas,
       xv = xvMat
   )

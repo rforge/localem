@@ -104,7 +104,7 @@ lemXv = function(
       ncores = ncores, 
       filename = file.path(path, 'smoothingMatrix.grd'),
       verbose = verbose)
-} else{
+} else {
 	if(verbose) {
 		cat("using supplied smoothing matrix\n")
 	}
@@ -135,7 +135,7 @@ lemXv = function(
   # estimate risk (by partition, not continuous) for each bw/cv combinantion
   estList = parallel::mcmapply(
       riskEst,
-      bw = dimnames(xvSmoothMat$smoothingArray)[[3]],
+      bw = xvSmoothMat$bw,
       MoreArgs = list(
           x=polyCoarse@data[,countcol],
           lemObjects = xvSmoothMat,
