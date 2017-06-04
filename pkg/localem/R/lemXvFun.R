@@ -102,6 +102,7 @@ lemXv = function(
   xvSmoothMat =  smoothingMatrix(
       rasterObjects = xvLemRaster, 
       ncores = ncores, 
+      filename = file.path(path, 'smoothingMatrix.grd'),
       verbose = verbose)
 } else{
 	if(verbose) {

@@ -37,6 +37,7 @@
 smoothingMatrix = function(
   rasterObjects,
   ncores = 1,
+  filename = 'smoothingMatrix.gri',
   verbose = FALSE
 ){
 	
@@ -49,6 +50,7 @@ smoothingMatrix = function(
     	rasterFine=rasterObjects$rasterFine,
     	focalList=rasterObjects$focal,
     	offsetRaster=rasterObjects$offset,
+      filename = filename,
     	ncores=ncores)
 
   

@@ -216,7 +216,7 @@ smoothingMatrixEntries = function(
 smoothingMatrixDiag = function(
     rasterCoarse,rasterFine,
     focalList,offsetRaster, ncores,
-    filename = 'smoothingMatrix.gri'
+    filename
 ) {
   
   kernelArrayD = kernMat(
@@ -241,12 +241,18 @@ smoothingMatrixDiag = function(
 
  # create a raster brick for storing the smoothing matrix
   smoothingRaster = spatial.tools::create_blank_raster(
-      gsub("[.]gr[id]$", "", filename), 
+      gsub("[.]gr[id]$", ".gri", filename), 
       reference_raster=smoothingRasterTemplate,
       nrow = Npartitions, ncol = Npartitions,
       nlayers = Nsmooths, 
       overwrite = TRUE, return_filename=TRUE,
-      verbose = verbose)
+      verbose = verbose, create_header=FALSE)
+  
+  smoothingRasterWithHeader = spatial.tools::build_raster_header(
+      x_filename = smoothingRasterFile,
+      reference_raster = smoothingRasterTemplate,
+      setMinMax = TRUE, verbose=verbose
+      )
   
   diagBlocks = parallel::mcmapply(
       smoothingMatrixEntries,
