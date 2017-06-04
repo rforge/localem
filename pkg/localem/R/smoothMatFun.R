@@ -50,7 +50,8 @@ smoothingMatrix = function(
     	focalList=rasterObjects$focal,
     	offsetRaster=rasterObjects$offset,
     	ncores=ncores)
-	
+
+  
   if(verbose) {
     cat(date(), "\n")
     cat("off-diagonal blocks of smoothing matrix\n")
@@ -73,34 +74,90 @@ smoothingMatrix = function(
     cat(date(), "\n")
     cat("assembling smoothing matrix\n")
   }
-	
+
+  smoothingRaster = theMat$smoothingArray
+  smoothingRasterFile = filename(smoothingRaster)
+  layerSeq = 1:nlayers(smoothingRaster)
+  Spartitions = theMat$partitions
+  Sbw = theMat$bw
+  
+  if(FALSE) { # array for debugging
+  smoothingArray = aperm(as.array(smoothingRaster), c(2,1,3))
+  dimnames(smoothingArray) = list(theMat$partitions, theMat$partitions, names(smoothingRaster))
+  smoothingArray[is.na(smoothingArray)] = 0
+  print(range(aperm(as.array(smoothingRaster), c(2,1,3)) - smoothingArray))
+  }
+  
   for(Ddist in seq(1, len=length(offDiag), by=1)) {
     for(Dcell1 in 1:length(offDiag[[Ddist]])) {
       for(Dcell2 in 1:length(offDiag[[Ddist]][[Dcell1]])) {
-				
+				partHere = offDiag[[Ddist]][[Dcell1]][[Dcell2]]
         s1 = dimnames(offDiag[[Ddist]][[Dcell1]][[Dcell2]])[[1]]
         s2 = dimnames(offDiag[[Ddist]][[Dcell1]][[Dcell2]])[[2]]
-				
+
+        if(FALSE) { # array for debugging
+          
         if(length(s1) == 1 || length(s2) == 1) {
-          theMat$smoothingArray[s2,s1,] = 
+          smoothingArray[s2,s1,] = 
 							offDiag[[Ddist]][[Dcell1]][[Dcell2]][,,,'transpose']
-        } else {
-          theMat$smoothingArray[s2,s1,] = 
+          
+          
+        } else { # neither length 1
+          smoothingArray[s2,s1,] = 
 							aperm(offDiag[[Ddist]][[Dcell1]][[Dcell2]][,,,'transpose'], c(2,1,3))
+          
+        } # done the transpose part
+        smoothingArray[s1,s2,] = 
+            offDiag[[Ddist]][[Dcell1]][[Dcell2]][,,,'straightup']
+        
+      } # array for debugging
+          
+        partHere = aperm(offDiag[[Ddist]][[Dcell1]][[Dcell2]][,,,'transpose', drop=FALSE], c(2,1,3,4))
+        matchPartHere = lapply(dimnames(partHere)[1:2], match, table=Spartitions)
+        
+        spatial.tools::binary_image_write(
+            gsub("d$", "i", smoothingRasterFile), 
+            image_dims = dim(smoothingRaster),
+            data=partHere,
+            data_position = list(
+                matchPartHere[[1]], 
+                matchPartHere[[2]], 
+                layerSeq)
+        )
+        
+
+        partHere = offDiag[[Ddist]][[Dcell1]][[Dcell2]][,,,'straightup', drop=FALSE]
+        matchPartHere = lapply(dimnames(partHere)[1:2], match, table=Spartitions)
+        
+        spatial.tools::binary_image_write(
+            gsub("d$", "i", smoothingRasterFile), 
+            image_dims = dim(smoothingRaster),
+            data=partHere, 
+            data_position = list(
+                matchPartHere[[1]], 
+                matchPartHere[[2]], 
+                layerSeq)
+        )
+        
+#        print(Dcell2)
+#        print(range(aperm(as.array(smoothingRaster), c(2,1,3)) - smoothingArray))
         }
-        theMat$smoothingArray[s1,s2,] = 
-						offDiag[[Ddist]][[Dcell1]][[Dcell2]][,,,'straightup']
-				
+#      print(Dcell1)
+#      print(range(aperm(as.array(smoothingRaster), c(2,1,3)) - smoothingArray))
       }
+#    print(Ddist)
+#    print(range(aperm(as.array(smoothingRaster), c(2,1,3)) - smoothingArray))   
     }
-  }
 	
   #fill in the zeros in the smoothing matrix where distance is beyond largest bandwidth
-  theMat$smoothingArray[is.na(theMat$smoothingArray)] = 0
+#  smoothingArray[is.na(smoothingArray)] = 0
 	
-  bw = gsub("^bw", "", dimnames(theMat$smoothingArray)[[3]])
-  smoothingArrayInf = apply(!is.finite(theMat$smoothingArray), 3, any)
-	
+#  range(aperm(as.array(smoothingRaster), c(2,1,3)) - smoothingArray)
+
+  
+#  bw = gsub("^bw", "", dimnames(theMat$smoothingArray)[[3]])
+#  smoothingArrayInf = apply(!is.finite(theMat$smoothingArray), 3, any)
+	 smoothingArrayInf = FALSE
   if(any(smoothingArrayInf)) {
     cat("excluding bandwidths (b/c infinite values in smoothing matrix): ", bw[smoothingArrayInf],  "\n")
 		

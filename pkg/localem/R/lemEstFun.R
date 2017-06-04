@@ -68,12 +68,29 @@ riskEst = function(
 ) {
 
  if(length(bw) > 1) {
-  stop("Bandwidth must be numeric and length 1")
+  stop("Bandwidth must be length 1")
  }
+
+ if(is.character(bw)) {
+   bw = match(bw, names(lemObjects$smoothingArray))
+   if(is.na(bw))
+     bw = match(bw, lemObjects$bw)
+   if(is.na(bw))
+     warning("cant match bw to smoothing array")
+ } else {
+   bwOrig = bw
+   bw = paste('bw', bw, sep='')
+   bw = match(bw, names(lemObjects$smoothingArray))
+   if(is.na(bw))
+     bw = match(bw, lemObjects$bw)
+   if(is.na(bw))
+     bw = bwOrig
+}
 	
  
  regionMat = lemObjects$regionMat
- smoothingMat = lemObjects$smoothingArray[,,bw]
+ smoothingMat = t(as.matrix(lemObjects$smoothingArray[[bw]]))
+ 
  if(length(grep("xv[[:digit:]]+$", bw))) {
    offsetMat = lemObjects$offsetMat[[paste('xvOffset', gsub('^bw[[:digit:]]+xv', '', bw), sep='')]]
  } else {
