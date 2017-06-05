@@ -165,7 +165,8 @@ scaleBar(kentuckyCounty,
 ## Cross-validation
 
 ```{r cvNew}
-xvKentucky = localEM::lemXv(
+library('localEM')
+xvKentucky = lemXv(
   polyCoarse = kentuckyCounty,   
   polyFine = kentuckyTract,   
   cellsCoarse = cellsCoarse,   
@@ -183,7 +184,7 @@ if(Sys.info()['user'] == 'patrick' & interactive()) {
 ```{r cvPlotNew, fig.cap='cross validation scores', fig.height=4, fig.width=6}
 plot(xvKentucky$xv[,1]/1000, xvKentucky$xv[,2], 
 	xlab='km', ylab='-log p', 
-    type='o', ylim=quantile(xvKentucky$xv[,2], c(0,0.5)))
+    type='o')
 ```
 
 ## Rasters

@@ -216,7 +216,8 @@ smoothingMatrixEntries = function(
 smoothingMatrixDiag = function(
     rasterCoarse,rasterFine,
     focalList,offsetRaster, ncores,
-    filename
+    filename,
+    verbose=FALSE
 ) {
   
   kernelArrayD = kernMat(

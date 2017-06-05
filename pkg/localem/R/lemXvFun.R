@@ -157,6 +157,7 @@ lemXv = function(
   }
   # compute the CV scores
   
+  xvMat = xvSmoothMat$xv
   # expected counts in left out regions
   xvEst = estDf[,grep("xv[[:digit:]]+$", colnames(estDf))]
   Sxv = gsub("^bw[[:digit:]]+xv", "", colnames(xvEst))

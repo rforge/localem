@@ -51,7 +51,8 @@ smoothingMatrix = function(
     	focalList=rasterObjects$focal,
     	offsetRaster=rasterObjects$offset,
       filename = filename,
-    	ncores=ncores)
+    	ncores=ncores,
+      verbose=verbose)
 
   
   if(verbose) {
