@@ -109,21 +109,21 @@ riskEst = function(
   }
   
   
-  # simulated bootstrap data 
+# multiple observations
+if(is.data.frame(x)) x = as.matrix(x)
   if(is.matrix(x)) {
     
     idCoarse = 1:nrow(x)
     
-    if(length(idCoarse) != dim(regionMat)[2]) {		
+    if(length(idCoarse) != dim(regionMat)[1]) {		
       
       #fine raster did not include all regions in the coarse shapefile
-      idMatch = idCoarse[as.numeric(dimnames(regionMat)[[2]])]
+      idMatch = idCoarse[as.numeric(dimnames(regionMat)[[1]])]
       
       obsCounts = x[idMatch,, drop=FALSE]
       
     } else {
-      
-      obsCounts = x[idCoarse,, drop=FALSE]
+      obsCounts = x[idCoarse,,drop=FALSE]
     }
     
   } else if(class(x) == 'SpatialPolygonsDataFrame') {
@@ -218,14 +218,13 @@ riskEst = function(
       names(lemObjects$partitionAreas), 
       names(lemObjects$partitionAreas)
   )
+  
+  # make sure everything's ordered correctly
+  
   offsetMat = offsetMat[colnames(regionMat), colnames(regionMat)]
   smoothingMat = smoothingMat[colnames(regionMat), colnames(regionMat)]
   partitionAreasMat = partitionAreasMat[colnames(regionMat), colnames(regionMat)]
   
-  
-  regionOffset = regionMat %*% offsetMat# 
-  
-  # make sure everything's ordered correctly
   
   #risk estimation for aggregated regions
   oldLambda = partitionAreasMat %*%
@@ -240,9 +239,9 @@ riskEst = function(
   Diter = 1
   absdiff = 1
   
-#	smoothingMat = smoothingMat / prod(res(lemObjects$offset))
-  
-  
+
+regionOffset = regionMat %*% offsetMat
+
   while((absdiff > tol) && (Diter < maxIter)) {
     
     Lambda = oneLemIter(

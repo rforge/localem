@@ -62,8 +62,8 @@
 #' This requires computations of new smoothing matrix for each training set
 #' Sampling Ratio: 75/25% of data for training and testing sets
 lemXv = function(
-    polyCoarse, 
-    polyFine, 
+    cases, 
+    population, 
     cellsCoarse, 
     cellsFine, 
     bw,
@@ -88,8 +88,8 @@ lemXv = function(
 	  }
   ##raster partition
   xvLemRaster = rasterPartition(
-      polyCoarse = polyCoarse, 
-      polyFine = polyFine, 
+      polyCoarse = cases, 
+      polyFine = population, 
       cellsCoarse = cellsCoarse, 
       cellsFine = cellsFine, 
       xv = xv,
@@ -99,36 +99,43 @@ lemXv = function(
       offsetFile = file.path(path, 'offsetXv.grd'), 
       verbose = verbose)
   
+  
   xvSmoothMat =  smoothingMatrix(
       rasterObjects = xvLemRaster, 
       ncores = ncores, 
       filename = file.path(path, 'smoothingMatrix.grd'),
       verbose = verbose)
+  
+  xvMat = xvSmoothMat$xv
+  
 } else {
 	if(verbose) {
 		cat("using supplied smoothing matrix\n")
 	}
 	
   xvSmoothMat = lemObjects
+  xvMat = lemObjects$xv
 }
   
+  if(is.vector(cases)) {
+    cases = data.frame(cases=cases)
+  }
   #names of interest for regions in the coarse shapefile
-  countcol = grep('^(count|cases)$', names(polyCoarse), value=TRUE, ignore.case=TRUE)
-  if(length(countcol)){
-    countcol = countcol[1]
-  } else {
+  countcol = grep('^(count|cases)[[:digit:]]+?$', 
+      names(cases), value=TRUE, ignore.case=TRUE)
+  if(!length(countcol)){
     countcol = grep(
-        "^(id|name)", names(polyCoarse), 
+        "^(id|name)", names(cases), 
         invert=TRUE, value=TRUE
     )[1]
   }
-  
-  idColX = grep("^id", names(polyCoarse), value=TRUE)
-  if(length(idColX)) {
-    idColX = idColX[1]
+  if(class(cases) == 'SpatialPolygonsDataFrame') {
+    polyCoarse = cases
+    cases = cases@data
   } else {
-    idColX = names(polyCoarse)[1]
+    polyCoarse = NULL
   }
+  
   if(verbose) {
 	  cat("running local-EM for validation sets\n")
   }
@@ -137,7 +144,7 @@ lemXv = function(
       riskEst,
       bw = xvSmoothMat$bw,
       MoreArgs = list(
-          x=polyCoarse@data[,countcol],
+          x=cases[,countcol],
           lemObjects = xvSmoothMat,
           tol = tol, 
           maxIter =maxIter,
@@ -150,23 +157,23 @@ lemXv = function(
   
   estDf = as.matrix(do.call(cbind, estListExp))
   riskDf = as.matrix(do.call(cbind, estListRisk))
-  colnames(estDf) = colnames(riskDf) = names(estList)
+  colnames(estDf) = colnames(riskDf) = 
+      paste(rep(names(estList), unlist(lapply(estListExp, function(xx) dim(xx)[2]))),
+          colnames(estDf), sep='_')
   
   if(verbose) {
 	  cat("computing CV scores\n")
   }
   # compute the CV scores
   
-  xvMat = xvSmoothMat$xv
   # expected counts in left out regions
-  xvEst = estDf[,grep("xv[[:digit:]]+$", colnames(estDf))]
-  Sxv = gsub("^bw[[:digit:]]+xv", "", colnames(xvEst))
+  xvEst = estDf[,grep("xv[[:digit:]]+", colnames(estDf))]
+  Sxv = gsub("^bw[[:digit:]]+xv|_count[[:digit:]]+?$", "", colnames(xvEst))
+  Scount = gsub("bw[[:digit:]]+xv[[:digit:]]+_", "", colnames(xvEst))
+
   xvEstMask = xvMat[,Sxv] * xvEst 
-  
-  # observed counts in left out regins
-  xvObs = xvMat * as.matrix(polyCoarse@data[,rep(countcol, ncol(xvMat))])
-  xvObs = xvObs[,Sxv]
-  
+  # observed counts in left out regions
+  xvObs = xvMat[,Sxv] * as.matrix(cases[,Scount])
   
   logProbCoarse = stats::dpois(as.matrix(xvObs), as.matrix(xvEstMask), log=TRUE)
   logProb = apply(logProbCoarse, 2, sum)

@@ -161,21 +161,19 @@ scaleBar(kentuckyCounty,
 
 ## Cross-validation
 
+The first simulated dataset
 ```{r cvNew}
 library('localEM')
 xvKentucky = lemXv(
-  polyCoarse = kentuckyCounty[,c('id','count1')],   
-  polyFine = kentuckyTract,   
+  cases = kentuckyCounty[,c('id','count1')],   
+  population = kentuckyTract,   
   cellsCoarse = cellsCoarse,   
   cellsFine = cellsFine,   
-  bw = c(seq(6, 20, by=2), 40) * 1000,
+  bw = c(seq(10, 40, by=2.5)) * 1000,
   xv = 4, 
   ncores = ncores,
   path = path,
   verbose = TRUE)
-if(Sys.info()['user'] == 'patrick' & interactive()) {
-	save(xvKentucky, file=file.path(path, 'xvKentucky.RData'))
-}  
 ```
 
 ```{r cvPlotNew, fig.cap='cross validation scores', fig.height=4, fig.width=6}
@@ -183,6 +181,19 @@ plot(xvKentucky$xv[,1]/1000, xvKentucky$xv[,2],
 	xlab='km', ylab='-log p', 
     type='o')
 ```
+
+
+All datasets
+
+```{r cvNewAll}
+library('localEM')
+xvKentucky = lemXv(
+  cases = kentuckyCounty@data[,grep("^count[[:digit:]]", names(kentuckyCounty))],   
+  lemObjects = xvKentucky$smoothingMatrix,   
+  ncores = ncores,
+  verbose = TRUE)
+```
+
 
 ## Rasters
 
