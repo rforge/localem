@@ -27,10 +27,13 @@ if(Sys.info()['user'] == 'patrick' & interactive()) {
 	cellsFine = 200
 	ncores = 8
 	cellsCoarse=30
+    path = '/tmp/localEM/kentuckyVignette/'
+    dir.create(path, showWarnings=FALSE, recursive=TRUE)
 } else {
 	ncores = ifelse(.Platform$OS.type == 'unix', 2, 1)
 	cellsFine = 60
 	cellsCoarse=15
+  path = tempdir()
 }
 
 ```
@@ -168,10 +171,10 @@ xvKentucky = lemXv(
   bw = c(seq(6, 20, by=2), 40) * 1000,
   xv = 4, 
   ncores = ncores,
-  path = tempdir(),
+  path = path,
   verbose = TRUE)
 if(Sys.info()['user'] == 'patrick' & interactive()) {
-	save(xvKentucky, file='xvKentucky.RData')
+	save(xvKentucky, file=file.path(path, 'xvKentucky.RData'))
 }  
 ```
 
