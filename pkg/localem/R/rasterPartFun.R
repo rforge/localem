@@ -51,16 +51,16 @@ rasterPartition = function(
     offsetFile = paste(tempfile('lemOffset', path), '.grd', sep=''),
     verbose = FALSE
 ){
-  
+    
   if(verbose) {
     cat(date(), "\n")
     cat("obtaining rasters\n")
   }
   
-  if(!(length(grep("\\.grd$", offsetFile)))){
+  if(!(length(grep("\\.gr[id]$", offsetFile)))){
     warning("offsetFile should have .grd extension")
   }
-  if(!(length(grep("\\.grd$", idFile)))){
+  if(!(length(grep("\\.gr[id]$", idFile)))){
     warning("idFile should have .grd extension")
   }
   if(is.numeric(cellsCoarse)) {
@@ -222,6 +222,9 @@ rasterPartition = function(
                 x[3] == partitions[,'cellCoarse']
         )[1])
   levels(partitionRaster)[[1]] = partitions
+  partitionRaster = writeRaster(partitionRaster, file=idFile, overwrite=file.exists(idFile))
+  
+
   
 # offsetMat is the value of the offset at all points in the partition
   
@@ -234,7 +237,9 @@ rasterPartition = function(
           partitionOffsets$zone, partitions$ID
       ), 'partition']    
   
-  
+
+# offsetMat is diagonal matrix with element the integral of offset in the partition 
+# different for each CV set
   offsetMat = apply(partitionOffsets[,grep("[oO]ffset", colnames(partitionOffsets))], 2, 
       function(x) {
         res = Matrix::Diagonal(nrow(partitionOffsets), x*prod(res(offsetStack)))
@@ -244,35 +249,26 @@ rasterPartition = function(
   
   regions = gsub("^c[[:digit:]]+p|\\.[[:digit:]]+$", "", partitionOffsets$partition)
   regions = as.integer(regions)
-  regionMat = outer(regions, regions, '==')
+  regionMat = outer(polyCoarse$idCoarse, regions, '==')
   regionMat = Matrix::Matrix(regionMat)
   
   dimnames(regionMat)=
-      list(partitionOffsets$partition, partitionOffsets$partition)
+      list(polyCoarse$idCoarse, partitionOffsets$partition)
   
   partitionFreq = raster::freq(partitionRaster)
   rownames(partitionFreq) = levels(partitionRaster)[[1]][partitionFreq[,'value'],'partition']
-  partitionAreas = partitionFreq[,'count'][rownames(regionMat)] * prod(res(partitionRaster))  
-  
-  expandCountMat = regionMat
-  expandCountMat = expandCountMat[,!duplicated(regions),drop=FALSE]
-  colnames(expandCountMat) = gsub("^c[[:digit:]]+p|\\.[[:digit:]]+$", 
-      "", colnames(expandCountMat) )
-  expandCountMat = expandCountMat[,
-      as.character(sort(as.integer(colnames(expandCountMat)))),
-      drop=FALSE
-  ]
-  
-    
-  partitionRaster = writeRaster(partitionRaster, file=idFile, overwrite=file.exists(idFile))
+  partitionAreas = partitionFreq[,'count'][colnames(regionMat)] * prod(res(partitionRaster))  
+
   
   
   result = list(
       rasterCoarse=rasterCoarse,
+      polyCoarse = polyCoarse,
       rasterFine=partitionRaster,
       focal=theFocal,
       offset=offsetStack,
       offsetMat = offsetMat,
+      regionMat = regionMat,
       partitionAreas=partitionAreas,
       xv = xvMat
   )

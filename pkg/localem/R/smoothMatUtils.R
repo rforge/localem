@@ -249,7 +249,7 @@ smoothingMatrixDiag = function(
       verbose = verbose, create_header=FALSE)
   
   smoothingRasterWithHeader = spatial.tools::build_raster_header(
-      x_filename = smoothingRasterFile,
+      x_filename = smoothingRaster,
       reference_raster = smoothingRasterTemplate,
       setMinMax = TRUE, verbose=verbose
       )

@@ -207,23 +207,6 @@ lemXv = function(
 
 
 
-#' Additional functions from the 'localEM' package that are required but were not globally loaded
-## Computes the risk estimation aggregated to the partitions for one iteration
-oneLemIter = function(
-    Lambda, smoothingMat, regionMat, offsetMat, counts,
-    regionOffset = crossprod(regionMat, offsetMat)
-){
-  
-  denom = regionOffset %*% Lambda
-  
-  em = crossprod(regionOffset, counts/denom) * Lambda
-  em[as.vector(!is.finite(em))] = 0
-  
-  result = crossprod(smoothingMat, em)
-  attributes(result)$em = em
-  
-  return(result)
-}
 
 ## Computes the expected counts for the test set based on aggregated risk estimation and smoothing matrix of training set
 xvLemEstOneBw = function(
