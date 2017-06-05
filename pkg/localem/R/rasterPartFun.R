@@ -180,34 +180,51 @@ rasterPartition = function(
   theFocal$array = focalArray   
   
   Scvsets = match(forSmooth[,'layer'],names(rasterOffset))
+
+	
+	# smoothing doesn't seem to work unless smoothing window is less than
+	# 59 by 59
+  maxFocalSize = 59
+  if(dim(focalArray)[1] > maxFocalSize){
+  	tooBig = (dim(focalArray)[1]-59)/2
+  	warning('focal window is larger than rasterEngine can hadel, being reduced by ', tooBig)
+  	toKeep = seq(tooBig+1, by=1, len=59)
+  	focalArray = focalArray[toKeep, toKeep,,drop=FALSE]
+  	# rescale so kernels integrate to 1
+  	toScale = 1/apply(focalArray, 3, sum)
+  	focalArray = focalArray * array(
+	  	rep(toScale, rep(prod(dim(focalArray)[1:2]), length(toScale))), 
+  		dim(focalArray))
+  }
   
   focalFunction = function(x, focalArray, Scvsets)  {
-    
-    apply(focalArray*x[,,Scvsets], 
+    apply(focalArray*x[,,Scvsets,drop=FALSE], 
         3, sum, na.rm=TRUE)
   }
   
   rasterOffset = setMinMax(rasterOffset)
   
+  offsetTempFile2 = tempfile()
+  
   spatial.tools::sfQuickInit(ncores, methods = FALSE)
   suppressWarnings(
       smoothedOffset <- spatial.tools::rasterEngine(
-          rasterOffset, focalFunction, 
-          args = list(Scvsets=Scvsets, focalArray=focalArray),
-          window_dims = dim(theFocal$focal[[1]]),
-          outbands=nrow(forSmooth),
+          x=rasterOffset, fun=focalFunction, 
+        args = list(Scvsets=Scvsets, focalArray=focalArray),
+          window_dims = dim(focalArray),
+          outbands=length(Scvsets),
           outfiles = 1,
           processing_unit = 'single',
-          setMinMax = TRUE,
+          chunk_format = 'array',
+          filename = gsub("[.]gr(d|i)$", "", offsetTempFile2), overwrite=TRUE,
+          verbose=verbose
       ))
   spatial.tools::sfQuickStop()
   names(smoothedOffset) = dimnames(focalArray)[[3]]
   
-  
-  offsetStack = writeRaster(addLayer(rasterOffset, smoothedOffset),
-      filename = offsetFile, overwrite = file.exists(offsetFile))
-  
-  
+ offsetStack = writeRaster(addLayer(rasterOffset, smoothedOffset),
+      filename = offsetFile, overwrite = file.exists(offsetFile))  
+ 
 # create list of partitions
   partitions = as.data.frame(na.omit(unique(rasterFineId)))
   partitions$partition = paste('c', partitions$cellCoarse, 'p', partitions$idCoarse,

@@ -24,9 +24,9 @@ data('kMap', package='localEM')
 # (only applicable to UNIX operating systems)
 if(Sys.info()['user'] == 'patrick' & interactive()) {
 	# this uses about 20GB of memory
-	cellsFine = 160
+	cellsFine = 200
 	ncores = 8
-	cellsCoarse=20
+	cellsCoarse=30
 } else {
 	ncores = ifelse(.Platform$OS.type == 'unix', 2, 1)
 	cellsFine = 60
@@ -65,7 +65,7 @@ kCases = geostatsp::simLgcp(
   param = c(mean = 0, variance = 0.4^2, 
     range = 120 * 1000, shape = 2),
    covariates = list(logExpected = kentuckyOffset), 
-  offset = 'logExpected')
+  offset = 'logExpected', n=12)
 #'
 ```
 
@@ -73,24 +73,18 @@ Aggregate events to counties
 
 ```{r aggSim}
 
-kCases$events = SpatialPointsDataFrame(
-  kCases$events,
-  data=over(kCases$events, kentuckyCounty)[,'id',drop=FALSE]
+kCases$agg = lapply(
+    kCases[grep("^events[[:digit:]]+?", names(kCases))],
+    function(qq) over(qq, kentuckyCounty)[,'id']
 )
-countyCounts = table(kCases$events$id,exclude=NULL)
-kentuckyCounty$count = as.vector(countyCounts[kentuckyCounty$id])
+countyCounts = as.data.frame(simplify2array(lapply(kCases$agg, table,exclude=NULL)))
+countyCounts = countyCounts[!is.na(rownames(countyCounts)),]
+countyCounts$id = rownames(countyCounts)
+names(countyCounts) = gsub("^events", 'count', names(countyCounts))
+kentuckyCounty = merge(kentuckyCounty, countyCounts)
 ```
 
 
-Remove events simulated outside a county.  
-
-```{r totalEvents}
-sum(kentuckyCounty$count)
-length(kCases$events)
-sum(is.na(kCases$events$id))
-kCases$events = kCases$events[!is.na(kCases$events$id), ]
-length(kCases$events)
-```
 
 ```{r plotOffset, echo = FALSE, fig.cap='simulated events', fig.subcap = c('offset','relative intensity', 'events', 'counts')}
 
@@ -118,12 +112,12 @@ legendBreaks('topleft',
   
 # simulated risk map
   iCol = colourScale(
-    kCases$raster$relativeIntensity, 
+    kCases$raster$relativeIntensity[[1]], 
   breaks = 8, style = 'equal', dec = -log10(0.5))
   
   map.new(kentuckyTract)
   
-  plot(kCases$raster$relativeIntensity, 
+  plot(kCases$raster$relativeIntensity[[1]], 
   col = iCol$col, breaks = iCol$breaks, 
   legend = FALSE, 
   add = TRUE)
@@ -139,14 +133,14 @@ legendBreaks('topleft',
   map.new(kentuckyTract)
   plot(kMap, add = TRUE)
   
-  points(kCases$events, col = '#FF000030', pch = 20, cex=0.5)
+  points(kCases$events1, col = '#FF000030', pch = 20, cex=0.5)
   
   scaleBar(kentuckyCounty, 
   pos = 'topleft',   bg = 'white')
   
 # simulated counts
 cCol = colourScale(
-  kentuckyCounty$count, 
+  kentuckyCounty$count1, 
   breaks = 10, 
   style = 'quantile', dec = -1)
 
@@ -167,11 +161,11 @@ scaleBar(kentuckyCounty,
 ```{r cvNew}
 library('localEM')
 xvKentucky = lemXv(
-  polyCoarse = kentuckyCounty,   
+  polyCoarse = kentuckyCounty[,c('id','count1')],   
   polyFine = kentuckyTract,   
   cellsCoarse = cellsCoarse,   
   cellsFine = cellsFine,   
-  bw = seq(20, 120, by=20) * 1000,
+  bw = c(seq(6, 20, by=2), 40) * 1000,
   xv = 4, 
   ncores = ncores,
   path = tempdir(),
