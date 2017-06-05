@@ -220,10 +220,10 @@ riskEst = function(
   )
   offsetMat = offsetMat[colnames(regionMat), colnames(regionMat)]
   smoothingMat = smoothingMat[colnames(regionMat), colnames(regionMat)]
-  partitionAreasMat = partitionAreasMat[rownames(regionMat), rownames(regionMat)]
+  partitionAreasMat = partitionAreasMat[colnames(regionMat), colnames(regionMat)]
   
   
-  regionOffset = Matrix::crossprod(regionMat, offsetMat) # 
+  regionOffset = regionMat %*% offsetMat# 
   
   # make sure everything's ordered correctly
   
@@ -262,15 +262,12 @@ riskEst = function(
   if(type[1] == 'expected') {
     # expected count using full offsets, not xv offests
     expectedCoarseRegions = 
-        Matrix::crossprod(regionMat, lemObjects$offsetMat[['offset']]) %*% 
+        (regionMat %*% lemObjects$offsetMat[['offset']]) %*% 
         littleLambda
     return(list(
             expected = expectedCoarseRegions,
             risk = littleLambda))
   }
-  
-  
-  
   
   lambdaMult = offsetMat %*% Lambda
   

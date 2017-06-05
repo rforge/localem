@@ -17,7 +17,7 @@ getXvMat = function(coarse, Nxv) {
 # Computes the risk estimation aggregated to the partitions for one iteration
 oneLemIter = function(
   Lambda, smoothingMat, regionMat, offsetMat, counts,
-		regionOffset = crossprod(regionMat, offsetMat)
+		regionOffset = regionMat %*% offsetMat
 ){
 	
 #  denomOld = t(regionMat) %*% offsetMat %*% Lambda
