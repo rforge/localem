@@ -61,9 +61,7 @@ riskEst = function(
     lemObjects, 
     bw, 
     tol = 1e-6, 
-    maxIter = 2000,
-    type = c('final','unsmoothed','expected'), 
-    filename = ''
+    maxIter = 2000
 ) {
   
   if(length(bw) > 1) {
@@ -268,109 +266,12 @@ riskEst = function(
   
   littleLambda = solve(partitionAreasMat) %*% Lambda
   
-  if(type[1] == 'expected') {
     # expected count using full offsets, not xv offests
     expectedCoarseRegions = 
         (regionMat %*% lemObjects$offsetMat[['offset']]) %*% 
         littleLambda
+    
     return(list(
             expected = as.matrix(expectedCoarseRegions),
             risk = as.matrix(littleLambda)))
-  }
-  
-  lambdaMult = offsetMat %*% Lambda
-  
-  # convert lambdas to rasters
-  
-  resultRaster = lemObjects$rasterFine$idFine + 
-      (maxValue(lemObjects$rasterFine$idFine)+10)*lemObjects$rasterFine$idCoarse
-  
-  resultRaster = resultRaster + (
-        maxValue(resultRaster)+10) * lemObjects$rasterFine$cellCoarse
-  
-  resultRaster = ratify(resultRaster, count=TRUE)
-  
-  uniqueCells = levels(resultRaster)[[1]]$ID
-  uniqueCells = match(uniqueCells, values(resultRaster))
-  
-  for(Dname in names(lemObjects$rasterFine))
-    levels(resultRaster)[[1]][[Dname]] =
-        values(lemObjects$rasterFine[[Dname]])[uniqueCells]
-  
-  levels(resultRaster)[[1]]$expected = 
-      values(lemObjects$offset$offset)[uniqueCells] * 
-      prod(res(lemObjects$offset))
-  
-  levels(resultRaster)[[1]]$partition = paste(
-      'c', levels(resultRaster)[[1]]$cellCoarse,
-      'p', levels(resultRaster)[[1]]$idCoarse,
-      '.', levels(resultRaster)[[1]]$idFine,
-      sep=''
-  )
-  
-  levelsEm = as.matrix(
-      attributes(Lambda)$em
-  )[levels(resultRaster)[[1]]$partition,,drop=FALSE]
-  
-  emScale = levelsEm /(
-        levels(resultRaster)[[1]]$COUNT * prod(res(resultRaster))
-        )
-  
-  colnames(levelsEm) = 
-      paste('em.', colnames(levelsEm), sep='')
-  colnames(emScale) =
-      paste('emScale.', colnames(emScale), sep='')
-  
-  
-  levels(resultRaster)[[1]] = cbind(
-      levels(resultRaster)[[1]],
-      emScale#, levelsEm, bigLambda, littleLambda
-  )
-  
-  
-#	bigLambda = as.matrix(lambdaMult)[levels(resultRaster)[[1]]$partition,]
-  
-#	littleLambda = bigLambda / (levels(resultRaster)[[1]]$COUNT * levels(resultRaster)[[1]]$expected)
-  
-#	colnames(bigLambda) = paste('bigLambda.', colnames(bigLambda), sep='')
-#	colnames(littleLambda) = paste('lambda.', colnames(littleLambda), sep='')
-  
-  emScale = deratify(resultRaster, 
-      grep('^emScale', 
-          colnames(levels(resultRaster)[[1]]), 
-          value=TRUE)
-  )
-  
-  
-  wMat=lemObjects$focal$focal[[paste('bw',bw, sep='')]]
-  offsetSmooth = lemObjects$offset[[paste('offset.bw',bw, sep='')]]
-  
-#	stuff = oneLastStepSmooth(
-#			Dlayer = names(emScale)[100],
-#			emScale=emScale,
-#			w=wMat,
-#			offsetSmooth=offsetSmooth			
-#			)
-  
-  emSmooth = parallel::mcmapply(
-      oneLastStepSmooth,
-      Dlayer = names(emScale),
-      MoreArgs = list(
-          emScale=emScale,
-          w=wMat,
-          offsetSmooth=offsetSmooth
-      ),
-      SIMPLIFY=FALSE,
-#			USE.NAMES=FALSE,
-      # for some reason ncores=4 fails
-#			mc.cores=pmin(2,ncores)
-      mc.cores=ncores
-  )
-  theNames = names(emSmooth)
-  names(emSmooth) = NULL
-  result = do.call(brick, 
-      c(emSmooth, list(filename=filename)))		
-  names(result) = gsub("^emScale", "risk", theNames)
-  
-  return(result)
 }
