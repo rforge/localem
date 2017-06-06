@@ -223,11 +223,11 @@ lemXv = function(
     cat("putting estimated risk in raster\n")
   }
   stuff <<- list(xvSmoothMat$rasterFine, riskDf) 
-  newDf = as.data.frame(c(
+  newDf = cbind(
           levels(xvSmoothMat$rasterFine)[[1]][,c('ID','idCoarse','idFine','cellCoarse','partition')], 
           as.data.frame(riskDf[
                   as.character(levels(xvSmoothMat$rasterFine)[[1]]$partition),])
-      ))
+      )
   if(names(newDf)[1] != 'ID') {
     newDf = as.data.frame(c(
             list(ID = 1:nrow(newDf)),
@@ -235,6 +235,7 @@ lemXv = function(
             ))
       }
   levels(xvSmoothMat$rasterFine)[[1]] = newDf
+  
   if(verbose) {
     cat("done\n")
   }
