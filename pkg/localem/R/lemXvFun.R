@@ -144,12 +144,12 @@ lemXv = function(
       riskEst,
       bw = xvSmoothMat$bw,
       MoreArgs = list(
-          x=cases[,countcol],
+          x=cases[,countcol, drop=FALSE],
           lemObjects = xvSmoothMat,
           tol = tol, 
           maxIter =maxIter,
-          ncores = ncores,
           type = 'expected'),
+      mc.cores = ncores,
       SIMPLIFY=FALSE
   )
   estListExp = lapply(estList, function(x) x$expected)
@@ -170,32 +170,37 @@ lemXv = function(
   xvEst = estDf[,grep("xv[[:digit:]]+", colnames(estDf))]
   Sxv = gsub("^bw[[:digit:]]+xv|_count[[:digit:]]+?$", "", colnames(xvEst))
   Scount = gsub("bw[[:digit:]]+xv[[:digit:]]+_", "", colnames(xvEst))
-
-  xvEstMask = xvMat[,Sxv] * xvEst 
+  Sbw = gsub('^bw|xv.*', "", colnames(xvEst))
+  
+  suppressWarnings(xvEstMask <- xvMat[,Sxv] * xvEst)
   # observed counts in left out regions
   xvObs = xvMat[,Sxv] * as.matrix(cases[,Scount])
   
   logProbCoarse = stats::dpois(as.matrix(xvObs), as.matrix(xvEstMask), log=TRUE)
   logProb = apply(logProbCoarse, 2, sum)
-  names(logProb) = colnames(xvEst)
   
-  logProb = data.frame(
-      bw = as.numeric(gsub("^bw|xv[[:digit:]]+$", "", names(logProb))),
-      fold = gsub("^bw[[:digit:]]+xv", "", names(logProb)),
-      minusLogProb = -logProb 
-  )
+  logProbFull = data.frame(
+      bw = as.numeric(Sbw),
+      cases = Scount, 
+      fold = Sxv, 
+      minusLogProb = -logProb
+      )
   
-  totalXv = tapply(logProb$minusLogProb, logProb$bw, sum)
-  totalXv = data.frame(
-      bw = as.numeric(names(totalXv)),
-      fold = 'total',
-      minusLogProb = totalXv
-  )
-  
-  xvScore = rbind(logProb, totalXv[,colnames(logProb)])
-  
-  expCoarse = polyCoarse
-  expCoarse@data = as.data.frame(as.matrix(estDf))
+  xvRes = aggregate(
+      logProbFull[,'minusLogProb'],
+      as.list(logProbFull[,c('bw','cases')]),
+      sum
+      )
+  xvRes = reshape(
+      xvRes, direction = 'wide',
+      idvar = 'bw',
+      timevar = 'cases'
+      )
+  colnames(xvRes) = gsub("^x[.]", "", colnames(xvRes))    
+  xvRes = xvRes[,c('bw',countcol)]
+  minXvScore = apply(xvRes[,countcol, drop=FALSE],2,min)
+  xvRes[,countcol] = xvRes[,countcol] - 
+      matrix(minXvScore, nrow=nrow(xvRes), ncol=length(minXvScore), byrow=TRUE)
   
   levels(xvSmoothMat$rasterFine)[[1]] = cbind(
       levels(xvSmoothMat$rasterFine)[[1]], 
@@ -203,13 +208,17 @@ lemXv = function(
   )
   
   result = list(
-      xv = totalXv[totalXv$fold=='total', c('bw','minusLogProb')],
-      xvFull = totalXv,
+      xv = xvRes,
+      xvFull = logProbFull,
       smoothingMatrix = xvSmoothMat,
-      expected = estDf,
+      expected = polyCoarse,
       folds = xvMat
-      )
+  )
   return(result)
+  
+  
+  
+  
 }
 
 

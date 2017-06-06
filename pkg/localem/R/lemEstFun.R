@@ -62,7 +62,6 @@ riskEst = function(
     bw, 
     tol = 1e-6, 
     maxIter = 2000,
-    ncores = 1,
     type = c('final','unsmoothed','expected'), 
     filename = ''
 ) {
@@ -95,10 +94,13 @@ riskEst = function(
   
   
   regionMat = lemObjects$regionMat
-  smoothingMat = t(as.matrix(lemObjects$smoothingArray[[bw]]))
-  dimnames(smoothingMat) = list(
-      lemObjects$partitions, lemObjects$partitions
-  )
+  smoothingMat = Matrix::Matrix(values(lemObjects$smoothingArray[[bw]]),
+      nrow = nrow(lemObjects$smoothingArray),
+      ncol = ncol(lemObjects$smoothingArray),
+      byrow = TRUE,
+      dimnames = list(
+        lemObjects$partitions, lemObjects$partitions
+    ))
   
   if(length(grep("xv[[:digit:]]+$", bwString))) {
     offsetMat = lemObjects$offsetMat[[
@@ -264,8 +266,8 @@ regionOffset = regionMat %*% offsetMat
         (regionMat %*% lemObjects$offsetMat[['offset']]) %*% 
         littleLambda
     return(list(
-            expected = expectedCoarseRegions,
-            risk = littleLambda))
+            expected = as.matrix(expectedCoarseRegions),
+            risk = as.matrix(littleLambda)))
   }
   
   lambdaMult = offsetMat %*% Lambda

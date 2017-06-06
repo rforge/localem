@@ -217,7 +217,7 @@ rasterPartition = function(
           processing_unit = 'single',
           chunk_format = 'array',
           filename = gsub("[.]gr(d|i)$", "", offsetTempFile2), overwrite=TRUE,
-          verbose=verbose
+          verbose=(verbose>2)
       ))
   spatial.tools::sfQuickStop()
   names(smoothedOffset) = dimnames(focalArray)[[3]]

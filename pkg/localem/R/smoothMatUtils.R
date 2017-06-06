@@ -247,12 +247,12 @@ smoothingMatrixDiag = function(
       nrow = Npartitions, ncol = Npartitions,
       nlayers = Nsmooths, 
       overwrite = TRUE, return_filename=TRUE,
-      verbose = verbose, create_header=FALSE)
+      verbose = (verbose>2), create_header=FALSE)
   
   smoothingRasterWithHeader = spatial.tools::build_raster_header(
       x_filename = smoothingRaster,
       reference_raster = smoothingRasterTemplate,
-      setMinMax = TRUE, verbose=verbose
+      setMinMax = TRUE, verbose=(verbose>2)
       )
   
   diagBlocks = parallel::mcmapply(
