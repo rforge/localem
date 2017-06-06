@@ -177,7 +177,7 @@ lemXv = function(
   colnames(estDf) = colnames(riskDf) = 
       paste(rep(names(estList), unlist(lapply(estListExp, function(xx) dim(xx)[2]))),
           colnames(estDf), sep='_')
-  
+  rownames(riskDf) = xvSmoothMat$partitions
   
   if(verbose) {
     cat("computing CV scores\n")
@@ -224,7 +224,7 @@ lemXv = function(
   }
   stuff <<- list(xvSmoothMat$rasterFine, riskDf) 
   newDf = as.data.frame(c(
-          levels(xvSmoothMat$rasterFine)[[1]], 
+          levels(xvSmoothMat$rasterFine)[[1]][,c('ID','idCoarse','idFine','cellCoarse','partition')], 
           as.data.frame(riskDf[
                   as.character(levels(xvSmoothMat$rasterFine)[[1]]$partition),])
       ))
