@@ -32,11 +32,10 @@ if(Sys.info()['user'] == 'patrick' & interactive()) {
   Sbw = c(seq(4, 16, by=2), seq(20,35,by=5)) * 1000
 } else {
   ncores = 2
-  cellsFine = 60
-  cellsCoarse=15
+  cellsFine = 120
+  cellsCoarse=10
   path = tempdir()
-  Sbw = c(seq(5, 25, by=5)) * 1000
-  
+  Sbw = c(seq(5, 20, by=2.5)) * 1000
 }
 
 ```
@@ -78,11 +77,9 @@ kCases = geostatsp::simLgcp(
 Aggregate events to counties
 
 ```{r aggSim}
-
 kCases$agg = lapply(
     kCases[grep("^events[[:digit:]]+?", names(kCases))],
-    function(qq) over(qq, kentuckyCounty)[,'id']
-)
+    function(qq) over(qq, kentuckyCounty)[,'id'])
 countyCounts = as.data.frame(simplify2array(lapply(kCases$agg, table,exclude=NULL)))
 countyCounts = countyCounts[!is.na(rownames(countyCounts)),]
 countyCounts$id = rownames(countyCounts)

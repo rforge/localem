@@ -83,39 +83,39 @@ lemXv = function(
   }
   
   if(missing(lemObjects)) {  
-	  if(verbose) {
-		  cat("computing smoothing matrix\n")
-	  }
-  ##raster partition
-  xvLemRaster = rasterPartition(
-      polyCoarse = cases, 
-      polyFine = population, 
-      cellsCoarse = cellsCoarse, 
-      cellsFine = cellsFine, 
-      xv = xv,
-      bw = bw, 
-      ncores = ncores, 
-      idFile = file.path(path,'idXv.grd'), 
-      offsetFile = file.path(path, 'offsetXv.grd'), 
-      verbose = verbose)
-  
-  
-  xvSmoothMat =  smoothingMatrix(
-      rasterObjects = xvLemRaster, 
-      ncores = ncores, 
-      filename = file.path(path, 'smoothingMatrix.grd'),
-      verbose = verbose)
-  
-  xvMat = xvSmoothMat$xv
-  
-} else {
-	if(verbose) {
-		cat("using supplied smoothing matrix\n")
-	}
-	
-  xvSmoothMat = lemObjects
-  xvMat = lemObjects$xv
-}
+    if(verbose) {
+      cat("computing smoothing matrix\n")
+    }
+    ##raster partition
+    xvLemRaster = rasterPartition(
+        polyCoarse = cases, 
+        polyFine = population, 
+        cellsCoarse = cellsCoarse, 
+        cellsFine = cellsFine, 
+        xv = xv,
+        bw = bw, 
+        ncores = ncores, 
+        idFile = file.path(path,'idXv.grd'), 
+        offsetFile = file.path(path, 'offsetXv.grd'), 
+        verbose = verbose)
+    
+    
+    xvSmoothMat =  smoothingMatrix(
+        rasterObjects = xvLemRaster, 
+        ncores = ncores, 
+        filename = file.path(path, 'smoothingMatrix.grd'),
+        verbose = verbose)
+    
+    xvMat = xvSmoothMat$xv
+    
+  } else {
+    if(verbose) {
+      cat("using supplied smoothing matrix\n")
+    }
+    
+    xvSmoothMat = lemObjects
+    xvMat = lemObjects$xv
+  }
   
   if(is.vector(cases)) {
     cases = data.frame(cases=cases)
@@ -137,31 +137,39 @@ lemXv = function(
   }
   
   if(verbose) {
-	  cat("running local-EM for validation sets\n")
+    cat("running local-EM for validation sets\n")
   }
   # estimate risk (by partition, not continuous) for each bw/cv combinantion
-  estList = parallel::mcmapply(
-      riskEst,
-      bw = xvSmoothMat$bw,
-      MoreArgs = list(
-          x=cases[,countcol, drop=FALSE],
-          lemObjects = xvSmoothMat,
-          tol = tol, 
-          maxIter =maxIter,
-          type = 'expected'),
-      mc.cores = ncores,
-      SIMPLIFY=FALSE
-  )
+#  estList = parallel::mcmapply(
+  
+  spatial.tools::sfQuickInit(ncores, methods = FALSE)
+  estList = foreach::foreach(
+          bw = xvSmoothMat$bw,
+          .export = 'riskEst') %dopar% {
+        riskEst(bw,
+#      MoreArgs = list(
+            x=cases[,countcol, drop=FALSE],
+            lemObjects = xvSmoothMat,
+            tol = tol, 
+            maxIter =maxIter,
+            type = 'expected'#),
+#      mc.cores = ncores,
+        #     SIMPLIFY=FALSE
+        )
+      }
+  spatial.tools::sfQuickStop()
+  names(estList) = xvSmoothMat$bw
+  
   estListExp = try(lapply(estList, function(x) x$expected))
   
   if(class(estListExp) == "try-error") {
     return(list(
-      xv = NULL,
-      xvFull = NULL,
-      smoothingMatrix = xvSmoothMat,
-      expected = polyCoarse,
-      folds = xvMat
-  ))
+            xv = NULL,
+            xvFull = NULL,
+            smoothingMatrix = xvSmoothMat,
+            expected = polyCoarse,
+            folds = xvMat
+        ))
   }
   
   estListRisk = lapply(estList, function(x) x$risk)
@@ -173,7 +181,7 @@ lemXv = function(
           colnames(estDf), sep='_')
   
   if(verbose) {
-	  cat("computing CV scores\n")
+    cat("computing CV scores\n")
   }
   # compute the CV scores
   
@@ -183,9 +191,9 @@ lemXv = function(
   Scount = gsub("bw[[:digit:]]+xv[[:digit:]]+_", "", colnames(xvEst))
   Sbw = gsub('^bw|xv.*', "", colnames(xvEst))
   
-  suppressWarnings(xvEstMask <- xvMat[,Sxv] * xvEst)
+  suppressMessages(xvEstMask <- xvMat[,Sxv] * xvEst)
   # observed counts in left out regions
-  xvObs = xvMat[,Sxv] * as.matrix(cases[,Scount])
+  suppressMessages(xvObs <- xvMat[,Sxv] * as.matrix(cases[,Scount]))
   
   logProbCoarse = stats::dpois(as.matrix(xvObs), as.matrix(xvEstMask), log=TRUE)
   logProb = apply(logProbCoarse, 2, sum)
@@ -195,18 +203,18 @@ lemXv = function(
       cases = Scount, 
       fold = Sxv, 
       minusLogProb = -logProb
-      )
+  )
   
   xvRes = aggregate(
       logProbFull[,'minusLogProb'],
       as.list(logProbFull[,c('bw','cases')]),
       sum
-      )
+  )
   xvRes = reshape(
       xvRes, direction = 'wide',
       idvar = 'bw',
       timevar = 'cases'
-      )
+  )
   colnames(xvRes) = gsub("^x[.]", "", colnames(xvRes))    
   xvRes = xvRes[,c('bw',countcol)]
   minXvScore = apply(xvRes[,countcol, drop=FALSE],2,min)
