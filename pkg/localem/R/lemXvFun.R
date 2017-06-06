@@ -221,7 +221,7 @@ lemXv = function(
   
   levels(xvSmoothMat$rasterFine)[[1]] = cbind(
       levels(xvSmoothMat$rasterFine)[[1]], 
-      as.matrix(riskDf[levels(xvSmoothMat$rasterFine)[[1]]$partition,])
+      as.data.frame(riskDf[levels(xvSmoothMat$rasterFine)[[1]]$partition,])
   )
   if(verbose) {
     cat("done\n")
