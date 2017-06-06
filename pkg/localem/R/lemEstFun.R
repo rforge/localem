@@ -99,15 +99,15 @@ riskEst = function(
       ncol = ncol(lemObjects$smoothingArray),
       byrow = FALSE,
       dimnames = list(
+          lemObjects$partitions, lemObjects$partitions
+      ))
+  if(FALSE) {
+    
+    smoothingMatrix = t(as.matrix(lemObjects$smoothingArray[[bw]]))  
+    dimnames(smoothingMatrix) = list(
         lemObjects$partitions, lemObjects$partitions
-    ))
-if(FALSE) {
-  
-  smoothingMatrix = t(as.matrix(lemObjects$smoothingArray[[bw]]))  
-  dimnames(smoothingMatrix) = list(
-      lemObjects$partitions, lemObjects$partitions
-  )
-}
+    )
+  }
   
   if(length(grep("xv[[:digit:]]+$", bwString))) {
     offsetMat = lemObjects$offsetMat[[
@@ -119,7 +119,7 @@ if(FALSE) {
   
   
 # multiple observations
-if(is.data.frame(x)) x = as.matrix(x)
+  if(is.data.frame(x)) x = as.matrix(x)
   if(is.matrix(x)) {
     
     idCoarse = 1:nrow(x)
@@ -246,15 +246,15 @@ if(is.data.frame(x)) x = as.matrix(x)
       )
   
   Diter = 1
-  absdiff = 1
+  absdiff = Inf
   
-
-regionOffset = regionMat %*% offsetMat
-
-if(requireNamespace("gpuR", quietly=TRUE)) {
-  smoothingMat = gpuR::gpuMatrix(as.matrix(smoothingMat))
-}
-
+  
+  regionOffset = regionMat %*% offsetMat
+  
+  if(requireNamespace("gpuR", quietly=TRUE)) {
+    smoothingMat = gpuR::gpuMatrix(as.matrix(smoothingMat))
+  }
+  
   while((absdiff > tol) && (Diter < maxIter)) {
     
     Lambda = oneLemIter(

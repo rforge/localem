@@ -26,10 +26,10 @@ if(Sys.info()['user'] == 'patrick' & interactive()) {
   # this uses about 20GB of memory
   cellsFine = 200
   ncores = 8
-  cellsCoarse=30
+  cellsCoarse=40
   path = '/tmp/localEM/kentuckyVignette/'
   dir.create(path, showWarnings=FALSE, recursive=TRUE)
-  Sbw = c(seq(4, 20, by=2), 25, 30) * 1000
+  Sbw = c(seq(4, 16, by=2), seq(20,35,by=5)) * 1000
 } else {
   ncores = ifelse(.Platform$OS.type == 'unix', 2, 1)
   cellsFine = 60

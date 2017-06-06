@@ -5,7 +5,7 @@
 #' @param polyCoarse Spatial polygons of case data
 #' @param polyFine Spatial polygons of population data
 #' @param bw Vector of bandwidths
-#' @param focalSize Distance to truncate Gaussian kernel bandwidth (default is 3 times of the bandwidth)
+#' @param focalSize Distance to truncate Gaussian kernel, default is 29 cells
 #' @param cellsCoarse Horizontal/vertical resolution of raster applied to coarse polygons
 #' @param cellsFine Horizontal/vertical resolution of raster applied to fine polygons
 #' @param ncores Number of cores/threads for parallel processing
@@ -43,7 +43,7 @@ rasterPartition = function(
     cellsCoarse, 
     cellsFine, 
     bw,
-    focalSize = 59,
+    focalSize = NULL,
     xv = NULL, 
     ncores = 1, 
     path = tempdir(),
@@ -155,6 +155,8 @@ rasterPartition = function(
     cat("smoothing offsets\n")
   }
   
+  if(is.null(focalSize))
+  	focalSize = 59*xres(rasterFine)
   theFocal = focalFromBw(
       bw = bw, 
       fine=rasterFine, 
@@ -171,7 +173,7 @@ rasterPartition = function(
       c(dim(theFocal$focal[[1]]), length(theFocal$focal)),
       dimnames = list(NULL,NULL, names(theFocal$focal))
   )
-  focalArray = focalArray[,,forSmooth[,'bw']]
+  focalArray = focalArray[,,forSmooth[,'bw'], drop=FALSE]
   dimnames(focalArray)[[3]] = paste(
       forSmooth[,'bw'], 
       gsub("offset", "", forSmooth[,'layer'], ignore.case=TRUE),
