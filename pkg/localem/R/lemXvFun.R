@@ -148,15 +148,11 @@ lemXv = function(
           bw = xvSmoothMat$bw,
           .export = 'riskEst') %dopar% {
         riskEst(bw,
-#      MoreArgs = list(
             x=cases[,countcol, drop=FALSE],
             lemObjects = xvSmoothMat,
             tol = tol, 
             maxIter =maxIter,
-            type = 'expected'#),
-#      mc.cores = ncores,
-        #     SIMPLIFY=FALSE
-        )
+            type = 'expected' )
       }
   spatial.tools::sfQuickStop()
   names(estList) = xvSmoothMat$bw

@@ -27,7 +27,7 @@ oneLemIter = function(
 #  emOld = t(t(counts/denom) %*% t(regionMat) %*% offsetMat) * Lambda
  
   # the script M(Lambda) object
-	em = crossprod(regionOffset, counts/denom) * Lambda
+	em = Matrix::crossprod(regionOffset, counts/denom) * Lambda
 	
   em[as.vector(!is.finite(em))] = 0
 
@@ -35,8 +35,10 @@ oneLemIter = function(
 
   if(class(smoothingMat) == 'gpuMatrix') {
     em = gpuR::gpuMatrix(em)
+    result = as.matrix(gupMatrix::crossprod(smoothingMat, em))
+  } else {
+    result = as.matrix(Matrix::crossprod(smoothingMat, em))    
   }
-	result = as.matrix(crossprod(smoothingMat, em))
 	
 	attributes(result)$em = em
 	

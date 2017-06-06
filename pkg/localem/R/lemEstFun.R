@@ -94,7 +94,7 @@ riskEst = function(
   
   
   regionMat = lemObjects$regionMat
-  smoothingMat = Matrix::Matrix(values(lemObjects$smoothingArray[[bw]]),
+  smoothingMat = Matrix::Matrix(raster::values(lemObjects$smoothingArray[[bw]]),
       nrow = nrow(lemObjects$smoothingArray),
       ncol = ncol(lemObjects$smoothingArray),
       byrow = FALSE,
