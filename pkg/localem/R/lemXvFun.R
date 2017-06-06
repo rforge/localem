@@ -142,7 +142,9 @@ lemXv = function(
   # estimate risk (by partition, not continuous) for each bw/cv combinantion
 #  estList = parallel::mcmapply(
   
-  spatial.tools::sfQuickInit(ncores, methods = FALSE)
+  spatial.tools::sfQuickInit(
+      min(c(length(xvSmoothMat$bw),ncores)), 
+      methods = FALSE)
 
   estList = foreach::foreach(
           bw = xvSmoothMat$bw,
@@ -217,11 +219,20 @@ lemXv = function(
   minXvScore = apply(xvRes[,countcol, drop=FALSE],2,min)
   xvRes[,countcol] = xvRes[,countcol] - 
       matrix(minXvScore, nrow=nrow(xvRes), ncol=length(minXvScore), byrow=TRUE)
-  
-  levels(xvSmoothMat$rasterFine)[[1]] = as.data.frame(c(
-      levels(xvSmoothMat$rasterFine)[[1]], 
-      as.data.frame(riskDf[levels(xvSmoothMat$rasterFine)[[1]]$partition,])
-  ))
+  if(verbose) {
+    cat("putting estimated risk in raster\n")
+  }
+  newDf = as.data.frame(c(
+          levels(xvSmoothMat$rasterFine)[[1]], 
+          as.data.frame(riskDf[levels(xvSmoothMat$rasterFine)[[1]]$partition,])
+      ))
+  if(names(newDf)[1] != 'ID') {
+    newDf = as.data.frame(c(
+            list(ID = 1:nrow(newDf)),
+            newDf
+            ))
+      }
+  levels(xvSmoothMat$rasterFine)[[1]] = newDf
   if(verbose) {
     cat("done\n")
   }
