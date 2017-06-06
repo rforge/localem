@@ -35,7 +35,7 @@ if(Sys.info()['user'] == 'patrick' & interactive()) {
   cellsFine = 120
   cellsCoarse= 10
   path = tempdir()
-  Sbw = c(seq(5, 40, by=2.5)) * 1000
+  Sbw = c(seq(5, 40, by=5)) * 1000
 }
 
 ```
@@ -57,9 +57,14 @@ The simulated cases are then aggregated to the appropriate counties.
 
 ```{r simcases, message = FALSE}
 
+if(requireNamespace("RandomFields", quietly=TRUE)) {
+  NcellsSim = 400
+} else {
+  NcellsSim = 100
+}
 kentuckyOffset = geostatsp::spdfToBrick(
     kentuckyTract,
-    geostatsp::squareRaster(kentuckyTract, 400),
+    geostatsp::squareRaster(kentuckyTract, NcellsSim),
     pattern = '^expected$',
     logSumExpected=TRUE
 )

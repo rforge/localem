@@ -275,8 +275,8 @@ smoothingMatrixDiag = function(
           matchPartHere = match(partHere, Spartitions)
           
           haveWritten = FALSE
-          
-          while(!haveWritten) {
+          writeCounter1 = 0
+          while(!haveWritten & (writeCounter1 < 20)) {
             haveWritten = tryCatch(spatial.tools::binary_image_write(
                 smoothingRaster, 
                 image_dims = dim(smoothingRasterTemplate),
@@ -286,8 +286,13 @@ smoothingMatrixDiag = function(
                     matchPartHere, 
                     layerSeq)
             ), error = function(err) {FALSE}  )
+            writeCounter1 = writeCounter1 + 1
           }
         }
+        if(writeCounter1 >20) {
+          warning("over 20 write attempts for cell", Dcell1)
+        }
+        
         dim(thisBlock)
       }
   
