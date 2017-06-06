@@ -151,8 +151,7 @@ lemXv = function(
             x=cases[,countcol, drop=FALSE],
             lemObjects = xvSmoothMat,
             tol = tol, 
-            maxIter =maxIter,
-            type = 'expected' )
+            maxIter =maxIter )
       }
   spatial.tools::sfQuickStop()
   names(estList) = xvSmoothMat$bw
@@ -219,10 +218,10 @@ lemXv = function(
   xvRes[,countcol] = xvRes[,countcol] - 
       matrix(minXvScore, nrow=nrow(xvRes), ncol=length(minXvScore), byrow=TRUE)
   
-  levels(xvSmoothMat$rasterFine)[[1]] = cbind(
+  levels(xvSmoothMat$rasterFine)[[1]] = as.data.frame(c(
       levels(xvSmoothMat$rasterFine)[[1]], 
       as.data.frame(riskDf[levels(xvSmoothMat$rasterFine)[[1]]$partition,])
-  )
+  ))
   if(verbose) {
     cat("done\n")
   }
