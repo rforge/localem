@@ -97,10 +97,17 @@ riskEst = function(
   smoothingMat = Matrix::Matrix(values(lemObjects$smoothingArray[[bw]]),
       nrow = nrow(lemObjects$smoothingArray),
       ncol = ncol(lemObjects$smoothingArray),
-      byrow = TRUE,
+      byrow = FALSE,
       dimnames = list(
         lemObjects$partitions, lemObjects$partitions
     ))
+if(FALSE) {
+  
+  smoothingMatrix = t(as.matrix(lemObjects$smoothingArray[[bw]]))  
+  dimnames(smoothingMatrix) = list(
+      lemObjects$partitions, lemObjects$partitions
+  )
+}
   
   if(length(grep("xv[[:digit:]]+$", bwString))) {
     offsetMat = lemObjects$offsetMat[[
@@ -243,6 +250,10 @@ if(is.data.frame(x)) x = as.matrix(x)
   
 
 regionOffset = regionMat %*% offsetMat
+
+if(requireNamespace("gpuR", quietly=TRUE)) {
+  smoothingMat = gpuR::gpuMatrix(as.matrix(smoothingMat))
+}
 
   while((absdiff > tol) && (Diter < maxIter)) {
     

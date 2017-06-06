@@ -25,7 +25,8 @@ Suggests:
   	mapmisc,
   	RColorBrewer,
   	classInt,
-  	knitr
+  	knitr,
+  	gpuR
 Enhances:
 	  RandomFields
 RoxygenNote: 5.0.1

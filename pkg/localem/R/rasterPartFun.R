@@ -43,7 +43,7 @@ rasterPartition = function(
     cellsCoarse, 
     cellsFine, 
     bw,
-    focalSize = NULL,
+    focalSize = 59,
     xv = NULL, 
     ncores = 1, 
     path = tempdir(),
@@ -51,7 +51,7 @@ rasterPartition = function(
     offsetFile = paste(tempfile('lemOffset', path), '.grd', sep=''),
     verbose = FALSE
 ){
-    
+# TO DO: aggregate raster before smoothing if bw is large    
   if(verbose) {
     cat(date(), "\n")
     cat("obtaining rasters\n")

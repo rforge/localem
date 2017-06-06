@@ -206,6 +206,9 @@ lemXv = function(
       levels(xvSmoothMat$rasterFine)[[1]], 
       as.matrix(riskDf[levels(xvSmoothMat$rasterFine)[[1]]$partition,])
   )
+  if(verbose) {
+    cat("done\n")
+  }
   
   result = list(
       xv = xvRes,
