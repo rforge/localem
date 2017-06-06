@@ -63,11 +63,12 @@ smoothingMatrix = function(
   Sbw = theMat$bw
   
   if(verbose) {
+    cat('off-diagonals of smoothing matrix', "\n")
     cat(date(), "\n")
   }
-  myBar = raster::pbCreate(length(theMat$uniqueDist),
-      c('','text')[1+verbose], 
-      label='off-diagonals of smoothing matrix')
+#  myBar = raster::pbCreate(length(theMat$uniqueDist),
+#      c('','text')[1+verbose], 
+#      label='off-diagonals of smoothing matrix')
   offDiag = foreach::foreach(
           x = theMat$uniqueDist, .packages='localEM', .export = 'smoothingMatrixOneDist'
       ) %dopar% {
@@ -133,10 +134,10 @@ smoothingMatrix = function(
             
           }
         }
-        raster::pbStep(myBar)
+#        raster::pbStep(myBar)
         c(writeCounter1, writeCounter1)
       } # end foreach
-      raster::pbClose(myBar)
+ #     raster::pbClose(myBar)
   spatial.tools::sfQuickStop()
   
   

@@ -143,6 +143,7 @@ lemXv = function(
 #  estList = parallel::mcmapply(
   
   spatial.tools::sfQuickInit(ncores, methods = FALSE)
+
   estList = foreach::foreach(
           bw = xvSmoothMat$bw,
           .export = 'riskEst') %dopar% {
