@@ -146,7 +146,7 @@ lemXv = function(
 
   estList = foreach::foreach(
           bw = xvSmoothMat$bw,
-          .export = 'riskEst') %dopar% {
+          .export = 'riskEst', .packages='Matrix') %dopar% {
         riskEst(bw,
             x=cases[,countcol, drop=FALSE],
             lemObjects = xvSmoothMat,
