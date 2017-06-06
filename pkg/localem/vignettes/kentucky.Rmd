@@ -31,7 +31,7 @@ if(Sys.info()['user'] == 'patrick' & interactive()) {
   dir.create(path, showWarnings=FALSE, recursive=TRUE)
   Sbw = c(seq(4, 16, by=2), seq(20,35,by=5)) * 1000
 } else {
-  ncores = ifelse(.Platform$OS.type == 'unix', 2, 1)
+  ncores = 2
   cellsFine = 60
   cellsCoarse=15
   path = tempdir()

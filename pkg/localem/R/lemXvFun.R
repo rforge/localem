@@ -152,7 +152,18 @@ lemXv = function(
       mc.cores = ncores,
       SIMPLIFY=FALSE
   )
-  estListExp = lapply(estList, function(x) x$expected)
+  estListExp = try(lapply(estList, function(x) x$expected))
+  
+  if(class(estListExp) == "try-error") {
+    return(list(
+      xv = NULL,
+      xvFull = NULL,
+      smoothingMatrix = xvSmoothMat,
+      expected = polyCoarse,
+      folds = xvMat
+  ))
+  }
+  
   estListRisk = lapply(estList, function(x) x$risk)
   
   estDf = as.matrix(do.call(cbind, estListExp))

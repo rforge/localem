@@ -152,16 +152,18 @@ rasterPartition = function(
   
   if(verbose) {
     cat(date(), "\n")
-    cat("smoothing offsets\n")
+    cat("computing focal array\n")
   }
   
   if(is.null(focalSize))
-  	focalSize = 59*xres(rasterFine)
+  	focalSize = 3*max(bw)
+  
+  spatial.tools::sfQuickInit(ncores, methods = FALSE)
+  
   theFocal = focalFromBw(
       bw = bw, 
       fine=rasterFine, 
-      focalSize=focalSize, 
-      ncores=ncores)
+      focalSize=focalSize)
   
   
   forSmooth = expand.grid(
@@ -183,7 +185,12 @@ rasterPartition = function(
   
   Scvsets = match(forSmooth[,'layer'],names(rasterOffset))
 
-	
+  if(verbose) {
+    cat(date(), "\n")
+    cat("smoothing offsets\n")
+  }
+  
+  
 	# smoothing doesn't seem to work unless smoothing window is less than
 	# 59 by 59
   maxFocalSize = 59
@@ -208,7 +215,6 @@ rasterPartition = function(
   
   offsetTempFile2 = tempfile()
   
-  spatial.tools::sfQuickInit(ncores, methods = FALSE)
   suppressWarnings(
       smoothedOffset <- spatial.tools::rasterEngine(
           x=rasterOffset, fun=focalFunction, 

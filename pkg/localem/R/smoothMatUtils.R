@@ -215,7 +215,7 @@ smoothingMatrixEntries = function(
 # Generates also the matrix that matches the IDs of the coarse polygons with the partitions
 smoothingMatrixDiag = function(
     rasterCoarse,rasterFine,
-    focalList,offsetRaster, ncores,
+    focalList,offsetRaster, 
     filename,
     verbose=FALSE
 ) {
@@ -229,8 +229,10 @@ smoothingMatrixDiag = function(
       reorder=FALSE,
       xv = names(offsetRaster))
   
+  Spartitions = levels(rasterFine)[[1]][,'partition']
   Npartitions= nrow(levels(rasterFine)[[1]])
   Nsmooths = dim(kernelArrayD)[3]
+  layerSeq = 1:Nsmooths
   Sbw = dimnames(kernelArrayD)[[3]]
   
   smoothingRasterTemplate = brick(
@@ -238,9 +240,10 @@ smoothingMatrixDiag = function(
       xmn=0,xmx=1,ymn=0,ymx=1,
       nl = Nsmooths
   )
+  
   names(smoothingRasterTemplate) = Sbw		
-
- # create a raster brick for storing the smoothing matrix
+  
+  # create a raster brick for storing the smoothing matrix
   smoothingRaster = spatial.tools::create_blank_raster(
       gsub("[.]gr[id]$", ".gri", filename), 
       reference_raster=smoothingRasterTemplate,
@@ -253,39 +256,44 @@ smoothingMatrixDiag = function(
       x_filename = smoothingRaster,
       reference_raster = smoothingRasterTemplate,
       setMinMax = TRUE, verbose=(verbose>2)
-      )
-  
-  diagBlocks = parallel::mcmapply(
-      smoothingMatrixEntries,
-      cell1 = 1:ncell(rasterCoarse),
-      MoreArgs=list(
-          focalList=kernelArrayD,
-          coarse=rasterCoarse,
-          fine=rasterFine,
-          offsetRaster=offsetRaster#, smoothingRaster = smoothingRaster
-      ),
-      mc.cores=ncores, SIMPLIFY=FALSE
   )
   
-  cellsWithData = which(!(unlist(lapply(diagBlocks, is.null))))
-  Spartitions = unlist(lapply(diagBlocks, function(qq) dimnames(qq)[[1]]))
-  layerSeq = 1:Nsmooths
   
-  for(D in cellsWithData){
-    partHere = dimnames(diagBlocks[[D]])[[1]]
-    matchPartHere = match(partHere, Spartitions)
-    
-    spatial.tools::binary_image_write(
-        smoothingRaster, 
-        image_dims = dim(smoothingRasterTemplate),
-        data=diagBlocks[[D]], 
-        data_position = list(
-            matchPartHere, 
-            matchPartHere, 
-            layerSeq)
-        )
-  }
+  diagBlocks = foreach::foreach(
+          Dcell1 = 1:ncell(rasterCoarse), .packages='localEM', .export = 'smoothingMatrixEntries'
+      ) %dopar% {
 
+        thisBlock = smoothingMatrixEntries(cell1 = Dcell1,
+            focalList=kernelArrayD,
+            coarse=rasterCoarse,
+            fine=rasterFine,
+            offsetRaster=offsetRaster
+        )
+
+        if(!is.null(thisBlock)) {
+          partHere = dimnames(thisBlock)[[1]]
+          matchPartHere = match(partHere, Spartitions)
+          
+          haveWritten = FALSE
+          
+          while(!haveWritten) {
+            haveWritten = tryCatch(spatial.tools::binary_image_write(
+                smoothingRaster, 
+                image_dims = dim(smoothingRasterTemplate),
+                data=thisBlock, 
+                data_position = list(
+                    matchPartHere, 
+                    matchPartHere, 
+                    layerSeq)
+            ), error = function(err) {FALSE}  )
+          }
+        }
+        dim(thisBlock)
+      }
+  
+  cellsWithData = which(unlist(lapply(diagBlocks, length))>0)
+  
+  
   # matrix of cell distances
   allCells = expand.grid(cellsWithData, cellsWithData)
   colnames(allCells) = gsub("^Var", "cell", colnames(allCells))

@@ -10,7 +10,8 @@ LazyData: FALSE
 Depends:
 	  R (>= 2.10),
     raster,
-    sp
+    sp,
+    foreach
 Imports:
     parallel,
     Matrix,
