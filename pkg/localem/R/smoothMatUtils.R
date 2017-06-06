@@ -288,12 +288,12 @@ smoothingMatrixDiag = function(
             ), error = function(err) {FALSE}  )
             writeCounter1 = writeCounter1 + 1
           }
-        }
         if(writeCounter1 >20) {
           warning("over 20 write attempts for cell", Dcell1)
         }
         
-        dim(thisBlock)
+      }
+      dim(thisBlock)
       }
   
   cellsWithData = which(unlist(lapply(diagBlocks, length))>0)

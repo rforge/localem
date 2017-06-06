@@ -35,7 +35,7 @@ if(Sys.info()['user'] == 'patrick' & interactive()) {
   cellsFine = 120
   cellsCoarse= 10
   path = tempdir()
-  Sbw = c(seq(5, 40, by=5)) * 1000
+  Sbw = c(seq(5, 35, by=5)) * 1000
 }
 
 ```
