@@ -101,13 +101,6 @@ riskEst = function(
       dimnames = list(
           lemObjects$partitions, lemObjects$partitions
       ))
-  if(FALSE) {
-    
-    smoothingMatrix = t(as.matrix(lemObjects$smoothingArray[[bw]]))  
-    dimnames(smoothingMatrix) = list(
-        lemObjects$partitions, lemObjects$partitions
-    )
-  }
   
   if(length(grep("xv[[:digit:]]+$", bwString))) {
     offsetMat = lemObjects$offsetMat[[
@@ -264,6 +257,10 @@ riskEst = function(
         counts = obsCounts)
     
     absdiff = mean(abs(oldLambda - Lambda))
+    if(all(is.na(absdiff))) {
+      warning("missing values in Lambda")
+      absdiff = -Inf
+    }
     
     oldLambda = Lambda
     Diter = Diter + 1

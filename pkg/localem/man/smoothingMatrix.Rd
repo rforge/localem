@@ -4,7 +4,8 @@
 \alias{smoothingMatrix}
 \title{Generates the smoothing matrix for the partitions and bandwidths}
 \usage{
-smoothingMatrix(rasterObjects, ncores = 1, verbose = FALSE)
+smoothingMatrix(rasterObjects, ncores = 1, filename = "smoothingMatrix.gri",
+  verbose = FALSE)
 }
 \arguments{
 \item{rasterObjects}{Raster objects of partitions and smoothed offsets}
@@ -46,4 +47,3 @@ lemSmoothMat = smoothingMatrix(rasterObjects = lemRaster,
 }
 
 }
-

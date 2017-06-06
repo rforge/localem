@@ -41,4 +41,3 @@ legend('topleft',
 )
 }
 \keyword{datasets}
-

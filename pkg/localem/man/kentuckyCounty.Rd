@@ -40,4 +40,3 @@ legend('topleft',
 )
 }
 \keyword{datasets}
-

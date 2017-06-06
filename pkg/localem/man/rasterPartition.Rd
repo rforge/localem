@@ -5,8 +5,9 @@
 \title{Generates the partitions by overlaying rasters of the coarse and fine polygons}
 \usage{
 rasterPartition(polyCoarse, polyFine, cellsCoarse, cellsFine, bw,
-  focalSize = NULL, ncores = 1, idFile = paste(tempfile(), "Id.grd", sep =
-  ""), offsetFile = paste(tempfile(), "Offset.grd", sep = ""),
+  focalSize = NULL, xv = NULL, ncores = 1, path = tempdir(),
+  idFile = paste(tempfile("lemId", path), ".grd", sep = ""),
+  offsetFile = paste(tempfile("lemOffset", path), ".grd", sep = ""),
   verbose = FALSE)
 }
 \arguments{
@@ -20,7 +21,7 @@ rasterPartition(polyCoarse, polyFine, cellsCoarse, cellsFine, bw,
 
 \item{bw}{Vector of bandwidths}
 
-\item{focalSize}{Distance to truncate Gaussian kernel bandwidth (default is 3 times of the bandwidth)}
+\item{focalSize}{Distance to truncate Gaussian kernel, default is 29 cells}
 
 \item{ncores}{Number of cores/threads for parallel processing}
 
@@ -58,4 +59,3 @@ lemRaster = rasterPartition(polyCoarse = kentuckyCounty,
 }
 
 }
-

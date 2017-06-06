@@ -4,15 +4,16 @@
 \alias{lemXv}
 \title{Computes the likelihood cross-validation}
 \usage{
-lemXv(x, lemObjects, Nxv = 5, ncores = 1, tol = 1e-06, maxIter = 2000,
-  randomSeed = NULL, verbose = FALSE)
+lemXv(cases, population, cellsCoarse, cellsFine, bw, xv = 4, lemObjects,
+  ncores = 1, tol = 1e-06, maxIter = 2000, randomSeed = NULL,
+  verbose = FALSE, path = getwd())
 }
 \arguments{
-\item{x}{Spatial polygons of case data}
+\item{cellsCoarse, }{}
+
+\item{cellsFine, }{}
 
 \item{lemObjects}{List of arrays for the smoothing matrix, and raster stacks for the partition and smoothed offsets}
-
-\item{Nxv}{Number of cross-validation datasets}
 
 \item{ncores}{Number of cores/threads for parallel processing}
 
@@ -23,6 +24,14 @@ lemXv(x, lemObjects, Nxv = 5, ncores = 1, tol = 1e-06, maxIter = 2000,
 \item{randomSeed}{Seed for random number generator}
 
 \item{verbose}{Verbose output}
+
+\item{path}{folder for storing rasters}
+
+\item{polyCoarse, }{}
+
+\item{polyFine, }{}
+
+\item{Nxv}{Number of cross-validation datasets}
 }
 \value{
 The \code{lemXv} function returns a data frame of specified bandwidths and their cross-validation scores.
@@ -70,4 +79,3 @@ abline(v = bestBw, lty = 3)
 }
 
 }
-
