@@ -9,9 +9,15 @@ lemXv(cases, population, cellsCoarse, cellsFine, bw, xv = 4, lemObjects,
   verbose = FALSE, path = getwd())
 }
 \arguments{
+\item{cases, }{}
+
+\item{population, }{}
+
 \item{cellsCoarse, }{}
 
 \item{cellsFine, }{}
+
+\item{xv}{Number of cross-validation datasets}
 
 \item{lemObjects}{List of arrays for the smoothing matrix, and raster stacks for the partition and smoothed offsets}
 
@@ -26,12 +32,6 @@ lemXv(cases, population, cellsCoarse, cellsFine, bw, xv = 4, lemObjects,
 \item{verbose}{Verbose output}
 
 \item{path}{folder for storing rasters}
-
-\item{polyCoarse, }{}
-
-\item{polyFine, }{}
-
-\item{Nxv}{Number of cross-validation datasets}
 }
 \value{
 The \code{lemXv} function returns a data frame of specified bandwidths and their cross-validation scores.
@@ -78,4 +78,7 @@ plot(lemCv[is.finite(lemCv$bw),],
 abline(v = bestBw, lty = 3)
 }
 
+Computes the likelihood cross-validation by removing spatial regions and estimating risk for those regions
+This requires computations of new smoothing matrix for each training set
+Sampling Ratio: 75/25\% of data for training and testing sets
 }
