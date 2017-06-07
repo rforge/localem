@@ -196,8 +196,9 @@ lemXv = function(
   
   # expected counts in left out regions
   xvEst = estDf[,grep("xv[[:digit:]]+", colnames(estDf))]
-  Sxv = gsub("^bw[[:digit:]]+xv|_count[[:digit:]]+?$", "", colnames(xvEst))
+  Sxv = gsub("^bw[[:digit:]]+xv|_count[[:digit:]]+?$|_$", "", colnames(xvEst))
   Scount = gsub("bw[[:digit:]]+xv[[:digit:]]+_", "", colnames(xvEst))
+  if(all(nchar(Scount)==0)) Scount = rep(countcol, length(Scount))
   Sbw = gsub('^bw|xv.*', "", colnames(xvEst))
   
   suppressMessages(xvEstMask <- xvMat[,Sxv] * xvEst)
@@ -234,19 +235,20 @@ lemXv = function(
   }
 #  stuff <<- list(xvSmoothMat$rasterFine, riskDf) 
   newDf <- list(
-          levels(xvSmoothMat$rasterFine)[[1]][,c('ID','idCoarse','idFine','cellCoarse','partition')], 
+          raster::levels(xvSmoothMat$rasterFine)[[1]][,c('ID','idCoarse','idFine','cellCoarse','partition')], 
           as.data.frame(riskDf[
-                  as.character(levels(xvSmoothMat$rasterFine)[[1]]$partition),])
+                  as.character(raster::levels(xvSmoothMat$rasterFine)[[1]]$partition),])
       )
-  newDf = cbind(newDf[[1]], newDf[[2]])    
-  if(names(newDf)[1] != 'ID') {
-    newDf = as.data.frame(c(
+  newDf = try(cbind(newDf[[1]], newDf[[2]]))    
+  if(class(newDf) != 'try-error') {
+    if(names(newDf)[1] != 'ID') {
+      newDf = as.data.frame(c(
             list(ID = 1:nrow(newDf)),
             newDf
             ))
       }
-  levels(xvSmoothMat$rasterFine)[[1]] = newDf
-  
+    levels(xvSmoothMat$rasterFine)[[1]] = newDf
+  }
   if(verbose) {
     cat("done\n")
   }
