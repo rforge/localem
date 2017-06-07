@@ -197,11 +197,11 @@ rasterPartition = function(
   
 	# smoothing doesn't seem to work unless smoothing window is less than
 	# 59 by 59
-  maxFocalSize = 59
+  maxFocalSize = 101
   if(dim(focalArray)[1] > maxFocalSize){
-  	tooBig = (dim(focalArray)[1]-59)/2
+  	tooBig = (dim(focalArray)[1]-maxFocalSize)/2
   	warning('focal window is larger than rasterEngine can hadel, being reduced by ', tooBig)
-  	toKeep = seq(tooBig+1, by=1, len=59)
+  	toKeep = seq(tooBig+1, by=1, len=maxFocalSize)
   	focalArray = focalArray[toKeep, toKeep,,drop=FALSE]
   	# rescale so kernels integrate to 1
   	toScale = 1/apply(focalArray, 3, sum)
@@ -253,7 +253,6 @@ rasterPartition = function(
   levels(partitionRaster) = list(partitions)
   partitionRaster = writeRaster(partitionRaster, file=idFile, overwrite=file.exists(idFile))
   
-
   
 # offsetMat is the value of the offset at all points in the partition
   
@@ -285,8 +284,8 @@ rasterPartition = function(
       list(polyCoarse$idCoarse, partitionOffsets$partition)
   
   partitionFreq = raster::freq(partitionRaster)
-  rownames(partitionFreq) = levels(partitionRaster)[[1]][partitionFreq[,'value'],'partition']
-  partitionAreas = partitionFreq[,'count'][colnames(regionMat)] * prod(res(partitionRaster))  
+  rownames(partitionFreq) = raster::levels(partitionRaster)[[1]][partitionFreq[,'value'],'partition']
+  partitionAreas = partitionFreq[,'count'][colnames(regionMat)] * prod(raster::res(partitionRaster))  
 
   
   
