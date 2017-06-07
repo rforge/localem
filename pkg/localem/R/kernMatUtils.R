@@ -168,7 +168,7 @@ kernMat = function(
     if(is.null(coarse)) {
       warning("supply coarse if fineRelativeRes is a raster")
     }
-    fineRelativeRes = round(res(coarse)/res(fineRelativeRes))
+    fineRelativeRes = round(raster::res(coarse)/raster::res(fineRelativeRes))
   }
   cellDistFine = cellDist * fineRelativeRes
   

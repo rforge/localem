@@ -121,15 +121,18 @@ rasterPartition = function(
   # then create fine ID's with homogeneous offsets
   maxOffset = 10^5 / maxValue(rasterOffset)
   ratifyOffset = ratify(round(rasterOffset*maxOffset), count=FALSE)
-  stuff= levels(ratifyOffset)[[1]]
-  stuff$idFine = seq(1, nrow(stuff))
-  levels(ratifyOffset) = stuff
-  
+  stuff= raster::levels(ratifyOffset)[[1]]
+  if(!is.null(stuff)) {
+	  stuff$idFine = seq(1, nrow(stuff))
+	  levels(ratifyOffset) = list(stuff)
+  } else {
+  	warning('offset problems, cant find levels')
+  }
   rasterIdFine = deratify(ratifyOffset, 'idFine')
   
   for(Dxv in 1:ncol(xvMat)) {
     xvHere = which(xvMat[,Dxv])
-    maskHere = calc(rasterIdCoarse, 
+    maskHere = raster::calc(rasterIdCoarse, 
         function(x) ! x %in% xvHere )
     rasterOffset = addLayer(
         rasterOffset, 
@@ -158,7 +161,8 @@ rasterPartition = function(
   if(is.null(focalSize))
   	focalSize = 3*max(bw)
   
-  spatial.tools::sfQuickInit(ncores, methods = FALSE)
+  if(ncores>1) 
+	  spatial.tools::sfQuickInit(ncores, methods = FALSE)
   
   theFocal = focalFromBw(
       bw = bw, 
@@ -227,14 +231,14 @@ rasterPartition = function(
           filename = gsub("[.]gr(d|i)$", "", offsetTempFile2), overwrite=TRUE,
           verbose=(verbose>2)
       ))
-  spatial.tools::sfQuickStop()
+  if(ncores>1) spatial.tools::sfQuickStop()
   names(smoothedOffset) = dimnames(focalArray)[[3]]
   
  offsetStack = writeRaster(addLayer(rasterOffset, smoothedOffset),
       filename = offsetFile, overwrite = file.exists(offsetFile))  
  
 # create list of partitions
-  partitions = as.data.frame(na.omit(unique(rasterFineId)))
+  partitions = as.data.frame(na.omit(raster::unique(rasterFineId)))
   partitions$partition = paste('c', partitions$cellCoarse, 'p', partitions$idCoarse,
       '.', partitions$idFine, sep='')
   partitions = cbind(ID = 1:nrow(partitions), partitions)
@@ -246,7 +250,7 @@ rasterPartition = function(
                 x[2] == partitions[,'idFine'] &
                 x[3] == partitions[,'cellCoarse']
         )[1])
-  levels(partitionRaster)[[1]] = partitions
+  levels(partitionRaster) = list(partitions)
   partitionRaster = writeRaster(partitionRaster, file=idFile, overwrite=file.exists(idFile))
   
 

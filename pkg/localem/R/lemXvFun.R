@@ -77,6 +77,8 @@ lemXv = function(
     path = getwd()
 ){
   
+  dir.create(path, showWarnings=FALSE, recursive=TRUE)
+  
   # forcross-validation scores
   if(!is.null(randomSeed)) {
     set.seed(randomSeed)
@@ -86,6 +88,11 @@ lemXv = function(
     if(verbose) {
       cat("computing smoothing matrix\n")
     }
+
+    if(ncores > 1)
+      spatial.tools::sfQuickInit(ncores, methods = TRUE, 
+        .packages = c('Matrix','raster'))
+    
     ##raster partition
     xvLemRaster = rasterPartition(
         polyCoarse = cases, 
@@ -93,18 +100,20 @@ lemXv = function(
         cellsCoarse = cellsCoarse, 
         cellsFine = cellsFine, 
         xv = xv,
-        bw = bw, 
-        ncores = ncores, 
+        bw = bw,
+        ncores = 0, 
         idFile = file.path(path,'idXv.grd'), 
         offsetFile = file.path(path, 'offsetXv.grd'), 
         verbose = verbose)
     
-    
     xvSmoothMat =  smoothingMatrix(
         rasterObjects = xvLemRaster, 
-        ncores = ncores, 
+        ncores = 0, 
         filename = file.path(path, 'smoothingMatrix.grd'),
         verbose = verbose)
+    
+    if(ncores > 1)
+      spatial.tools::sfQuickStop()   
     
     xvMat = xvSmoothMat$xv
     
@@ -142,9 +151,10 @@ lemXv = function(
   # estimate risk (by partition, not continuous) for each bw/cv combinantion
 #  estList = parallel::mcmapply(
   
-  spatial.tools::sfQuickInit(
-      min(c(length(xvSmoothMat$bw),ncores)), 
-      methods = FALSE)
+  if(ncores > 1) spatial.tools::sfQuickInit(
+      ncores, 
+      methods = TRUE,
+      .packages = c('Matrix','raster'))
 
   estList = foreach::foreach(
           bw = xvSmoothMat$bw,
@@ -155,7 +165,7 @@ lemXv = function(
             tol = tol, 
             maxIter =maxIter )
       }
-  spatial.tools::sfQuickStop()
+  if(ncores > 1) spatial.tools::sfQuickStop()
   names(estList) = xvSmoothMat$bw
   
   estListExp = try(lapply(estList, function(x) x$expected))

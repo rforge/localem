@@ -43,10 +43,10 @@ smoothingMatrix = function(
   
   if(verbose) {
     cat(date(), "\n")
-    cat("diagonal blocks of smoothing matrix for partitions\n")
+    cat("diagonal blocks of smoothing matrix\n")
   }
   
-  spatial.tools::sfQuickInit(ncores, methods = FALSE)
+  if(ncores > 1) spatial.tools::sfQuickInit(ncores, methods = FALSE)
   
   theMat = smoothingMatrixDiag(
       rasterCoarse=rasterObjects$rasterCoarse,
@@ -138,7 +138,7 @@ smoothingMatrix = function(
         c(writeCounter1, writeCounter1)
       } # end foreach
  #     raster::pbClose(myBar)
-  spatial.tools::sfQuickStop()
+  if(ncores > 1)  spatial.tools::sfQuickStop()
   
   
   

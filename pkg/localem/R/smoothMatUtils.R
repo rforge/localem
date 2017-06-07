@@ -229,8 +229,8 @@ smoothingMatrixDiag = function(
       reorder=FALSE,
       xv = names(offsetRaster))
   
-  Spartitions = levels(rasterFine)[[1]][,'partition']
-  Npartitions= nrow(levels(rasterFine)[[1]])
+  Spartitions = raster::levels(rasterFine)[[1]][,'partition']
+  Npartitions = length(Spartitions)
   Nsmooths = dim(kernelArrayD)[3]
   layerSeq = 1:Nsmooths
   Sbw = dimnames(kernelArrayD)[[3]]
