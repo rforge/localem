@@ -2,8 +2,8 @@
 #'
 #' @description The \code{excProb} function first bootstraps cases with the input risk thresholds and expected counts of the fine raster, and then, computes the exceedance probablities with the same bandwidth as the risk estimation on the cells of the fine raster. 
 #' 
-#' @param lemEst Estimated risk intensity surface
-#' @param lemObjects List of arrays for the smoothing matrix, and raster stacks for the partition and smoothed offsets
+#' @param x Estimated risk intensity surface
+#' @param bw bandwidth, defaults to optimal for first dataset
 #' @param threshold Vector of risk thresholds
 #' @param Nboot Number of bootstraps
 #' @param ncores Number of cores/threads for parallel processing
@@ -67,8 +67,8 @@
 #'
 #' @export
 excProb = function(
-  lemEst, 
-  lemObjects, 
+  x, 
+  bw = NULL,
   threshold = 1, 
   Nboot = 100, 
   ncores = 1, 
@@ -77,12 +77,9 @@ excProb = function(
   filename = ''
 ){
   
-  # #observed risk surface
-  # theLemRisk = estimate
-  
- # result = theLemRisk
-  # names(result) = paste("risk.", bw, sep = "")
-
+  if(is.null(bw)) {
+    bw = x$xv[which.min(x$xv[,2]), 'bw']
+  }
   
   # bootstrap cases
 	offset = stats::na.omit(as.data.frame(

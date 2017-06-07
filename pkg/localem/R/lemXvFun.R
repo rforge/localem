@@ -159,14 +159,23 @@ lemXv = function(
   estList = foreach::foreach(
           bw = xvSmoothMat$bw,
           .export = 'riskEst', .packages=c('raster','Matrix')) %dopar% {
-        riskEst(bw,
+        try(riskEst(bw,
             x=cases[,countcol, drop=FALSE],
             lemObjects = xvSmoothMat,
             tol = tol, 
-            maxIter =maxIter )
+            maxIter =maxIter))
       }
   if(ncores > 1) spatial.tools::sfQuickStop()
   names(estList) = xvSmoothMat$bw
+  
+  if(any(unlist(lapply(estList, class)) == 'try-error') ) {
+    return(list(
+            estList = estList,
+            smoothingMatrix = xvSmoothMat,
+            expected = polyCoarse,
+            folds = xvMat
+        ))
+  }
   
   estListExp = try(lapply(estList, function(x) x$expected))
   
