@@ -70,7 +70,7 @@ smoothingMatrix = function(
 #      c('','text')[1+verbose], 
 #      label='off-diagonals of smoothing matrix')
   offDiag = foreach::foreach(
-          x = theMat$uniqueDist, .packages='localEM', .export = 'smoothingMatrixOneDist'
+          x = as.vector(theMat$uniqueDist), .packages='localEM', .export = 'smoothingMatrixOneDist'
       ) %dopar% {
         
         thisBlock = try(smoothingMatrixOneDist(x,
@@ -88,7 +88,7 @@ smoothingMatrix = function(
               s2 = dimnames(thisBlock[[Dcell1]][[Dcell2]])[[2]]
               
               partHere = aperm(thisBlock[[Dcell1]][[Dcell2]][,,,'transpose', drop=FALSE], c(2,1,3,4))
-              matchPartHere = lapply(dimnames(partHere)[1:2], match, table=theMat$partitions)
+              matchPartHere = lapply(dimnames(partHere)[1:2], match, table=as.vector(theMat$partitions))
               
               haveWritten = FALSE
               writeCounter1 = 0
@@ -108,7 +108,7 @@ smoothingMatrix = function(
               if(writeCounter1 >= 20) warning(paste("dist", x, "cells", Dcell1, Dcell2))
               
               partHere = thisBlock[[Dcell1]][[Dcell2]][,,,'straightup', drop=FALSE]
-              matchPartHere = lapply(dimnames(partHere)[1:2], match, table=theMat$partitions)
+              matchPartHere = lapply(dimnames(partHere)[1:2], match, table=as.vector(theMat$partitions))
               
               haveWritten = FALSE
               writeCounter2 = 0
