@@ -79,7 +79,7 @@ smoothingMatrix = function(
                 coarse=rasterObjects$rasterCoarse,
                 fine=rasterObjects$rasterFine,
                 offsetRaster=rasterObjects$offset
-            ))
+            ), silent=TRUE)
         if(class(thisBlock) != 'try-error') {
           for(Dcell1 in 1:length(thisBlock)) {
             for(Dcell2 in 1:length(thisBlock[[Dcell1]])) {
@@ -87,8 +87,11 @@ smoothingMatrix = function(
               s1 = dimnames(thisBlock[[Dcell1]][[Dcell2]])[[1]]
               s2 = dimnames(thisBlock[[Dcell1]][[Dcell2]])[[2]]
               
-              partHere = aperm(thisBlock[[Dcell1]][[Dcell2]][,,,'transpose', drop=FALSE], c(2,1,3,4))
-              matchPartHere = lapply(dimnames(partHere)[1:2], match, table=as.vector(theMat$partitions))
+              partHere = try(aperm(thisBlock[[Dcell1]][[Dcell2]][,,,'transpose', drop=FALSE], 
+                c(2,1,3,4)))
+              if(class(partHere) != 'try-error') {
+              matchPartHere = lapply(dimnames(partHere)[1:2], match, 
+                table=as.vector(theMat$partitions))
               
               haveWritten = FALSE
               writeCounter1 = 0
@@ -108,7 +111,8 @@ smoothingMatrix = function(
               if(writeCounter1 >= 20) warning(paste("dist", x, "cells", Dcell1, Dcell2))
               
               partHere = thisBlock[[Dcell1]][[Dcell2]][,,,'straightup', drop=FALSE]
-              matchPartHere = lapply(dimnames(partHere)[1:2], match, table=as.vector(theMat$partitions))
+              matchPartHere = lapply(dimnames(partHere)[1:2], match, 
+                table=as.vector(theMat$partitions))
               
               haveWritten = FALSE
               writeCounter2 = 0
@@ -125,7 +129,7 @@ smoothingMatrix = function(
                 writeCounter2 = writeCounter2 + 1
               }
               if(writeCounter2 >= 20) warning(paste("dist", x, "cells", Dcell1, Dcell2))
-              
+            }   
             }
           }
           res = c(writeCounter1, writeCounter1)
