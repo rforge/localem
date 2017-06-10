@@ -44,6 +44,7 @@ rasterPartition = function(
     cellsFine, 
     bw,
     focalSize = NULL,
+	fact = 1,
     xv = NULL, 
     ncores = 1, 
     path = tempdir(),
@@ -158,17 +159,32 @@ rasterPartition = function(
     cat("computing focal array\n")
   }
   
+  rasterOffset = setMinMax(rasterOffset)
+  
+  if(fact > 1) {
+	  rasterOffsetAgg = raster::aggregate(rasterOffset, fact=fact)
+  } else {
+	  rasterOffsetAgg = rasterOffset
+  }
+  
   if(is.null(focalSize))
-  	focalSize = 3*max(bw)
+  	focalSize = 2*max(bw)
   
   if(ncores>1) 
 	  spatial.tools::sfQuickInit(ncores, methods = FALSE)
   
-  theFocal = focalFromBw(
+  # focal used for smoothing matrix
+  theFocalResult = focalFromBw(
       bw = bw, 
       fine=rasterFine, 
       focalSize=focalSize)
-  
+	
+#	focal used for offsets
+	theFocal = focalFromBw(
+			bw=bw,
+			fine = rasterOffsetAgg,
+			focalSize = focalSize
+			)
   
   forSmooth = expand.grid(
       bw=names(theFocal$focal),
@@ -197,17 +213,15 @@ rasterPartition = function(
   
 	# smoothing doesn't seem to work unless smoothing window is less than
 	# 59 by 59
-  maxFocalSize = 101
-  if(dim(focalArray)[1] > maxFocalSize){
-  	tooBig = (dim(focalArray)[1]-maxFocalSize)/2
-  	warning('focal window is larger than rasterEngine can hadel, being reduced by ', tooBig)
-  	toKeep = seq(tooBig+1, by=1, len=maxFocalSize)
-  	focalArray = focalArray[toKeep, toKeep,,drop=FALSE]
-  	# rescale so kernels integrate to 1
-  	toScale = 1/apply(focalArray, 3, sum)
-  	focalArray = focalArray * array(
-	  	rep(toScale, rep(prod(dim(focalArray)[1:2]), length(toScale))), 
-  		dim(focalArray))
+	cellsToAdd = ceiling(pmax(0, 3*dim(focalArray)[1] - dim(rasterOffsetAgg)[1:2]))
+
+  if(any(cellsToAdd > 0)){
+	  if(verbose) {
+		  cat("adding", cellsToAdd[1], "and", cellsToAdd[2], 'cells to enable smoothing\n')
+		  cat("if you see a subscript error try increasing fact or decreasing bw\n")
+	  }
+	# extend the raster so smallest dimension is twice focal size
+	rasterOffsetAgg = raster::extend(rasterOffsetAgg, cellsToAdd)
   }
   
   focalFunction = function(x, focalArray, Scvsets)  {
@@ -215,13 +229,12 @@ rasterPartition = function(
         3, sum, na.rm=TRUE)
   }
   
-  rasterOffset = setMinMax(rasterOffset)
   
   offsetTempFile2 = tempfile()
   
   suppressWarnings(
       smoothedOffset <- spatial.tools::rasterEngine(
-          x=rasterOffset, fun=focalFunction, 
+          x=rasterOffsetAgg, fun=focalFunction, 
         args = list(Scvsets=Scvsets, focalArray=focalArray),
           window_dims = dim(focalArray),
           outbands=length(Scvsets),
@@ -234,7 +247,15 @@ rasterPartition = function(
   if(ncores>1) spatial.tools::sfQuickStop()
   names(smoothedOffset) = dimnames(focalArray)[[3]]
   
- offsetStack = writeRaster(addLayer(rasterOffset, smoothedOffset),
+  if(fact>1) {
+	  smoothedOffsetDisagg = raster::disaggregate(smoothedOffset, fact=fact)
+  } else {
+	  smoothedOffsetDisagg = smoothedOffset
+  }
+  if(any(cellsToAdd > 0))
+	  smoothedOffsetDisagg = raster::crop(smoothedOffsetDisagg, rasterOffset)
+  
+ offsetStack = writeRaster(addLayer(rasterOffset, smoothedOffsetDisagg),
       filename = offsetFile, overwrite = file.exists(offsetFile))  
  
 # create list of partitions
@@ -293,7 +314,7 @@ rasterPartition = function(
       rasterCoarse=rasterCoarse,
       polyCoarse = polyCoarse,
       rasterFine=partitionRaster,
-      focal=theFocal,
+      focal=theFocalResult,
       offset=offsetStack,
       offsetMat = offsetMat,
       regionMat = regionMat,

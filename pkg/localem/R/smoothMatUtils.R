@@ -248,7 +248,7 @@ smoothingMatrixDiag = function(
       gsub("[.]gr[id]$", ".gri", filename), 
       reference_raster=smoothingRasterTemplate,
       nrow = Npartitions, ncol = Npartitions,
-      nlayers = Nsmooths, 
+      nlayers = Nsmooths,  datatype = "FLT8S",
       overwrite = TRUE, return_filename=TRUE,
       verbose = (verbose>2), create_header=FALSE)
   
@@ -280,7 +280,7 @@ smoothingMatrixDiag = function(
             haveWritten = tryCatch(spatial.tools::binary_image_write(
                 smoothingRaster, 
                 image_dims = dim(smoothingRasterTemplate),
-                data=thisBlock, 
+                data=as.double(thisBlock), 
                 data_position = list(
                     matchPartHere, 
                     matchPartHere, 
