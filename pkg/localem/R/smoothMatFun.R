@@ -64,6 +64,7 @@ smoothingMatrix = function(
   
   if(verbose) {
     cat('off-diagonals of smoothing matrix', "\n")
+    cat("if there errors stop the cluster with spatial.tools::sfQuickStop()\n")
     cat(date(), "\n")
   }
 #  myBar = raster::pbCreate(length(theMat$uniqueDist),
