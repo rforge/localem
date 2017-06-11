@@ -218,11 +218,28 @@ rasterPartition = function(
   }
   
   
-  offsetTempFile2 = tempfile()
+  smoothedOffsetList = foreach::foreach(
+      x = 1:nrow(forSmooth)  ) %dopar% {
+      outfile = file.path(path, paste("smoothedOffsetList", x, ".grd", sep=''))
+      try(raster::focal(
+        rasterOffsetAgg[[forSmooth[x,'layer'] ]],
+        w = focalArray[,,forSmooth[x,'bw']],
+        na.rm=TRUE, pad=TRUE,
+        filename = outfile,
+        overwrite = file.exists(outfile)
+        ))
+      outfile
+    }
+  smoothedOffsetStack = raster::stack(unlist(smoothedOffsetList))
+  names(smoothedOffsetStack) = dimnames(focalArray)[[3]]
+  outfile = file.path(path, "smoothedOffsetBrick.grd")
+  smoothedOffset = raster::brick(
+    smoothedOffsetStack, filename = outfile, overwrite = file.exists(outfile)
+    )
   
-  suppressWarnings(
+  if(FALSE) {suppressWarnings(
       smoothedOffset <- spatial.tools::rasterEngine(
-          x=rasterOffsetAgg, fun=focalFunction, 
+          x=rasterOffsetAgg2, fun=focalFunction, 
         args = list(Scvsets=Scvsets, focalArray=focalArray),
           window_dims = dim(focalArray),
           outbands=length(Scvsets),
@@ -234,7 +251,7 @@ rasterPartition = function(
           verbose=(verbose>2),
           blocksize=1,
           minblocks = nrow(rasterOffsetAgg)
-      ))
+      ))}
   if(ncores>1) spatial.tools::sfQuickStop()
   names(smoothedOffset) = dimnames(focalArray)[[3]]
   
