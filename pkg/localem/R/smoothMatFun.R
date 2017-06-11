@@ -148,8 +148,9 @@ smoothingMatrix = function(
   if(ncores > 1)  spatial.tools::sfQuickStop()
 
   # replace NA's with zeros
-  smoothingRasterSubs = raster::subs(
-    brick(smoothingRaster, data.frame(id=NA, v=0), subsWithNA=FALSE)
+  theMat$smoothingArray = raster::subs(
+    brick(smoothingRaster), data.frame(id=NA, v=0), subsWithNA=FALSE,
+    filename = filename, overwrite=file.exists(filename)
     )  
   
   if(verbose) {
