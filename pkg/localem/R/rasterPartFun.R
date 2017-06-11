@@ -211,6 +211,7 @@ rasterPartition = function(
   }
   
   
+  cellsToAdd = c(0,0)
   if(FALSE){
 	# smoothing doesn't seem to work unless smoothing window is less than
 	# 59 by 59
