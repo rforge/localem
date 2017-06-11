@@ -218,15 +218,16 @@ rasterPartition = function(
   }
   
   
+  Soutfile = file.path(path, paste("smoothedOffsetList", 1:nrow(forSmooth), ".grd", sep=''))
+  
   smoothedOffsetList = foreach::foreach(
       x = 1:nrow(forSmooth)  ) %dopar% {
-      outfile = file.path(path, paste("smoothedOffsetList", x, ".grd", sep=''))
       try(raster::focal(
         rasterOffsetAgg[[forSmooth[x,'layer'] ]],
         w = focalArray[,,forSmooth[x,'bw']],
         na.rm=TRUE, pad=TRUE,
-        filename = outfile,
-        overwrite = file.exists(outfile)
+        filename = Soutfile[x],
+        overwrite = file.exists(Soutfile[x])
         ))
       outfile
     }
@@ -235,8 +236,7 @@ rasterPartition = function(
     cat(date(), "\n")
     cat("smoothing offsets done\n")
   }
-#  stuff <<- smoothedOffsetList
-  smoothedOffsetStack = raster::stack(unlist(smoothedOffsetList))
+  smoothedOffsetStack = raster::stack(Soutfile)
   names(smoothedOffsetStack) = dimnames(focalArray)[[3]]
   
   outfile = file.path(path, "smoothedOffsetBrick.grd")
