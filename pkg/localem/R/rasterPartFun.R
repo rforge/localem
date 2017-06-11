@@ -226,15 +226,16 @@ rasterPartition = function(
   }
   
   
-  smoothedOffsetList = foreach::foreach(
-      x = 1:nrow(forSmooth) ) %dopar% {
-      try(raster::focal(
+#  smoothedOffsetList = foreach::foreach(
+#      x = 1:nrow(forSmooth) ) %dopar% {
+for(x in 1:nrow(forSmooth)) {
+      raster::focal(
         rasterOffsetAgg[[forSmooth[x,'layer'] ]],
         w = focalArray[,,forSmooth[x,'bw']],
         na.rm=TRUE, pad=TRUE,
         filename = Soutfile[x],
         overwrite = file.exists(Soutfile[x])
-        ))
+        )
     }
 
   if(verbose) {
