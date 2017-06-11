@@ -212,20 +212,6 @@ rasterPartition = function(
   
   
   cellsToAdd = c(0,0)
-  if(FALSE){
-	# smoothing doesn't seem to work unless smoothing window is less than
-	# 59 by 59
-	cellsToAdd = ceiling(pmax(0, 4*dim(focalArray)[1] - dim(rasterOffsetAgg)[1:2]))
-
-  if(any(cellsToAdd > 0)){
-	  if(verbose) {
-		  cat("adding", cellsToAdd[1], "and", cellsToAdd[2], 'cells to enable smoothing\n')
-		  cat("if you see a subscript error try increasing fact or decreasing bw\n")
-	  }
-	# extend the raster so smallest dimension is twice focal size
-	rasterOffsetAgg = raster::extend(rasterOffsetAgg, cellsToAdd)
-  }
-  }
   focalFunction = function(x, focalArray, Scvsets)  {
     apply(focalArray*x[,,Scvsets,drop=FALSE], 
         3, sum, na.rm=TRUE)

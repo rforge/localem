@@ -147,18 +147,24 @@ smoothingMatrix = function(
   #     raster::pbClose(myBar)
   if(ncores > 1)  spatial.tools::sfQuickStop()
 
-  # replace NA's with zeros
-#  theMat$oldSmoothingArray = smoothingRaster
-  theMat$smoothingArray = raster::subs(
-    smoothingRaster, data.frame(NA, 0), subsWithNA=FALSE,
-    filename = filename, overwrite=file.exists(filename)
-    )  
   
   if(verbose) {
     cat(date(), "\n")
-    cat("done\n")
+    cat("replacing NA's with zeros\n")
   }
+  # replace NA's with zeros
+#  theMat$oldSmoothingArray = smoothingRaster
+  theMat$smoothingArray = raster::mask(
+    smoothingRaster, smoothingRaster, 
+    maskvalue = NA, updatevalue = 0, updateNA=TRUE,
+    filename = filename, overwrite=file.exists(filename)
+    )  
   
+    if(verbose) {
+      cat(date(), "\n")
+      cat("done\n")
+    }
+    
   if(any(unlist(lapply(offDiag, class)) == 'try-error') ) {
     warning("errors in smoothing matrix construction")
     return(c(list(offDiag = offDiag), 
@@ -166,6 +172,10 @@ smoothingMatrix = function(
   }
   
   result = c(theMat, rasterObjects[setdiff(names(rasterObjects), names(theMat))])
+  if(verbose) {
+    cat(date(), "\n")
+    cat("done\n")
+  }
   
   return(result)
 }
