@@ -54,7 +54,7 @@ smoothingMatrix = function(
       rasterFine=rasterObjects$rasterFine,
       focalList=rasterObjects$focal,
       offsetRaster=rasterObjects$offset,
-      filename = filename,
+      filename = paste(tempfile(), '.grd', sep=''),
       verbose=verbose)
   
   
@@ -146,6 +146,11 @@ smoothingMatrix = function(
       } # end foreach
   #     raster::pbClose(myBar)
   if(ncores > 1)  spatial.tools::sfQuickStop()
+
+  # replace NA's with zeros
+  smoothingRasterSubs = raster::subs(
+    brick(smoothingRaster, data.frame(id=NA, v=0), subsWithNA=FALSE)
+    )  
   
   if(verbose) {
     cat(date(), "\n")
