@@ -47,7 +47,7 @@ rasterPartition = function(
 	fact = 1,
     xv = NULL, 
     ncores = 1, 
-    path = tempdir(),
+    path = getwd(),
     idFile = paste(tempfile('lemId', path), '.grd', sep=''), 
     offsetFile = paste(tempfile('lemOffset', path), '.grd', sep=''),
     verbose = FALSE
@@ -230,8 +230,15 @@ rasterPartition = function(
         ))
       outfile
     }
+
+  if(verbose) {
+    cat(date(), "\n")
+    cat("smoothing offsets done\n")
+  }
+#  stuff <<- smoothedOffsetList
   smoothedOffsetStack = raster::stack(unlist(smoothedOffsetList))
   names(smoothedOffsetStack) = dimnames(focalArray)[[3]]
+  
   outfile = file.path(path, "smoothedOffsetBrick.grd")
   smoothedOffset = raster::brick(
     smoothedOffsetStack, filename = outfile, overwrite = file.exists(outfile)
