@@ -107,8 +107,8 @@ smoothingMatrix = function(
                         image_dims = dim(smoothingRaster),
                         data=partHere,
                         data_position = list(
-                            matchPartHere[[1]], 
-                            matchPartHere[[2]], 
+                            as.vector(matchPartHere[[1]]), 
+                              as.vector(matchPartHere[[2]]), 
                             layerSeq)), 
                     error = function(err) {FALSE} )
                 writeCounter1 = writeCounter1 + 1
@@ -116,7 +116,7 @@ smoothingMatrix = function(
               }
               if(writeCounter1 >= 20) warning(paste("dist", x, "cells", Dcell1, Dcell2))
               
-              partHere = thisBlock[[Dcell1]][[Dcell2]][,,,'straightup', drop=FALSE]
+              partHere = try(thisBlock[[Dcell1]][[Dcell2]][,,,'straightup', drop=FALSE])
               matchPartHere = lapply(dimnames(partHere)[1:2], match, 
                 table=as.vector(theMat$partitions))
               
@@ -128,8 +128,8 @@ smoothingMatrix = function(
                         image_dims = dim(smoothingRaster),
                         data=partHere, 
                         data_position = list(
-                            matchPartHere[[1]], 
-                            matchPartHere[[2]], 
+                            as.vector(matchPartHere[[1]]), 
+                              as.vector(matchPartHere[[2]]), 
                             layerSeq)), 
                     error = function(err) {FALSE} )
                 writeCounter2 = writeCounter2 + 1
