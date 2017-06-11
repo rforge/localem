@@ -243,9 +243,11 @@ smoothingMatrixDiag = function(
   
   names(smoothingRasterTemplate) = Sbw		
   
-  smoothingRaster = raster::filename(raster::writeRaster(
-        smoothingRasterTemplate, filename
-      ))
+  suppressWarnings(smoothingRaster <- raster::filename(raster::writeRaster(
+        smoothingRasterTemplate, filename, 
+        datatype = 'FLT8S', overwrite=file.exists(filename),
+        NAflag = as.double(0.0)
+      )))
   
   # create a raster brick for storing the smoothing matrix
   if(FALSE) {
