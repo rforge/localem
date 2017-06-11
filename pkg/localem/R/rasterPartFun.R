@@ -219,6 +219,12 @@ rasterPartition = function(
   
   
   Soutfile = file.path(path, paste("smoothedOffsetList", 1:nrow(forSmooth), ".grd", sep=''))
+
+  
+  if(verbose) {
+    cat("smoothing offsets temporary file", Soutfile[1], " ",  Soutfile[1], "\n")
+  }
+  
   
   smoothedOffsetList = foreach::foreach(
       x = 1:nrow(forSmooth) ) %dopar% {
