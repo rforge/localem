@@ -221,7 +221,7 @@ rasterPartition = function(
   Soutfile = file.path(path, paste("smoothedOffsetList", 1:nrow(forSmooth), ".grd", sep=''))
   
   smoothedOffsetList = foreach::foreach(
-      x = 1:nrow(forSmooth)  ) %dopar% {
+      x = 1:nrow(forSmooth) ) %dopar% {
       try(raster::focal(
         rasterOffsetAgg[[forSmooth[x,'layer'] ]],
         w = focalArray[,,forSmooth[x,'bw']],
@@ -229,7 +229,6 @@ rasterPartition = function(
         filename = Soutfile[x],
         overwrite = file.exists(Soutfile[x])
         ))
-      outfile
     }
 
   if(verbose) {
