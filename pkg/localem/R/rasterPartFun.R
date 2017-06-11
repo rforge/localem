@@ -211,6 +211,7 @@ rasterPartition = function(
   }
   
   
+  if(FALSE){
 	# smoothing doesn't seem to work unless smoothing window is less than
 	# 59 by 59
 	cellsToAdd = ceiling(pmax(0, 4*dim(focalArray)[1] - dim(rasterOffsetAgg)[1:2]))
@@ -223,7 +224,7 @@ rasterPartition = function(
 	# extend the raster so smallest dimension is twice focal size
 	rasterOffsetAgg = raster::extend(rasterOffsetAgg, cellsToAdd)
   }
-  
+  }
   focalFunction = function(x, focalArray, Scvsets)  {
     apply(focalArray*x[,,Scvsets,drop=FALSE], 
         3, sum, na.rm=TRUE)
@@ -240,9 +241,11 @@ rasterPartition = function(
           outbands=length(Scvsets),
           outfiles = 1,
           processing_unit = 'single',
+          datatype='FLT8S',
           chunk_format = 'array',
           filename = gsub("[.]gr(d|i)$", "", offsetTempFile2), overwrite=TRUE,
-          verbose=(verbose>2)
+          verbose=(verbose>2),
+          blocksize=1
       ))
   if(ncores>1) spatial.tools::sfQuickStop()
   names(smoothedOffset) = dimnames(focalArray)[[3]]
