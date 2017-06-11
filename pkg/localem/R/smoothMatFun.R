@@ -44,6 +44,7 @@ smoothingMatrix = function(
   if(verbose) {
     cat(date(), "\n")
     cat("diagonal blocks of smoothing matrix\n")
+    cat("if there errors stop the cluster with spatial.tools::sfQuickStop()\n")
   }
   
   if(ncores > 1) spatial.tools::sfQuickInit(ncores, methods = FALSE)
@@ -64,7 +65,6 @@ smoothingMatrix = function(
   
   if(verbose) {
     cat('off-diagonals of smoothing matrix', "\n")
-    cat("if there errors stop the cluster with spatial.tools::sfQuickStop()\n")
     cat(date(), "\n")
   }
 #  myBar = raster::pbCreate(length(theMat$uniqueDist),

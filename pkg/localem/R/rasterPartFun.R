@@ -213,7 +213,7 @@ rasterPartition = function(
   
 	# smoothing doesn't seem to work unless smoothing window is less than
 	# 59 by 59
-	cellsToAdd = ceiling(pmax(0, 3*dim(focalArray)[1] - dim(rasterOffsetAgg)[1:2]))
+	cellsToAdd = ceiling(pmax(0, 4*dim(focalArray)[1] - dim(rasterOffsetAgg)[1:2]))
 
   if(any(cellsToAdd > 0)){
 	  if(verbose) {

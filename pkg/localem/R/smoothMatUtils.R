@@ -243,7 +243,12 @@ smoothingMatrixDiag = function(
   
   names(smoothingRasterTemplate) = Sbw		
   
+  smoothingRaster = raster::filename(raster::writeRaster(
+        smoothingRasterTemplate, filename
+      ))
+  
   # create a raster brick for storing the smoothing matrix
+  if(FALSE) {
   smoothingRaster = spatial.tools::create_blank_raster(
       gsub("[.]gr[id]$", ".gri", filename), 
       reference_raster=smoothingRasterTemplate,
@@ -252,21 +257,12 @@ smoothingMatrixDiag = function(
       overwrite = TRUE, return_filename=TRUE,
       verbose = (verbose>2), create_header=FALSE)
   
-    spatial.tools::binary_image_write(
-      smoothingRaster, 
-      image_dims = dim(smoothingRasterTemplate),
-      data=as.double(0.0), 
-      data_position = list(
-        1:dim(smoothingRasterTemplate)[1], 
-        1:dim(smoothingRasterTemplate)[2], 
-        layerSeq))
-    
   smoothingRasterWithHeader = spatial.tools::build_raster_header(
       x_filename = smoothingRaster,
       reference_raster = smoothingRasterTemplate,
       setMinMax = TRUE, verbose=(verbose>2)
   )
-  
+}
   
   diagBlocks = foreach::foreach(
           Dcell1 = 1:ncell(rasterCoarse), .packages='localEM', .export = 'smoothingMatrixEntries'
