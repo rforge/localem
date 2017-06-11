@@ -168,7 +168,7 @@ rasterPartition = function(
   }
   
   if(is.null(focalSize))
-  	focalSize = 2*max(bw)
+  	focalSize = 2.5*max(bw)
   
   if(ncores>1) 
 	  spatial.tools::sfQuickInit(ncores, methods = FALSE)

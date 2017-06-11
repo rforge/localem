@@ -69,9 +69,14 @@ smoothingMatrix = function(
 #  myBar = raster::pbCreate(length(theMat$uniqueDist),
 #      c('','text')[1+verbose], 
 #      label='off-diagonals of smoothing matrix')
+#  stuff <<- theMat
+#  stuff2 <<- rasterObjects
+#  print('eee')
   offDiag = foreach::foreach(
           x = as.vector(theMat$uniqueDist), .packages='localEM', .export = 'smoothingMatrixOneDist'
-      ) %dopar% {
+ #     ) %do% {
+#        print(x)
+    ) %dopar% {
         
         thisBlock = try(smoothingMatrixOneDist(x,
                 allCells=theMat$cells,
