@@ -152,13 +152,7 @@ smoothingMatrix = function(
     cat(date(), "\n")
     cat("replacing NA's with zeros\n")
   }
-  # replace NA's with zeros
-#  theMat$oldSmoothingArray = smoothingRaster
-  theMat$smoothingArray = raster::mask(
-    smoothingRaster, smoothingRaster, 
-    maskvalue = NA, updatevalue = 0, updateNA=TRUE,
-    filename = filename, overwrite=file.exists(filename)
-    )  
+
   
     if(verbose) {
       cat(date(), "\n")

@@ -248,21 +248,14 @@ lemXv = function(
     cat("putting estimated risk in raster\n")
   }
 #  stuff <<- list(xvSmoothMat$rasterFine, riskDf) 
-  newDf <- list(
-          raster::levels(xvSmoothMat$rasterFine)[[1]][,c('ID','idCoarse','idFine','cellCoarse','partition')], 
-          as.data.frame(riskDf[
-                  as.character(raster::levels(xvSmoothMat$rasterFine)[[1]]$partition),])
-      )
-  newDf = try(cbind(newDf[[1]], newDf[[2]]))    
-  if(class(newDf) != 'try-error') {
-    if(names(newDf)[1] != 'ID') {
-      newDf = as.data.frame(c(
-            list(ID = 1:nrow(newDf)),
-            newDf
-            ))
-      }
-    levels(xvSmoothMat$rasterFine)[[1]] = newDf
-  }
+  newDf <- riskDf[
+    as.character(raster::levels(xvSmoothMat$rasterFine)[[1]]$partition),]
+  
+  riskRaster = xvSmoothMat$rasterFine
+  levels(riskRaster)[[1]] =  as.data.frame(cbind(
+    ID = raster::levels(xvSmoothMat$rasterFine)[[1]]$ID,
+    newDf))
+    
   if(verbose) {
     cat("done\n")
   }
@@ -270,6 +263,7 @@ lemXv = function(
   result = list(
       xv = xvRes,
       xvFull = logProbFull,
+      risk = riskRaster,
       smoothingMatrix = xvSmoothMat,
       expected = polyCoarse,
       folds = xvMat

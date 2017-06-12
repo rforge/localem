@@ -242,12 +242,19 @@ smoothingMatrixDiag = function(
   )
   
   names(smoothingRasterTemplate) = Sbw		
+
+
+  firstFile = paste(tempfile(), '.grd', sep='')
+  suppressWarnings(firstRaster <-  raster::writeRaster(
+        smoothingRasterTemplate, firstFile, 
+        datatype = 'FLT8S'))
+  # replace NA's with zeros
+  smoothingRaster <- raster::filename(raster::mask(
+      firstRaster, firstRaster, 
+    maskvalue = NA, updatevalue = 0, updateNA=TRUE,
+    filename = filename, overwrite=file.exists(filename)
+  ))
   
-  suppressWarnings(smoothingRaster <- raster::filename(raster::writeRaster(
-        smoothingRasterTemplate, filename, 
-        datatype = 'FLT8S', overwrite=file.exists(filename),
-        NAflag = as.double(0.0)
-      )))
   
   # create a raster brick for storing the smoothing matrix
   if(FALSE) {
