@@ -196,10 +196,12 @@ lemXv = function(
   
   estDf = as.matrix(do.call(cbind, estListExp))
   riskDf = as.matrix(do.call(cbind, estListRisk))
-  colnames(estDf) = colnames(riskDf) = 
-      paste(rep(names(estList), unlist(lapply(estListExp, function(xx) dim(xx)[2]))),
-          colnames(estDf), sep='_')
-  rownames(riskDf) = xvSmoothMat$partitions
+  colnames(estDf) = colnames(riskDf) = paste(
+    rep(names(estList), unlist(lapply(estListExp, function(xx) dim(xx)[2]))),
+          unlist(lapply(
+      estListExp, colnames
+      )), sep='_')
+  rownames(riskDf) = colnames(xvSmoothMat$regionMat)
   
   if(verbose) {
     cat("computing CV scores\n")
