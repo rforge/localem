@@ -222,7 +222,7 @@ rasterPartition = function(
 
   
   if(verbose) {
-    cat("smoothing offsets temporary file", Soutfile[1], " ",  Soutfile[1], "\n")
+    cat("smoothing offsets temporary file", Soutfile[1], " ",  Soutfile[length(Soutfile)], "\n")
   }
   
   

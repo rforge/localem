@@ -306,7 +306,8 @@ smoothingMatrixDiag = function(
                 matchPartHere[theOrder], 
                 layerSeq
               )
-            ), error = function(err) {warning(err)}  )
+            ), error = function(err) {warning(err);-1}  )
+          haveWritten = (haveWritten >= 0)
           writeCounter1 = writeCounter1 + 1
         }
       } # end not null
