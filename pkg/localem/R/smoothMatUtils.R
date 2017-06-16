@@ -229,7 +229,13 @@ smoothingMatrixDiag = function(
       reorder=FALSE,
       xv = names(offsetRaster))
   
-  Spartitions = as.character(raster::levels(rasterFine)[[1]][,'partition'])
+
+    # order the partitions
+   partitionIdMat = raster::levels(rasterFine)[[1]][,c('cellCoarse','idCoarse','partition')]
+   partitionOrder = order(partitionIdMat[,1], partitionIdMat[,2],partitionIdMat[,3])
+   Spartitions = partitionIdMat[partitionOrder,'partition']
+  
+  
   Npartitions = length(Spartitions)
   Nsmooths = dim(kernelArrayD)[3]
   layerSeq = 1:Nsmooths
@@ -256,22 +262,7 @@ smoothingMatrixDiag = function(
   ))
   
   
-  # create a raster brick for storing the smoothing matrix
-  if(FALSE) {
-  smoothingRaster = spatial.tools::create_blank_raster(
-      gsub("[.]gr[id]$", ".gri", filename), 
-      reference_raster=smoothingRasterTemplate,
-      nrow = Npartitions, ncol = Npartitions,
-      nlayers = Nsmooths,  datatype = "FLT8S",
-      overwrite = TRUE, return_filename=TRUE,
-      verbose = (verbose>2), create_header=FALSE)
-  
-  smoothingRasterWithHeader = spatial.tools::build_raster_header(
-      x_filename = smoothingRaster,
-      reference_raster = smoothingRasterTemplate,
-      setMinMax = TRUE, verbose=(verbose>2)
-  )
-}
+
   
   diagBlocks = foreach::foreach(
           Dcell1 = 1:ncell(rasterCoarse), .packages='localEM', .export = 'smoothingMatrixEntries'
@@ -288,22 +279,24 @@ smoothingMatrixDiag = function(
           partHere = dimnames(thisBlock)[[1]]
           matchPartHere = match(partHere, Spartitions)
           
+          theOrder = order(matchPartHere)
+          
           haveWritten = FALSE
           writeCounter1 = 0
           while(!haveWritten & (writeCounter1 < 20)) {
             haveWritten = tryCatch(spatial.tools::binary_image_write(
                 smoothingRaster, 
                 image_dims = dim(smoothingRasterTemplate),
-                data=as.double(thisBlock), 
+                data=thisBlock[theOrder,theOrder,], 
                 data_position = list(
-                    matchPartHere, 
-                    matchPartHere, 
+                    matchPartHere[theOrder], 
+                    matchPartHere[theOrder], 
                     layerSeq)
             ), error = function(err) {FALSE}  )
             writeCounter1 = writeCounter1 + 1
           }
-        if(writeCounter1 >20) {
-          warning("over 20 write attempts for cell", Dcell1)
+        if(writeCounter1 >=20) {
+          warning("problem writing smoothing matrixk to disk for cell", Dcell1)
         }
         
       }

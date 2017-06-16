@@ -49,6 +49,7 @@ smoothingMatrix = function(
   
   if(ncores > 1) spatial.tools::sfQuickInit(ncores, methods = FALSE)
   
+  
   theMat = smoothingMatrixDiag(
       rasterCoarse=rasterObjects$rasterCoarse,
       rasterFine=rasterObjects$rasterFine,
@@ -112,7 +113,6 @@ smoothingMatrix = function(
                             layerSeq)), 
                     error = function(err) {FALSE} )
                 writeCounter1 = writeCounter1 + 1
-                
               }
               if(writeCounter1 >= 20) warning(paste("dist", x, "cells", Dcell1, Dcell2))
               
@@ -122,7 +122,7 @@ smoothingMatrix = function(
               
               haveWritten = FALSE
               writeCounter2 = 0
-              while(!haveWritten & (writeCounter1 < 20)) {
+              while(!haveWritten & (writeCounter2 < 20)) {
                 haveWritten = tryCatch(spatial.tools::binary_image_write(
                         gsub("d$", "i", smoothingRasterFile), 
                         image_dims = dim(smoothingRaster),
@@ -145,6 +145,9 @@ smoothingMatrix = function(
 #        raster::pbStep(myBar)
       } # end foreach
   #     raster::pbClose(myBar)
+
+  if(any(unlist(offDiag) >= 20)) warning("problem writing smoothing matrix to disk")
+
   if(ncores > 1)  spatial.tools::sfQuickStop()
 
   
