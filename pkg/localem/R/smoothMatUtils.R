@@ -235,7 +235,6 @@ smoothingMatrixDiag = function(
   partitionOrder = order(partitionIdMat[,1], partitionIdMat[,2],partitionIdMat[,3])
   Spartitions = partitionIdMat[partitionOrder,'partition']
   
-  
   Npartitions = length(Spartitions)
   Nsmooths = dim(kernelArrayD)[3]
   layerSeq = 1:Nsmooths
@@ -250,6 +249,11 @@ smoothingMatrixDiag = function(
   
   firstFile = paste(tempfile(), '.grd', sep='')
   
+  # write zeros in the smoothing matrix
+  toWrite = matrix(as.double(0), nrow(smoothingRasterTemplate), nlayers(smoothingRasterTemplate))
+  
+  if(verbose) cat("creating raster to hold smoothing matrix\n")
+  
   firstRaster = writeStart(
     smoothingRasterTemplate,
     filename = firstFile, 
@@ -258,19 +262,23 @@ smoothingMatrixDiag = function(
     bandorder = 'BSQ',
     overwrite=file.exists(firstFile))
   
-  # write zeros in the smoothing matrix
-  toWrite = matrix(as.double(0), nrow(firstRaster), nlayers(firstRaster))
   for(Drow in 1:nrow(firstRaster)) {
     firstRaster = writeValues(firstRaster, toWrite, Drow) 
   }  
   firstRaster = writeStop(firstRaster)
   smoothingRaster = gsub("grd$", "gri", filename(firstRaster))
-  
+
+  # theType = mmap::real64();dput(theType, '')
+  theType = structure(numeric(0), bytes = 8L, signed = 1L, class = c("Ctype", 
+      "double"))
+ 
+  if(verbose) cat("looping through diagonal cells\n")
   
   diagBlocks = foreach::foreach(
       Dcell1 = 1:ncell(rasterCoarse), .packages='localEM', .export = 'smoothingMatrixEntries'
     ) %dopar% {
-      
+ 
+# for(Dcell1 in 1:ncell(rasterCoarse)) {     
       thisBlock = smoothingMatrixEntries(cell1 = Dcell1,
         focalList=kernelArrayD,
         coarse=rasterCoarse,
@@ -286,13 +294,13 @@ smoothingMatrixDiag = function(
         
         haveWritten = FALSE
         writeCounter1 = 0
-        while(!haveWritten & (writeCounter1 < 20)) {
+        while( (!haveWritten) & (writeCounter1 < 20) ) {
           haveWritten = tryCatch(
             spatial.tools::binary_image_write(
               filename = smoothingRaster,
-              mode = as.double(0),
+              mode=theType,
               image_dims = dim(smoothingRasterTemplate),
-              data=thisBlock[theOrder,theOrder,], 
+              data=as.double(thisBlock[theOrder,theOrder,]), 
               data_position = list(
                 matchPartHere[theOrder], 
                 matchPartHere[theOrder], 
@@ -302,6 +310,7 @@ smoothingMatrixDiag = function(
           writeCounter1 = writeCounter1 + 1
         }
       } # end not null
+      dim(thisBlock)
     } # end foreach loop
   
   cellsWithData = which(unlist(lapply(diagBlocks, length))>0)

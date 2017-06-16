@@ -60,24 +60,22 @@ smoothingMatrix = function(
   
   
   smoothingRaster = theMat$smoothingArray
-  smoothingRasterFile = filename(smoothingRaster)
+  smoothingRasterFile = gsub("grd$", "gri", filename(smoothingRaster))
   layerSeq = 1:nlayers(smoothingRaster)
   Sbw = theMat$bw
+  Spartitions = theMat$partitions
   
   if(verbose) {
     cat('off-diagonals of smoothing matrix', "\n")
     cat(date(), "\n")
   }
-#  myBar = raster::pbCreate(length(theMat$uniqueDist),
-#      c('','text')[1+verbose], 
-#      label='off-diagonals of smoothing matrix')
-#  stuff <<- theMat
-#  stuff2 <<- rasterObjects
-#  print('eee')
+
+  # theType = mmap::real64();dput(theType, '')
+  theType = structure(numeric(0), bytes = 8L, signed = 1L, class = c("Ctype", 
+      "double"))
+  
   offDiag = foreach::foreach(
           x = as.vector(theMat$uniqueDist), .packages='localEM', .export = 'smoothingMatrixOneDist'
- #     ) %do% {
-#        print(x)
     ) %dopar% {
         
         thisBlock = try(smoothingMatrixOneDist(x,
@@ -87,6 +85,7 @@ smoothingMatrix = function(
                 fine=rasterObjects$rasterFine,
                 offsetRaster=rasterObjects$offset
             ), silent=TRUE)
+          
         if(class(thisBlock) != 'try-error') {
           for(Dcell1 in 1:length(thisBlock)) {
             for(Dcell2 in 1:length(thisBlock[[Dcell1]])) {
@@ -98,13 +97,14 @@ smoothingMatrix = function(
                 c(2,1,3,4)))
               if(class(partHere) != 'try-error') {
               matchPartHere = lapply(dimnames(partHere)[1:2], match, 
-                table=as.vector(theMat$partitions))
+                table=Spartitions)
               
               haveWritten = FALSE
               writeCounter1 = 0
               while(!haveWritten & (writeCounter1 < 20)) {
                 haveWritten = tryCatch(spatial.tools::binary_image_write(
-                        gsub("d$", "i", smoothingRasterFile), 
+                        smoothingRasterFile,
+                        mode = theType, 
                         image_dims = dim(smoothingRaster),
                         data=partHere,
                         data_position = list(
@@ -118,13 +118,14 @@ smoothingMatrix = function(
               
               partHere = try(thisBlock[[Dcell1]][[Dcell2]][,,,'straightup', drop=FALSE])
               matchPartHere = lapply(dimnames(partHere)[1:2], match, 
-                table=as.vector(theMat$partitions))
+                table=Spartitions)
               
               haveWritten = FALSE
               writeCounter2 = 0
               while(!haveWritten & (writeCounter2 < 20)) {
                 haveWritten = tryCatch(spatial.tools::binary_image_write(
-                        gsub("d$", "i", smoothingRasterFile), 
+                        smoothingRasterFile, 
+                        mode = theType, 
                         image_dims = dim(smoothingRaster),
                         data=partHere, 
                         data_position = list(
@@ -142,9 +143,7 @@ smoothingMatrix = function(
         }  else { # end try error
           res =thisBlock
         }
-#        raster::pbStep(myBar)
       } # end foreach
-  #     raster::pbClose(myBar)
 
   if(any(unlist(offDiag) >= 20)) warning("problem writing smoothing matrix to disk")
 
