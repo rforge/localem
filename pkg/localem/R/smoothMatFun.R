@@ -44,7 +44,7 @@ smoothingMatrix = function(
   if(verbose) {
     cat(date(), "\n")
     cat("diagonal blocks of smoothing matrix\n")
-    cat("if there errors stop the cluster with spatial.tools::sfQuickStop()\n")
+    cat("if there are errors stop the cluster with spatial.tools::sfQuickStop()\n")
   }
   
   if(ncores > 1) spatial.tools::sfQuickInit(ncores, methods = FALSE)
@@ -113,7 +113,7 @@ smoothingMatrix = function(
                     as.vector(matchPartHere[[2]][theOrder[[2]] ]), 
                     layerSeq)), 
                 error = function(err) {warning(err);-1} )
-               haveWritten = (haveWritten >= 0)
+              haveWritten = (haveWritten != -1)
               writeCounter1 = writeCounter1 + 1
             }
             if(writeCounter1 >= 20) warning(paste("dist", x, "cells", Dcell1, Dcell2))
@@ -136,8 +136,8 @@ smoothingMatrix = function(
                     as.vector(matchPartHere[[2]][theOrder[[2]] ]), 
                     layerSeq)), 
                 error = function(err) {warning(err);-1} )
-            haveWritten = (haveWritten >= 0)
-            writeCounter2 = writeCounter2 + 1
+              haveWritten = (haveWritten != -1)
+              writeCounter2 = writeCounter2 + 1
             }
             if(writeCounter2 >= 20) warning(paste("dist", x, "cells", Dcell1, Dcell2))
           } # end Dcell2  

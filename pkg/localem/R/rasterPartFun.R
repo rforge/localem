@@ -38,21 +38,21 @@
 #'
 #' @export
 rasterPartition = function(
-    polyCoarse, 
-    polyFine, 
-    cellsCoarse, 
-    cellsFine, 
-    bw,
-    focalSize = NULL,
-	fact = 1,
-    xv = NULL, 
-    ncores = 1, 
-    path = getwd(),
-    idFile = paste(tempfile('lemId', path), '.grd', sep=''), 
-    offsetFile = paste(tempfile('lemOffset', path), '.grd', sep=''),
-    verbose = FALSE
+  polyCoarse, 
+  polyFine, 
+  cellsCoarse, 
+  cellsFine, 
+  bw,
+  focalSize = NULL,
+  fact = 1,
+  xv = NULL, 
+  ncores = 1, 
+  path = getwd(),
+  idFile = paste(tempfile('lemId', path), '.grd', sep=''), 
+  offsetFile = paste(tempfile('lemOffset', path), '.grd', sep=''),
+  verbose = FALSE
 ){
-# TO DO: aggregate raster before smoothing if bw is large    
+
   if(verbose) {
     cat(date(), "\n")
     cat("obtaining rasters\n")
@@ -74,7 +74,7 @@ rasterPartition = function(
   
   if(is.numeric(cellsFine)) {
     rasterFine = disaggregate(rasterCoarse,
-        ceiling(cellsFine/ncol(rasterCoarse)))
+      ceiling(cellsFine/ncol(rasterCoarse)))
     names(rasterFine) = 'cellCoarse'
   } else {
     rasterFine = cellsFine
@@ -92,9 +92,9 @@ rasterPartition = function(
   polyCoarse$idCoarse = idCoarse
   
   rasterIdCoarse = rasterize(
-      polyCoarse,
-      rasterFine,
-      field='idCoarse')
+    polyCoarse,
+    rasterFine,
+    field='idCoarse')
   names(rasterIdCoarse) = 'idCoarse'
   
   polyFine@data[is.na(polyFine@data[,'expected']),'expected'] = 0
@@ -111,9 +111,9 @@ rasterPartition = function(
   
   
   rasterOffset = geostatsp::spdfToBrick(
-      x=polyFine,
-      template=rasterFine,
-      pattern='^expected$')
+    x=polyFine,
+    template=rasterFine,
+    pattern='^expected$')
   names(rasterOffset) = 'offset'
   
   # fine ID (iffset
@@ -124,35 +124,35 @@ rasterPartition = function(
   ratifyOffset = ratify(round(rasterOffset*maxOffset), count=FALSE)
   stuff= raster::levels(ratifyOffset)[[1]]
   if(!is.null(stuff)) {
-	  stuff$idFine = seq(1, nrow(stuff))
-	  levels(ratifyOffset) = list(stuff)
+    stuff$idFine = seq(1, nrow(stuff))
+    levels(ratifyOffset) = list(stuff)
   } else {
-  	warning('offset problems, cant find levels')
+    warning('offset problems, cant find levels')
   }
   rasterIdFine = deratify(ratifyOffset, 'idFine')
   
   for(Dxv in 1:ncol(xvMat)) {
     xvHere = which(xvMat[,Dxv])
     maskHere = raster::calc(rasterIdCoarse, 
-        function(x) ! x %in% xvHere )
+      function(x) ! x %in% xvHere )
     rasterOffset = addLayer(
-        rasterOffset, 
-        rasterOffset[[1]] * maskHere
+      rasterOffset, 
+      rasterOffset[[1]] * maskHere
     )
   }
   names(rasterOffset) = c("offset", 
-      paste('xvOffset', colnames(xvMat), sep=''))
+    paste('xvOffset', colnames(xvMat), sep=''))
   
   offsetTempFile = paste(tempfile(), '.grd', sep='')
   
   rasterOffset = raster::mask(rasterOffset, rasterIdCoarse[['idCoarse']],
-      filename=offsetTempFile, overwrite = file.exists(offsetTempFile))
+    filename=offsetTempFile, overwrite = file.exists(offsetTempFile))
   
   
   rasterFineId = brick(rasterIdCoarse, rasterIdFine, rasterFine)	
   
   rasterFineId = writeRaster(rasterFineId, idFile,
-      overwrite=file.exists(idFile))
+    overwrite=file.exists(idFile))
   
   if(verbose) {
     cat(date(), "\n")
@@ -162,136 +162,134 @@ rasterPartition = function(
   rasterOffset = setMinMax(rasterOffset)
   
   if(fact > 1) {
-	  rasterOffsetAgg = raster::aggregate(rasterOffset, fact=fact)
+    rasterOffsetAgg = raster::aggregate(rasterOffset, fact=fact)
   } else {
-	  rasterOffsetAgg = rasterOffset
+    rasterOffsetAgg = rasterOffset
   }
   
   if(is.null(focalSize))
-  	focalSize = 2.5*max(bw)
+    focalSize = 2.5*max(bw)
   
   if(ncores>1) 
-	  spatial.tools::sfQuickInit(ncores, methods = FALSE)
+    spatial.tools::sfQuickInit(ncores, methods = FALSE)
   
   # focal used for smoothing matrix
   theFocalResult = focalFromBw(
-      bw = bw, 
-      fine=rasterFine, 
-      focalSize=focalSize)
-	
+    bw = bw, 
+    fine=rasterFine, 
+    focalSize=focalSize)
+  
 #	focal used for offsets
-	theFocal = focalFromBw(
-			bw=bw,
-			fine = rasterOffsetAgg,
-			focalSize = focalSize
-			)
+  theFocal = focalFromBw(
+    bw=bw,
+    fine = rasterOffsetAgg,
+    focalSize = focalSize
+  )
   
   forSmooth = expand.grid(
-      bw=names(theFocal$focal),
-      layer=names(rasterOffset))
+    bw=names(theFocal$focal),
+    layer=names(rasterOffset))
   
   focalArray = array(
-      unlist(theFocal$focal),
-      c(dim(theFocal$focal[[1]]), length(theFocal$focal)),
-      dimnames = list(NULL,NULL, names(theFocal$focal))
+    unlist(theFocal$focal),
+    c(dim(theFocal$focal[[1]]), length(theFocal$focal)),
+    dimnames = list(NULL,NULL, names(theFocal$focal))
   )
   focalArray = focalArray[,,forSmooth[,'bw'], drop=FALSE]
   dimnames(focalArray)[[3]] = paste(
-      forSmooth[,'bw'], 
-      gsub("offset", "", forSmooth[,'layer'], ignore.case=TRUE),
-      sep=''
+    forSmooth[,'bw'], 
+    gsub("offset", "", forSmooth[,'layer'], ignore.case=TRUE),
+    sep=''
   )
   theFocal$array = focalArray   
   
   Scvsets = match(forSmooth[,'layer'],names(rasterOffset))
-
+  
   if(verbose) {
     cat(date(), "\n")
     cat("smoothing offsets\n")
   }
   
   
-  cellsToAdd = c(0,0)
   focalFunction = function(x, focalArray, Scvsets)  {
     apply(focalArray*x[,,Scvsets,drop=FALSE], 
-        3, sum, na.rm=TRUE)
+      3, sum, na.rm=TRUE)
   }
   
+  outfile = file.path(path, "smoothedOffsetBrick.grd")
   
-  Soutfile = file.path(path, paste("smoothedOffsetList", 1:nrow(forSmooth), ".grd", sep=''))
-
+  smoothedOffset <- try(
+    spatial.tools::rasterEngine(
+      x=rasterOffsetAgg, fun=focalFunction, 
+      args = list(Scvsets=Scvsets, focalArray=focalArray),
+      window_dims = dim(focalArray),
+      outbands=length(Scvsets),
+      outfiles = 1,
+      processing_unit = 'single',
+      datatype='FLT8S',
+      chunk_format = 'array',
+      filename = outfile, 
+      overwrite=TRUE,
+      verbose=(verbose>2),
+      blocksize=1,
+      minblocks = nrow(rasterOffsetAgg)
+    ), silent=!verbose)
   
-  if(verbose) {
-    cat("smoothing offsets temporary file", Soutfile[1], " ",  Soutfile[length(Soutfile)], "\n")
-  }
-  
-  
-#  smoothedOffsetList = foreach::foreach(
-#      x = 1:nrow(forSmooth) ) %dopar% {
-for(x in 1:nrow(forSmooth)) {
-      raster::focal(
-        rasterOffsetAgg[[forSmooth[x,'layer'] ]],
-        w = focalArray[,,forSmooth[x,'bw']],
-        na.rm=TRUE, pad=TRUE,
-        filename = Soutfile[x],
-        overwrite = file.exists(Soutfile[x])
-        )
+  if(class(smoothedOffset) == 'try-error') {
+    Soutfile = file.path(path, paste("smoothedOffsetList", 1:nrow(forSmooth), ".grd", sep=''))
+    if(verbose) {
+      cat("smoothing with spatial.tools failed, using raster\n")
+      cat("temporary files", Soutfile[1], " ",  Soutfile[length(Soutfile)], "\n")
     }
-
+    
+    smoothedOffset = foreach::foreach(
+        x = 1:nrow(forSmooth), .packages='raster'
+      ) %dopar% {
+        raster::focal(
+          rasterOffsetAgg[[forSmooth[x,'layer'] ]],
+          w = focalArray[,,forSmooth[x,'bw']],
+          na.rm=TRUE, pad=TRUE,
+          filename = Soutfile[x],
+          overwrite = file.exists(Soutfile[x])
+        )
+      }
+    smoothedOffsetStack = raster::stack(Soutfile)
+    names(smoothedOffsetStack) = dimnames(focalArray)[[3]]
+    
+    smoothedOffset = raster::brick(
+      smoothedOffsetStack, filename = outfile, overwrite = file.exists(outfile)
+    )
+  }  
   if(verbose) {
     cat(date(), "\n")
     cat("smoothing offsets done\n")
   }
-  smoothedOffsetStack = raster::stack(Soutfile)
-  names(smoothedOffsetStack) = dimnames(focalArray)[[3]]
   
-  outfile = file.path(path, "smoothedOffsetBrick.grd")
-  smoothedOffset = raster::brick(
-    smoothedOffsetStack, filename = outfile, overwrite = file.exists(outfile)
-    )
-  
-  if(FALSE) {suppressWarnings(
-      smoothedOffset <- spatial.tools::rasterEngine(
-          x=rasterOffsetAgg2, fun=focalFunction, 
-        args = list(Scvsets=Scvsets, focalArray=focalArray),
-          window_dims = dim(focalArray),
-          outbands=length(Scvsets),
-          outfiles = 1,
-          processing_unit = 'single',
-          datatype='FLT8S',
-          chunk_format = 'array',
-          filename = gsub("[.]gr(d|i)$", "", offsetTempFile2), overwrite=TRUE,
-          verbose=(verbose>2),
-          blocksize=1,
-          minblocks = nrow(rasterOffsetAgg)
-      ))}
   if(ncores>1) spatial.tools::sfQuickStop()
   names(smoothedOffset) = dimnames(focalArray)[[3]]
   
   if(fact>1) {
-	  smoothedOffsetDisagg = raster::disaggregate(smoothedOffset, fact=fact)
+    smoothedOffsetDisagg = raster::disaggregate(smoothedOffset, fact=fact)
   } else {
-	  smoothedOffsetDisagg = smoothedOffset
+    smoothedOffsetDisagg = smoothedOffset
   }
-  if(any(cellsToAdd > 0))
-	  smoothedOffsetDisagg = raster::crop(smoothedOffsetDisagg, rasterOffset)
   
- offsetStack = writeRaster(addLayer(rasterOffset, smoothedOffsetDisagg),
-      filename = offsetFile, overwrite = file.exists(offsetFile))  
- 
+  offsetStack = writeRaster(addLayer(rasterOffset, smoothedOffsetDisagg),
+    filename = offsetFile, overwrite = file.exists(offsetFile))  
+  
 # create list of partitions
   partitions = as.data.frame(na.omit(raster::unique(rasterFineId)))
   partitions$partition = paste('c', partitions$cellCoarse, 'p', partitions$idCoarse,
-      '.', partitions$idFine, sep='')
+    '.', partitions$idFine, sep='')
   partitions = cbind(ID = 1:nrow(partitions), partitions)
 # raster with partition ID's
   
   partitionRaster = raster::calc(rasterFineId, 
-      function(x) which(
-            x[1]==partitions[,'idCoarse'] &
-                x[2] == partitions[,'idFine'] &
-                x[3] == partitions[,'cellCoarse']
-        )[1])
+    function(x) which(
+        x[1]==partitions[,'idCoarse'] &
+          x[2] == partitions[,'idFine'] &
+          x[3] == partitions[,'cellCoarse']
+      )[1])
   levels(partitionRaster) = list(partitions)
   partitionRaster = writeRaster(partitionRaster, file=idFile, overwrite=file.exists(idFile))
   
@@ -299,23 +297,23 @@ for(x in 1:nrow(forSmooth)) {
 # offsetMat is the value of the offset at all points in the partition
   
   partitionOffsets = as.data.frame(zonal(
-          offsetStack[[grep("^bw", names(offsetStack), invert=TRUE)]],
-          partitionRaster,
-          'mean', na.rm=TRUE
-      ))
+      offsetStack[[grep("^bw", names(offsetStack), invert=TRUE)]],
+      partitionRaster,
+      'mean', na.rm=TRUE
+    ))
   partitionOffsets$partition = partitions[match(
-          partitionOffsets$zone, partitions$ID
-      ), 'partition']    
+      partitionOffsets$zone, partitions$ID
+    ), 'partition']    
   
-
+  
 # offsetMat is diagonal matrix with element the integral of offset in the partition 
 # different for each CV set
   offsetMat = apply(partitionOffsets[,grep("[oO]ffset", colnames(partitionOffsets))], 2, 
-      function(x) {
-        res = Matrix::Diagonal(nrow(partitionOffsets), x*prod(res(offsetStack)))
-        dimnames(res) = list(partitionOffsets$partition, partitionOffsets$partition) 
-        res
-      })
+    function(x) {
+      res = Matrix::Diagonal(nrow(partitionOffsets), x*prod(res(offsetStack)))
+      dimnames(res) = list(partitionOffsets$partition, partitionOffsets$partition) 
+      res
+    })
   
   regions = gsub("^c[[:digit:]]+p|\\.[[:digit:]]+$", "", partitionOffsets$partition)
   regions = as.integer(regions)
@@ -323,24 +321,24 @@ for(x in 1:nrow(forSmooth)) {
   regionMat = Matrix::Matrix(regionMat)
   
   dimnames(regionMat)=
-      list(polyCoarse$idCoarse, partitionOffsets$partition)
+    list(polyCoarse$idCoarse, partitionOffsets$partition)
   
   partitionFreq = raster::freq(partitionRaster)
   rownames(partitionFreq) = raster::levels(partitionRaster)[[1]][partitionFreq[,'value'],'partition']
   partitionAreas = partitionFreq[,'count'][colnames(regionMat)] * prod(raster::res(partitionRaster))  
-
+  
   
   
   result = list(
-      rasterCoarse=rasterCoarse,
-      polyCoarse = polyCoarse,
-      rasterFine=partitionRaster,
-      focal=theFocalResult,
-      offset=offsetStack,
-      offsetMat = offsetMat,
-      regionMat = regionMat,
-      partitionAreas=partitionAreas,
-      xv = xvMat
+    rasterCoarse=rasterCoarse,
+    polyCoarse = polyCoarse,
+    rasterFine=partitionRaster,
+    focal=theFocalResult,
+    offset=offsetStack,
+    offsetMat = offsetMat,
+    regionMat = regionMat,
+    partitionAreas=partitionAreas,
+    xv = xvMat
   )
   
   if(verbose) {

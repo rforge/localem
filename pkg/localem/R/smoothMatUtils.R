@@ -267,17 +267,17 @@ smoothingMatrixDiag = function(
   }  
   firstRaster = writeStop(firstRaster)
   smoothingRaster = gsub("grd$", "gri", filename(firstRaster))
-
+  
   # theType = mmap::real64();dput(theType, '')
   theType = structure(numeric(0), bytes = 8L, signed = 1L, class = c("Ctype", 
       "double"))
- 
+  
   if(verbose) cat("looping through diagonal cells\n")
   
   diagBlocks = foreach::foreach(
       Dcell1 = 1:ncell(rasterCoarse), .packages='localEM', .export = 'smoothingMatrixEntries'
     ) %dopar% {
- 
+      
 # for(Dcell1 in 1:ncell(rasterCoarse)) {     
       thisBlock = smoothingMatrixEntries(cell1 = Dcell1,
         focalList=kernelArrayD,
@@ -307,7 +307,7 @@ smoothingMatrixDiag = function(
                 layerSeq
               )
             ), error = function(err) {warning(err);-1}  )
-          haveWritten = (haveWritten >= 0)
+          haveWritten = (haveWritten != -1)
           writeCounter1 = writeCounter1 + 1
         }
       } # end not null
