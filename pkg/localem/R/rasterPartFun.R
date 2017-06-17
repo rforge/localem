@@ -171,7 +171,7 @@ rasterPartition = function(
     focalSize = 2.5*max(bw)
   
   if(ncores>1) 
-    spatial.tools::sfQuickInit(ncores, methods = FALSE)
+    theCluster = spatial.tools::sfQuickInit(ncores, methods = TRUE)
   
   # focal used for smoothing matrix
   theFocalResult = focalFromBw(
@@ -219,7 +219,7 @@ rasterPartition = function(
   outfile = file.path(path, "smoothedOffsetBrick.grd")
   
   smoothedOffset <- try(
-    spatial.tools::rasterEngine(
+    suppressWarnings(spatial.tools::rasterEngine(
       x=rasterOffsetAgg, fun=focalFunction, 
       args = list(Scvsets=Scvsets, focalArray=focalArray),
       window_dims = dim(focalArray),
@@ -233,7 +233,7 @@ rasterPartition = function(
       verbose=(verbose>2),
       blocksize=1,
       minblocks = nrow(rasterOffsetAgg)
-    ), silent=!verbose)
+    )), silent=!verbose)
   
   if(class(smoothedOffset) == 'try-error') {
     Soutfile = file.path(path, paste("smoothedOffsetList", 1:nrow(forSmooth), ".grd", sep=''))
@@ -244,10 +244,10 @@ rasterPartition = function(
     
     smoothedOffset = foreach::foreach(
         x = 1:nrow(forSmooth), .packages='raster'
-      ) %dopar% {
+      ) %do% {
         raster::focal(
-          rasterOffsetAgg[[forSmooth[x,'layer'] ]],
-          w = focalArray[,,forSmooth[x,'bw']],
+          rasterOffsetAgg[[ forSmooth[x,'layer'] ]],
+          w = focalArray[,,forSmooth[x,'bw'] ],
           na.rm=TRUE, pad=TRUE,
           filename = Soutfile[x],
           overwrite = file.exists(Soutfile[x])
