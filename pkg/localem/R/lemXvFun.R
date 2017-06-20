@@ -102,7 +102,7 @@ lemXv = function(
         cellsFine = cellsFine, 
         xv = xv,
         bw = bw,
-		      fact = fact,
+        fact = fact,
         ncores = 0, 
         path = path,
         idFile = file.path(path,'idXv.grd'), 
@@ -162,7 +162,7 @@ lemXv = function(
   estList = foreach::foreach(
           bw = xvSmoothMat$bw,
           .export = 'riskEst', .packages=c('raster','Matrix')) %dopar% {
-stuff=        try(riskEst(bw,
+        try(riskEst(bw,
             x=cases[,countcol, drop=FALSE],
             lemObjects = xvSmoothMat,
             tol = tol, 

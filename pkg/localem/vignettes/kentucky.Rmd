@@ -31,7 +31,7 @@ data('kMap', package='localEM')
 # specify number of grid cells and
 # number of cores for computations in parallel 
 # (only applicable to UNIX operating systems)
-if(Sys.info()['user'] == 'patrick' & interactive()) {
+if(Sys.info()['user'] == 'patrick' & interactive() & FALSE) {
 	# this uses about 20GB of memory
 	cellsFine = 300
 	cellsSimulate = 600
@@ -43,7 +43,7 @@ if(Sys.info()['user'] == 'patrick' & interactive()) {
 	Sbw = unique(round(exp(seq(log(4), log(50), len=12)))) * 1000
 } else {
 	ncores = 2
-	cellsFine = 150
+	cellsFine = 120
 	cellsSimulate = 200
 	cellsCoarse= 10
 	nsim = 3

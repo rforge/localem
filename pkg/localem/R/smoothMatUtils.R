@@ -247,7 +247,7 @@ smoothingMatrixDiag = function(
   )
   names(smoothingRasterTemplate) = Sbw		
   
-  firstFile = paste(tempfile(), '.grd', sep='')
+  firstFile = filename
   
   # write zeros in the smoothing matrix
   toWrite = matrix(as.double(0), nrow(smoothingRasterTemplate), nlayers(smoothingRasterTemplate))
