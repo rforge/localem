@@ -72,7 +72,7 @@ lemXv = function(
     ncores = 1, 
     tol = 1e-6, 
     maxIter = 2000, 
-	   fact = 1,
+    fact = 1,
     randomSeed = NULL, 
     verbose = FALSE,
     path = getwd()
@@ -162,7 +162,7 @@ lemXv = function(
   estList = foreach::foreach(
           bw = xvSmoothMat$bw,
           .export = 'riskEst', .packages=c('raster','Matrix')) %dopar% {
-        try(riskEst(bw,
+stuff=        try(riskEst(bw,
             x=cases[,countcol, drop=FALSE],
             lemObjects = xvSmoothMat,
             tol = tol, 

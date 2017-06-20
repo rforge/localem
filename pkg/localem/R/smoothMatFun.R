@@ -55,7 +55,7 @@ smoothingMatrix = function(
     rasterFine=rasterObjects$rasterFine,
     focalList=rasterObjects$focal,
     offsetRaster=rasterObjects$offset,
-    filename = paste(tempfile(), '.grd', sep=''),
+    filename = filename,
     verbose=verbose)
   
   
