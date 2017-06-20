@@ -35,10 +35,10 @@
 #'
 #' @export
 smoothingMatrix = function(
-  rasterObjects,
-  ncores = 1,
-  filename = 'smoothingMatrix.gri',
-  verbose = FALSE
+    rasterObjects,
+    ncores = 1,
+    filename = 'smoothingMatrix.gri',
+    verbose = FALSE
 ){
   
   if(verbose) {
@@ -47,16 +47,16 @@ smoothingMatrix = function(
     cat("if there are errors stop the cluster with spatial.tools::sfQuickStop()\n")
   }
   
-  if(ncores > 1) spatial.tools::sfQuickInit(ncores, methods = FALSE)
+  if(ncores > 1) spatial.tools::sfQuickInit(ncores, methods = TRUE)
   
   
   theMat = smoothingMatrixDiag(
-    rasterCoarse=rasterObjects$rasterCoarse,
-    rasterFine=rasterObjects$rasterFine,
-    focalList=rasterObjects$focal,
-    offsetRaster=rasterObjects$offset,
-    filename = filename,
-    verbose=verbose)
+      rasterCoarse=rasterObjects$rasterCoarse,
+      rasterFine=rasterObjects$rasterFine,
+      focalList=rasterObjects$focal,
+      offsetRaster=rasterObjects$offset,
+      filename = filename,
+      verbose=verbose)
   
   
   smoothingRaster = theMat$smoothingArray
@@ -72,81 +72,85 @@ smoothingMatrix = function(
   
   # theType = mmap::real64();dput(theType, '')
   theType = structure(numeric(0), bytes = 8L, signed = 1L, class = c("Ctype", 
-      "double"))
+          "double"))
   
   offDiag = foreach::foreach(
-      x = as.vector(theMat$uniqueDist), .packages='localEM', .export = 'smoothingMatrixOneDist'
-    ) %dopar% {
-      
-      thisBlock = try(smoothingMatrixOneDist(x,
-          allCells=theMat$cells,
-          focal=rasterObjects$focal,
-          coarse=rasterObjects$rasterCoarse,
-          fine=rasterObjects$rasterFine,
-          offsetRaster=rasterObjects$offset
-        ), silent=TRUE)
-      
-      if(class(thisBlock) != 'try-error') {
-        for(Dcell1 in 1:length(thisBlock)) {
-          for(Dcell2 in 1:length(thisBlock[[Dcell1]])) {
-            partHere = thisBlock[[Dcell1]][[Dcell2]]
-            s1 = dimnames(thisBlock[[Dcell1]][[Dcell2]])[[1]]
-            s2 = dimnames(thisBlock[[Dcell1]][[Dcell2]])[[2]]
-            
-            partHere = try(aperm(thisBlock[[Dcell1]][[Dcell2]][,,,'transpose', drop=FALSE], 
-                c(2,1,3,4)))
-            matchPartHere = lapply(dimnames(partHere)[1:2], match, 
-              table=Spartitions)
-            
-            theOrder = lapply(matchPartHere, order)
-            
-            haveWritten = FALSE
-            writeCounter1 = 0
-            while(!haveWritten & (writeCounter1 < 20)) {
-              haveWritten = tryCatch(spatial.tools::binary_image_write(
-                  smoothingRasterFile,
-                  mode = theType, 
-                  image_dims = dim(smoothingRaster),
-                  data=as.double(partHere[theOrder[[1]], theOrder[[2]],,] ),
-                  data_position = list(
-                    as.vector(matchPartHere[[1]][theOrder[[1]] ]), 
-                    as.vector(matchPartHere[[2]][theOrder[[2]] ]), 
-                    layerSeq)), 
-                error = function(err) {warning(err);-1} )
-              haveWritten = (haveWritten != -1)
-              writeCounter1 = writeCounter1 + 1
-            }
-            if(writeCounter1 >= 20) warning(paste("dist", x, "cells", Dcell1, Dcell2))
-            
-            partHere = try(thisBlock[[Dcell1]][[Dcell2]][,,,'straightup', drop=FALSE])
-            matchPartHere = lapply(dimnames(partHere)[1:2], match, 
-              table=Spartitions)
-            theOrder = lapply(matchPartHere, order)
-            
-            haveWritten = FALSE
-            writeCounter2 = 0
-            while(!haveWritten & (writeCounter2 < 20)) {
-              haveWritten = tryCatch(spatial.tools::binary_image_write(
-                  smoothingRasterFile, 
-                  mode = theType, 
-                  image_dims = dim(smoothingRaster),
-                  data=as.double(partHere[theOrder[[1]], theOrder[[2]],,] ),
-                  data_position = list(
-                    as.vector(matchPartHere[[1]][theOrder[[1]] ]), 
-                    as.vector(matchPartHere[[2]][theOrder[[2]] ]), 
-                    layerSeq)), 
-                error = function(err) {warning(err);-1} )
-              haveWritten = (haveWritten != -1)
-              writeCounter2 = writeCounter2 + 1
-            }
-            if(writeCounter2 >= 20) warning(paste("dist", x, "cells", Dcell1, Dcell2))
-          } # end Dcell2  
-        } # end Dcell1
-        res = c(writeCounter1, writeCounter1)
-      }  else { # end try error
-        res =thisBlock
-      }
-    } # end foreach
+          x = as.vector(theMat$uniqueDist), .packages=c('Matrix','localEM'), .export = 'smoothingMatrixOneDist'
+      ) %dopar% {
+        
+        thisBlock = smoothingMatrixOneDist(
+            x=x,
+            allCells=theMat$cells,
+            focal=rasterObjects$focal,
+            coarse=rasterObjects$rasterCoarse,
+            fine=rasterObjects$rasterFine,
+            offsetRaster=rasterObjects$offset
+        )
+        if(class(thisBlock) != 'try-error') {
+          for(Dcell1 in 1:length(thisBlock)) {
+            for(Dcell2 in 1:length(thisBlock[[Dcell1]])) {
+              
+              partHere = thisBlock[[Dcell1]][[Dcell2]]
+              s1 = dimnames(thisBlock[[Dcell1]][[Dcell2]])[[1]]
+              s2 = dimnames(thisBlock[[Dcell1]][[Dcell2]])[[2]]
+              partHere = try(aperm(thisBlock[[Dcell1]][[Dcell2]][,,,'transpose', drop=FALSE], 
+                      c(2,1,3,4)))
+              matchPartHere = lapply(dimnames(partHere)[1:2], match, 
+                  table=Spartitions)
+              
+              theOrder = lapply(matchPartHere, order)
+              
+              haveWritten = FALSE
+              writeCounter1 = 0
+              
+              while(!haveWritten & (writeCounter1 < 20)) {
+                haveWritten = tryCatch(spatial.tools::binary_image_write(
+                        smoothingRasterFile,
+                        mode = theType, 
+                        image_dims = dim(smoothingRaster),
+                        data=as.double(partHere[theOrder[[1]], theOrder[[2]],,] ),
+                        data_position = list(
+                            as.vector(matchPartHere[[1]][theOrder[[1]] ]), 
+                            as.vector(matchPartHere[[2]][theOrder[[2]] ]), 
+                            layerSeq)), 
+                    error = function(err) {warning(err);-1} )
+                haveWritten = (haveWritten != -1)
+                writeCounter1 = writeCounter1 + 1
+              }
+              if(writeCounter1 >= 20) warning(paste("dist", x, "cells", Dcell1, Dcell2))
+              
+              partHere = try(thisBlock[[Dcell1]][[Dcell2]][,,,'straightup', drop=FALSE])
+              matchPartHere = lapply(dimnames(partHere)[1:2], match, 
+                  table=Spartitions)
+              theOrder = lapply(matchPartHere, order)
+              
+              haveWritten = FALSE
+              writeCounter2 = 0
+              
+              
+              while(!haveWritten & (writeCounter2 < 20)) {
+                haveWritten = tryCatch(spatial.tools::binary_image_write(
+                        smoothingRasterFile, 
+                        mode = theType, 
+                        image_dims = dim(smoothingRaster),
+                        data=as.double(partHere[theOrder[[1]], theOrder[[2]],,] ),
+                        data_position = list(
+                            as.vector(matchPartHere[[1]][theOrder[[1]] ]), 
+                            as.vector(matchPartHere[[2]][theOrder[[2]] ]), 
+                            layerSeq)), 
+                    error = function(err) {warning(err);-1} )
+                haveWritten = (haveWritten != -1)
+                writeCounter2 = writeCounter2 + 1
+              }
+              if(writeCounter2 >= 20) warning(paste("dist", x, "cells", Dcell1, Dcell2))
+            } # end Dcell2  
+          } # end Dcell1
+          res = c(writeCounter1, writeCounter1)
+        }  else { # end try error
+          res =thisBlock
+        }
+        res
+      } # end foreach
   
   if(any(unlist(offDiag) >= 20)) warning("problem writing smoothing matrix to disk")
   
@@ -167,7 +171,7 @@ smoothingMatrix = function(
   if(any(unlist(lapply(offDiag, class)) == 'try-error') ) {
     warning("errors in smoothing matrix construction")
     return(c(list(offDiag = offDiag), 
-        theMat, rasterObjects[setdiff(names(rasterObjects), names(theMat))]))
+            theMat, rasterObjects[setdiff(names(rasterObjects), names(theMat))]))
   }
   
   result = c(theMat, rasterObjects[setdiff(names(rasterObjects), names(theMat))])

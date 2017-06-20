@@ -195,9 +195,7 @@ kernMat = function(
           len= fineRelativeRes[1],by=1)[1:fineRelativeRes[1]]
       for(Dbw in Sbw){
         kernelArray[Dcell,,Dbw] = as.vector(
-            focalList$extended[[Dbw]][
-                Srow, Scol
-            ])
+            focalList$extended[[Dbw]][Srow, Scol])
       } # for Dbw
     } #  for Drow
   } # for Dcol

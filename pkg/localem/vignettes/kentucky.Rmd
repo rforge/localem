@@ -42,13 +42,13 @@ if(Sys.info()['user'] == 'patrick' & interactive() & FALSE) {
 	dir.create(path, showWarnings=FALSE, recursive=TRUE)
 	Sbw = unique(round(exp(seq(log(4), log(50), len=12)))) * 1000
 } else {
-	ncores = 2
+	ncores = 8#2
 	cellsFine = 120
 	cellsSimulate = 200
 	cellsCoarse= 10
 	nsim = 3
 	path = file.path(dirname(tempdir()), 'localEM')
-	Sbw = c(5,7,10,15) * 1000
+	Sbw = c(10,15,20) * 1000
 }
 
 
