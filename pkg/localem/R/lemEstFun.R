@@ -197,11 +197,12 @@ riskEst = function(
     } else {
       
       obsCounts = as.matrix(x[match(idCoarse, x[[idColX]]),countcol])
-      dimnames(obsCounts) = list(idCoarse, bw)
+      dimnames(obsCounts) = list(idCoarse, col=names(x[,countcol]))
     }
   } else { # x is a vector
     idCoarse = 1:length(x)
-    obsCounts = as.matrix(x, ncol=1)  
+    obsCounts = as.matrix(x, ncol=1)
+    colnames(obsCounts) = 'y'
   }
   xvSet = gsub("^bw[[:digit:]]+(xv)?", "", bwString)
   if(nchar(xvSet)) {
@@ -262,6 +263,7 @@ riskEst = function(
     oldLambda = Lambda
     Diter = Diter + 1
   }
+  colnames(Lambda) = colnames(obsCounts)
   
   littleLambda = solve(partitionAreasMat) %*% Lambda
   

@@ -157,12 +157,12 @@ lemXv = function(
   if(ncores > 1) spatial.tools::sfQuickInit(
       ncores, 
       methods = TRUE,
-      .packages = c('Matrix','raster'))
+      .packages = c('Matrix','localEM', 'raster'))
 
   estList = foreach::foreach(
           bw = xvSmoothMat$bw,
-          .export = 'riskEst', .packages=c('raster','Matrix')) %dopar% {
-        try(riskEst(bw,
+          .packages=c('raster','localEM', 'Matrix')) %dopar% {
+       try(riskEst(bw,
             x=cases[,countcol, drop=FALSE],
             lemObjects = xvSmoothMat,
             tol = tol, 
@@ -172,6 +172,7 @@ lemXv = function(
   names(estList) = xvSmoothMat$bw
   
   if(any(unlist(lapply(estList, class)) == 'try-error') ) {
+    warning("errors in local-em estimation")
     return(list(
             estList = estList,
             smoothingMatrix = xvSmoothMat,
@@ -195,6 +196,7 @@ lemXv = function(
   estListRisk = lapply(estList, function(x) x$risk)
   
   estDf = as.matrix(do.call(cbind, estListExp))
+  colnames(estDf)
   riskDf = as.matrix(do.call(cbind, estListRisk))
   colnames(estDf) = colnames(riskDf) = paste(
     rep(names(estList), unlist(lapply(estListExp, function(xx) dim(xx)[2]))),
@@ -212,7 +214,7 @@ lemXv = function(
   xvEst = estDf[,grep("xv[[:digit:]]+", colnames(estDf))]
   Sxv = gsub("^bw[[:digit:]]+xv|_count[[:digit:]]+?$|_$", "", colnames(xvEst))
   Scount = gsub("bw[[:digit:]]+xv[[:digit:]]+_", "", colnames(xvEst))
-  if(all(nchar(Scount)==0)) Scount = rep(countcol, length(Scount))
+  if(all(nchar(Scount)==0)) Scount = rep_len(countcol, length(Scount))
   Sbw = gsub('^bw|xv.*', "", colnames(xvEst))
   
   suppressMessages(xvEstMask <- xvMat[,Sxv] * xvEst)
