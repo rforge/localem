@@ -231,7 +231,7 @@ toPlot = xvKentucky$risk
 for(Dbw in xvKentucky$xv$bw) {
   
   rCol = mapmisc::colourScale(
-      riskEst[,paste('bw', Dbw, '_', sep='') ], 
+      riskEst[,paste('bw', Dbw, '_count1', sep='') ], 
       breaks = iCol$breaks,
       style = 'fixed',  
       col = iCol$col)
