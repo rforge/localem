@@ -7,9 +7,9 @@ focalWeightWithSize = function(x, bw, size=NULL) {
   if(!length(size))
     size = 3*bw
   
-  raster::focalWeight(
-            x=x, d=c(bw, size),
-            type='Gauss'
+  focalWeight(
+        x=x, d=c(bw, size),
+        type='Gauss'
   )
   
 }
@@ -36,7 +36,7 @@ focalFromBw = function(
   }
   
   
-  focalList = foreach::foreach(Dbw = bw, .export = c("focalWeightWithSize")) %dopar% {
+  focalList = foreach::foreach(Dbw = bw, .export = "focalWeightWithSize", .packages = "raster") %dopar% {
     focalWeightWithSize(
         bw=Dbw,
         x=fine,
