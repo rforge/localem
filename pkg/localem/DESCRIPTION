@@ -25,7 +25,8 @@ Suggests:
     rgeos,
     rgdal,
   	mapmisc,
-  	RColorBrewer,
+  	RColorBrewer, 
+	classInt, 
   	knitr
 Enhances:
     RandomFields,
