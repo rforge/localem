@@ -21,6 +21,7 @@
 #' 
 #' @return The \code{lemXv} function returns a data frame of specified bandwidths and their cross-validation scores. 
 #'  
+#' @import foreach raster sp
 #' @export
 lemXv = function(
     cases, 
