@@ -3,9 +3,11 @@
 #' @description Takes a partition-level LEM estiamte and smoothis it to a continuous risk estimate 
 #'
 #' @param x result from lemXV
-#' @param counts
+#' @param counts observed counts, defaults to all counts for which cross validation was done
+#' @param bw smoothing bandwidth, defaults to the optimal bandwidths for each set of counts
 #' @param ncores Number of cores/threads for parallel processing
 #' @param filename name of final raster file
+#' @param verbose if TRUE, print progress information
 #'
 #' @details The optimal bandwidth for each layer is 
 #' @return A raster brick

@@ -4,15 +4,21 @@
 \alias{lemFinal}
 \title{Computes final smoothed LEM estimate}
 \usage{
-lemFinal(x, bw = NULL, ncores = 1, filename = tempfile(),
-  verbose = FALSE)
+lemFinal(x, counts = colnames(x$xv)[-1], bw = x$xv[apply(x$xv[, counts], 2,
+  which.min), "bw"], ncores = 1, filename = tempfile(), verbose = FALSE)
 }
 \arguments{
 \item{x}{result from lemXV}
 
+\item{counts}{observed counts, defaults to all counts for which cross validation was done}
+
+\item{bw}{smoothing bandwidth, defaults to the optimal bandwidths for each set of counts}
+
 \item{ncores}{Number of cores/threads for parallel processing}
 
 \item{filename}{name of final raster file}
+
+\item{verbose}{if TRUE, print progress information}
 }
 \value{
 A raster brick
