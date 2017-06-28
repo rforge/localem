@@ -3,6 +3,7 @@
 #' @description Takes a partition-level LEM estiamte and smoothis it to a continuous risk estimate 
 #'
 #' @param x result from lemXV
+#' @param counts
 #' @param ncores Number of cores/threads for parallel processing
 #' @param filename name of final raster file
 #'
@@ -11,18 +12,16 @@
 #'
 
 #' @export
-lemFinal = function(x, bw = NULL, ncores=1, filename = tempfile(), verbose=FALSE) {
+lemFinal = function(
+    x, 
+    counts = colnames(x$xv)[-1],
+    bw = x$xv[apply(x$xv[,counts],2,which.min),'bw'], 
+    ncores=1, filename = tempfile(), verbose=FALSE) {
   
-  if(is.null(bw)) {
-    finalBw = x$xv[
-        apply(x$xv[,-1], 2, which.min),
-        , 'bw']
-  } else {
-    finalBw = rep_len(bw, ncol(x$xv)-1)
-  }
+
+  finalBw = rep_len(bw, length(counts))
   
-  
-  Scounts = colnames(x$xv)[-1]
+  Scounts = counts
   Slayers = paste("bw", finalBw, "_", Scounts, sep='')
   
   xFocal = x$smoothingMatrix$focal$array[,,paste('bw', finalBw, sep=''), drop=FALSE]
@@ -38,7 +37,10 @@ lemFinal = function(x, bw = NULL, ncores=1, filename = tempfile(), verbose=FALSE
      c("ID", Slayers)]
   toSmooth = deratify(toSmooth)
   
-  spatial.tools::sfQuickInit(ncores, methods = FALSE)
+  if(ncores>1) spatial.tools::sfQuickInit(
+        ncores, methods = TRUE,        
+        .packages = c('Matrix','raster'))
+  
   
   suppressWarnings(
       smoothedRisk <- spatial.tools::rasterEngine(
@@ -52,7 +54,7 @@ lemFinal = function(x, bw = NULL, ncores=1, filename = tempfile(), verbose=FALSE
           filename = gsub("[.]gr(d|i)$", "", filename), overwrite=TRUE,
           verbose=(verbose>2)
       ))
-  spatial.tools::sfQuickStop()
+  if(ncores>1) spatial.tools::sfQuickStop()
   names(smoothedRisk) = Slayers
   
   smoothedRisk

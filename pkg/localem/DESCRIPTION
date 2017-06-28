@@ -11,14 +11,13 @@ LazyData: FALSE
 Depends:
 	R (>= 2.10),
     raster,
-    sp,
-    foreach
+    sp
 Imports:
     Matrix,
     geostatsp (>= 1.4.4),
     stats,
-    spatial.tools, 
-    mmap
+    spatial.tools,
+    foreach
 Suggests:
     spdep,
     diseasemapping,

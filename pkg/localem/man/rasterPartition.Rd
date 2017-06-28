@@ -5,7 +5,7 @@
 \title{Generates the partitions by overlaying rasters of the coarse and fine polygons}
 \usage{
 rasterPartition(polyCoarse, polyFine, cellsCoarse, cellsFine, bw,
-  focalSize = NULL, xv = NULL, ncores = 1, path = tempdir(),
+  focalSize = NULL, fact = 1, xv = NULL, ncores = 1, path = getwd(),
   idFile = paste(tempfile("lemId", path), ".grd", sep = ""),
   offsetFile = paste(tempfile("lemOffset", path), ".grd", sep = ""),
   verbose = FALSE)

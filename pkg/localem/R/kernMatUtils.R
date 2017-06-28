@@ -7,9 +7,9 @@ focalWeightWithSize = function(x, bw, size=NULL) {
   if(!length(size))
     size = 3*bw
   
-  focalWeight(
-        x=x, d=c(bw, size),
-        type='Gauss'
+  raster::focalWeight(
+      x=x, d=c(bw, size),
+      type='Gauss'
   )
   
 }
@@ -35,36 +35,31 @@ focalFromBw = function(
     focalSize = 3*max(bw)
   }
   
-  
-  focalList = foreach::foreach(Dbw = bw, .export = "focalWeightWithSize", .packages = "raster") %dopar% {
-    focalWeightWithSize(
-        bw=Dbw,
-        x=fine,
-        size = focalSize
-    )
-  }
+# define Dbw to make package check happy
+Dbw = NULL  
+  focalList = foreach::foreach(
+          Dbw = bw, 
+          .export = "focalWeightWithSize", 
+          .packages = "raster"
+      ) %dopar% {
+        focalWeightWithSize(
+            bw=Dbw,
+            x=fine,
+            size = focalSize
+        )
+      }
   names(focalList) = bw
-
-  if(FALSE) {
-  focalList = parallel::mcmapply(
-      focalWeightWithSize,
-      bw=bw,
-      MoreArgs=list(
-          x=fine,
-          size = focalSize
-      ),
-      mc.cores=ncores, SIMPLIFY=FALSE
-  )
-}
-
+  
   
   names(focalList) = paste("bw",
       names(bw),
       sep="")
   
   
-  bigList = foreach::foreach(Dbw = names(focalList)) %dopar% {
-  
+  bigList = foreach::foreach(
+          Dbw = names(focalList)
+      ) %dopar% {
+        
         theDim = dim(focalList[[Dbw]])
         topleft = bigCentreCell - (theDim-1)/2
         xseq = seq(topleft[1], len=theDim[1], by=1)
@@ -77,8 +72,8 @@ focalFromBw = function(
         ] = focalList[[Dbw]][xNotZero,yNotZero]
         Matrix::Matrix(res)
       }
-   names(bigList) = names(focalList)   
-      
+  names(bigList) = names(focalList)   
+  
   
   bw = data.frame(
       bw=bw,
@@ -94,7 +89,7 @@ focalFromBw = function(
       bw=bw)
   
   for(D in sort(setdiff(unique(bw$fact),1))){
-    fineAgg = aggregate(fine, fact=D)
+    fineAgg = stats::aggregate(fine, fact=D)
     bwHere = sort(bw[bw$fact==D,'bw'])
     focalListD =
         mapply(

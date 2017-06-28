@@ -274,6 +274,7 @@ smoothingMatrixDiag = function(
   
   if(verbose) cat("looping through diagonal cells\n")
   
+  Dcell1 = NULL # defined for package check 
   diagBlocks = foreach::foreach(
       Dcell1 = 1:ncell(rasterCoarse), .packages='localEM', .export = 'smoothingMatrixEntries'
     ) %dopar% {

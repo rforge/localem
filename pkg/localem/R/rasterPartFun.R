@@ -151,8 +151,9 @@ rasterPartition = function(
   
   rasterFineId = brick(rasterIdCoarse, rasterIdFine, rasterFine)	
   
-  rasterFineId = writeRaster(rasterFineId, idFile,
-    overwrite=file.exists(idFile))
+  rasterFineId = writeRaster(rasterFineId, 
+      filename = idFile,
+      overwrite=file.exists(idFile))
   
   if(verbose) {
     cat(date(), "\n")
@@ -236,12 +237,30 @@ rasterPartition = function(
     )), silent=!verbose)
   
   if(class(smoothedOffset) == 'try-error') {
-    Soutfile = file.path(path, paste("smoothedOffsetList", 1:nrow(forSmooth), ".grd", sep=''))
+    dir.create(file.path(path, 'smoothedOffsetList'), showWarnings=FALSE)
+    Soutfile = file.path(path, 'smoothedOffsetList', paste("smoothedOffsetList", 1:nrow(forSmooth), ".grd", sep=''))
     if(verbose) {
       cat("smoothing with spatial.tools failed, using raster\n")
       cat("temporary files", Soutfile[1], " ",  Soutfile[length(Soutfile)], "\n")
     }
-    
+# parallel package, doesn't work for some reason    
+#    smoothedOffset = parallel::clusterMap(
+#    	cl = NULL,
+#    	fun = function(x, rasterOffsetAgg, forSmooth, focalArray, Soutfile) {
+#          raster::focal(
+#              rasterOffsetAgg[[ forSmooth[x,'layer'] ]],
+#              w = focalArray[,,forSmooth[x,'bw'] ],
+#              na.rm=TRUE, pad=TRUE,
+#              filename = Soutfile[x],
+#              overwrite = file.exists(Soutfile[x])
+#          )
+#        },
+#    	x = 1:nrow(forSmooth),
+#    	MoreArgs = list(rasterOffsetAgg=rasterOffsetAgg,
+#    	forSmooth=forSmooth, focalArray=focalArray, Soutfile=Soutfile)
+#        )
+# define x so package check is happy
+x = NULL
     smoothedOffset = foreach::foreach(
         x = 1:nrow(forSmooth), .packages='raster'
       ) %do% {
@@ -278,7 +297,7 @@ rasterPartition = function(
     filename = offsetFile, overwrite = file.exists(offsetFile))  
   
 # create list of partitions
-  partitions = as.data.frame(na.omit(raster::unique(rasterFineId)))
+  partitions = as.data.frame(stats::na.omit(raster::unique(rasterFineId)))
   partitions$partition = paste('c', partitions$cellCoarse, 'p', partitions$idCoarse,
     '.', partitions$idFine, sep='')
   partitions = cbind(ID = 1:nrow(partitions), partitions)
@@ -291,7 +310,7 @@ rasterPartition = function(
           x[3] == partitions[,'cellCoarse']
       )[1])
   levels(partitionRaster) = list(partitions)
-  partitionRaster = writeRaster(partitionRaster, file=idFile, overwrite=file.exists(idFile))
+  partitionRaster = writeRaster(partitionRaster, filename=idFile, overwrite=file.exists(idFile))
   
   
 # offsetMat is the value of the offset at all points in the partition

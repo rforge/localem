@@ -179,7 +179,7 @@ riskEst = function(
           
           #if conflict, assign counts to coarse shapefile region whose centroid is closest to the one of interest
           polyNeighNotMatch = lemObjects$polyCoarse[idCoarse %in% idNeighNotMatch,]
-          coordsNeighNotMatch = coordinates(rgeos::gCentroid(polyNeighNotMatch, byid = TRUE))
+          coordsNeighNotMatch = sp::coordinates(rgeos::gCentroid(polyNeighNotMatch, byid = TRUE))
           
           coordsNotMatch = matrix(
               rep(coordinates(rgeos::gCentroid(polyNotMatch, byid = TRUE)), each = length(polyNeighNotMatch)),

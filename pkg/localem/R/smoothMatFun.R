@@ -74,6 +74,8 @@ smoothingMatrix = function(
   theType = structure(numeric(0), bytes = 8L, signed = 1L, class = c("Ctype", 
           "double"))
   
+  # define x for package check
+  x = NULL
   offDiag = foreach::foreach(
           x = as.vector(theMat$uniqueDist), .packages=c('Matrix','localEM'), .export = 'smoothingMatrixOneDist'
       ) %dopar% {

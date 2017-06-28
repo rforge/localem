@@ -4,8 +4,7 @@
 \alias{riskEst}
 \title{Computes the relative risk estimation on the raster of fine polygons}
 \usage{
-riskEst(x, lemObjects, bw, tol = 1e-06, maxIter = 2000, type = c("final",
-  "unsmoothed", "expected"), filename = "")
+riskEst(x, lemObjects, bw, tol = 1e-06, maxIter = 2000)
 }
 \arguments{
 \item{x}{Spatial polygons of case data}
@@ -18,9 +17,9 @@ riskEst(x, lemObjects, bw, tol = 1e-06, maxIter = 2000, type = c("final",
 
 \item{maxIter}{Maximum number of iterations for convergence}
 
-\item{filename}{Passed to writeRaster}
-
 \item{ncores}{Number of cores/threads for parallel processing}
+
+\item{filename}{Passed to writeRaster}
 }
 \value{
 The \code{riskEst} function returns a raster of risk estimations for the input bandwidth.

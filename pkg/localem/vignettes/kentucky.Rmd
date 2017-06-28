@@ -1,0 +1,326 @@
+<!--
+%\VignetteEngine{knitr::docco_linear}
+%\VignetteIndexEntry{Local-EM Example with Cancer Cases in Kentucky}
+-->
+	
+# Local-EM Example with Cancer Cases in Kentucky
+	
+## Introduction 
+
+The `localEM` package contains functions to implement the kernel smoothing local-EM algorithm$^1$ of disease data aggregated to geographical regions. This algorithm provides an nonparametric alternative to the standard geospatial models, such as the Besag-York-Mollie (BYM) model$^2$, for estimating spatial risk of areal disease data. With disease cases typically aggregated to highly coarse geographical regions (e.g., census counties, or census subdivisions), the local-EM method creates a tessellation of distinct regions by overlaying the map of these coarse regions with another map containing fine geographical regions (e.g., census tracts, census blocks, or census dissemination areas) of population data. This allows for the spatial risk to be estimated at a better resolution with the fine regions. 
+
+The methodology of this package is demonstrated on simulated lung cancer cases for the state of Kentucky, USA. The spatial polygons for the census counties and tracts of Kentucky are included with this package. 
+
+```{r knitrSetup, include=FALSE}
+# default chunk options
+knitr::opts_chunk$set(
+    dev='png',
+    fig.width=4, fig.height=2.5,
+    dpi = 100
+)
+```
+
+```{r setup, message = FALSE}
+library('mapmisc')
+
+data('kentuckyCounty', package='localEM') 
+data('kentuckyTract', package='localEM')
+data('kMap', package='localEM')
+
+# specify number of grid cells and
+# number of cores for computations in parallel 
+if(Sys.info()['user'] == 'patrick' & interactive() & FALSE) {
+  # this uses about 20GB of memory
+  cellsFine = 300
+  cellsSimulate = 600
+  ncores = 8
+  cellsCoarse=20
+  nsim = 12
+  path = '/store/patrick/localEM/kentuckyVignette/'
+  dir.create(path, showWarnings=FALSE, recursive=TRUE)
+  Sbw = unique(round(exp(seq(log(5), log(50), len=11)))) * 1000
+} else {
+  ncores = 2
+  cellsFine = 100
+  cellsSimulate = 200
+  cellsCoarse= 8
+  nsim = 3
+  path = file.path(dirname(tempdir()), 'localEM')
+  Sbw = seq(10,30,by=10) * 1000
+}
+
+
+```
+
+
+## Simulate Cases
+
+Using the `simLgcp()` function from the `geostatsp` package, case locations are
+simulated with the log Gaussian Cox process and  following parameters: 
+
+* mean: 0
+* variance: 0.16
+* shape: 2
+* range: 120 km
+* offsets: log of expected cases/m$^2$ of the census tracts
+
+The simulated cases are then aggregated to the appropriate counties. 
+
+```{r simcases, message = FALSE}
+
+if(requireNamespace("RandomFields", quietly=TRUE)) {
+  NcellsSim = cellsSimulate
+} else {
+  NcellsSim = 100
+}
+kentuckyOffset = geostatsp::spdfToBrick(
+    kentuckyTract,
+    geostatsp::squareRaster(kentuckyTract, NcellsSim),
+    pattern = '^expected$',
+    logSumExpected=TRUE
+)
+
+
+set.seed(0)
+kCases = geostatsp::simLgcp(
+    param = c(mean = 0, variance = 0.4^2, 
+        range = 120 * 1000, shape = 2),
+    covariates = list(logExpected = kentuckyOffset), 
+    offset = 'logExpected', n=nsim)
+#'
+```
+
+Aggregate events to counties
+
+```{r aggSim}
+kCases$agg = lapply(
+    kCases[grep("^events[[:digit:]]+?", names(kCases))],
+    function(qq) over(qq, kentuckyCounty)[,'id'])
+countyCounts = as.data.frame(lapply(
+        kCases$agg, 
+        function(xx) 
+          as.vector(table(xx,exclude=NULL)[as.character(kentuckyCounty$id)])
+    )
+)
+countyCounts[is.na(countyCounts)] = 0
+names(countyCounts) = gsub("^events", 'count', names(countyCounts))
+rownames(countyCounts) = as.character(kentuckyCounty$id)
+kentuckyCounty = merge(kentuckyCounty, countyCounts,
+    by.x='id', by.y='row.names')
+```
+
+
+
+```{r plotOffset, echo = FALSE, fig.cap='simulated events', fig.subcap = c('offset','relative intensity', 'events', 'counts'), out.width='44%'}
+
+# offset map
+oCol = colourScale(
+    c(0, exp(maxValue(kentuckyOffset))), 
+    breaks = 10, 
+    style = 'equal', dec = 7, 
+    transform = 'sqrt')
+
+map.new(kentuckyTract)
+plot(kentuckyOffset, 
+    col = oCol$col, 
+    breaks = pmax(-100,log(oCol$breaks)), 
+    legend = FALSE, 
+    add = TRUE)
+plot(kMap, add = TRUE)
+
+legendBreaks('topleft', 
+    breaks = oCol$breaks * 10^6, col = oCol$col, 
+    title = expression(plain('cases/km')^2), 
+    bg = 'white')
+
+
+
+# simulated risk map
+iCol = colourScale(
+    kCases$raster$relativeIntensity1, 
+    breaks = 8, style = 'equal', dec = -log10(0.5))
+
+map.new(kentuckyTract)
+
+plot(kCases$raster$relativeIntensity1, 
+    col = iCol$col, breaks = iCol$breaks, 
+    legend = FALSE, 
+    add = TRUE)
+plot(kMap, add = TRUE)
+
+legendBreaks('topleft', 
+    col = iCol$col, breaks = iCol$breaks, 
+    title = 'relative risk', 
+    bg = 'white')
+
+
+# simulated events map
+map.new(kentuckyTract)
+plot(kMap, add = TRUE)
+
+points(kCases$events1, col = '#FF000030', pch = 20, cex=0.5)
+
+scaleBar(kentuckyCounty, 
+    pos = 'topleft',   bg = 'white')
+
+# simulated counts
+cCol = colourScale(
+    kentuckyCounty$count1, 
+    breaks = 10, 
+    style = 'quantile', dec = -1)
+
+map.new(kentuckyTract)
+plot(kentuckyCounty, col=cCol$plot, add=TRUE)
+plot(kMap, add = TRUE)
+legendBreaks("topleft", cCol)
+
+
+scaleBar(kentuckyCounty, 
+    pos = 'topleft',   
+    inset = c(0.2,0),
+    bg = 'white')
+```
+
+
+
+# Estimation
+
+The first simulated dataset
+```{r cvNew}
+library('localEM')
+fileHere = file.path(path, 'xvKentucky.RDdata')
+if(!file.exists(fileHere)) {
+  xvKentucky = lemXv(
+      cases = kentuckyCounty[,c('id','count1')],   
+      population = kentuckyTract,   
+      cellsCoarse = cellsCoarse,   
+      cellsFine = cellsFine,   
+      bw = Sbw,
+      xv = 4, 
+      ncores = ncores,
+      path = path,
+      verbose = TRUE)
+  save(xvKentucky, file=fileHere)  
+} else {
+  load(fileHere)
+}
+```
+
+```{r cvPlotNew, fig.cap='cross validation scores', fig.height=4, fig.width=6}
+plot(xvKentucky$xv[,1]/1000, xvKentucky$xv[,2], 
+    xlab='km', ylab='-log p', 
+    type='o')
+```
+
+
+
+
+# Risk Estimation
+
+
+
+
+```{r intensPlots, fig.cap = 'rr', fig.subcap = xvKentucky$xv$bw, fig.ncol=2}
+
+
+riskEst = levels(xvKentucky$risk)[[1]]
+toPlot = xvKentucky$risk
+
+for(Dbw in xvKentucky$xv$bw) {
+  
+  rCol = mapmisc::colourScale(
+      riskEst[,paste('bw', Dbw, '_count1', sep='') ], 
+      breaks = iCol$breaks,
+      style = 'fixed',  
+      col = iCol$col)
+  toPlot@legend@colortable = c(NA,rCol$plot)
+  
+  map.new(kentuckyCounty)
+  plot(toPlot, add=TRUE)
+  plot(kMap, add = TRUE)
+  
+  legendBreaks('topleft', rCol,  bg = 'white')
+}
+
+```
+
+
+# Multiple datasets
+
+
+```{r cvNewAll}
+library('localEM')
+xvAll = lemXv(
+    cases = kentuckyCounty@data[,grep("^count[[:digit:]]", names(kentuckyCounty))],   
+    lemObjects = xvKentucky$smoothingMatrix,
+    ncores = ncores,
+    verbose = TRUE,
+    path=tempdir())
+```
+
+
+```{r cvPlotAll, fig.cap='cross validation scores', fig.height=4, fig.width=6}
+matplot(xvAll$xv[,'bw']/1000, 
+    xvAll$xv[,-1], 
+    xlab='km', ylab='-log p', 
+    type='l', lty=1, log='x',
+    ylim = quantile(xvKentucky$xv[,-1], c(0, 0.8)) )
+```
+
+
+
+## Exceedance Probabilities
+
+Exceedance probabilities are computed with the `excProb()` function to measure the uncertainty of the local-EM risk estimation. Bootstrapping is used to obtain these exceedance probabilities for the local-EM algorithm. 
+
+Specifically, under the assumption that disease events are a realisation from the background population and constant risk threshold, cases are bootstrapped and randomly aggregated to the counties. Using the same bandwidth as the observed data, the local-EM risk is then estimated for each of the bootstrapped data. Afterwards, exceedance probabilities are computed as the proportion of the observed risk estimate at least as large as the ones of the bootstrap data. Large exceedance probabilities are consistent with the risk being greater than the specified threshold. 
+
+```{r excProb, eval=FALSE, purl=FALSE}
+
+lemExcProb = excProb(
+    lemEst = lemRisk, 
+    lemObjects = xvKentucky, 
+    threshold = c(1.25, 2), 
+    Nboot = 20, 
+    ncores = ncores)
+
+```
+
+```{r plotExcProb, eval = FALSE, purl=FALSE}
+
+#exceedance probability maps
+pCol = colourScale(lemExcProb, 
+    breaks = c(0, 0.2, 0.8, 0.95, 1), style = 'fixed', 
+    col = c('green', 'yellow', 'orange', 'red')
+)								
+
+for(Dthreshold in names(lemExcProb)) {
+  
+  threshold = gsub('threshold\\.', '', Dthreshold)
+  map.new(kentuckyTract, 
+      mar = c(0, 0, 1, 0), 
+      main = paste('Exceedance Probabilities, t = ', threshold, sep = ''))
+  plot(lemExcProb[[Dthreshold]], 
+      col = pCol$col, breaks = pCol$breaks, 
+      legend = FALSE, 
+      add = TRUE)
+  plot(kMap, add = TRUE)
+  
+  legendBreaks('topleft', 
+      col = pCol$col, breaks = pCol$breaks, 
+      title = 'prob', 
+      bg = 'white')
+  
+  scaleBar(kentuckyCounty, 
+      pos = 'topleft', 
+      inset = c(0.3, 0.1), 
+      bg = 'white')
+}
+
+```
+
+## References
+
+1. Nguyen P, Brown PE, Stafford J. Mapping cancer risk in southwestern Ontario with changing census boundaries. Biometrics. 2012; 68(4): 1229-37. 
+
+2. Besag J, York J, Mollie A. Bayesian image restoration, with two applications in spatial statistics. Ann Inst Statist Math. 1991; 43(1): 1-59. 

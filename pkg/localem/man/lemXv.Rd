@@ -5,17 +5,19 @@
 \title{Computes the likelihood cross-validation}
 \usage{
 lemXv(cases, population, cellsCoarse, cellsFine, bw, xv = 4, lemObjects,
-  ncores = 1, tol = 1e-06, maxIter = 2000, randomSeed = NULL,
-  verbose = FALSE, path = getwd())
+  ncores = 1, tol = 1e-06, maxIter = 2000, fact = 1,
+  randomSeed = NULL, verbose = FALSE, path = getwd())
 }
 \arguments{
-\item{cases, }{}
+\item{cases}{spatial object with case counts}
 
-\item{population, }{}
+\item{population}{spatial object with population data}
 
-\item{cellsCoarse, }{}
+\item{cellsCoarse}{number of cells for parallel computations of the smoothing matrix}
 
-\item{cellsFine, }{}
+\item{cellsFine}{number of cells for numerical integration}
+
+\item{bw}{vector of bandwidths}
 
 \item{xv}{Number of cross-validation datasets}
 
@@ -26,6 +28,8 @@ lemXv(cases, population, cellsCoarse, cellsFine, bw, xv = 4, lemObjects,
 \item{tol}{Tolerance for convergence}
 
 \item{maxIter}{Maximum number of iterations for convergence}
+
+\item{fact}{aggregation factor for offsets prior to smoothing}
 
 \item{randomSeed}{Seed for random number generator}
 
@@ -41,44 +45,4 @@ The \code{lemXv} function computes the likelihood cross-validation scores for th
 }
 \details{
 After using the \code{lemXv} function, the last entry of the data frame object is the theoretical cross-validation score when bandwidth is set to infinity.
-}
-\examples{
-\dontrun{ 
-data(kentuckyCounty)
-data(kentuckyTract)
-
-ncores = 1 + (.Platform$OS.type == 'unix')
-
-lemRaster = rasterPartition(polyCoarse = kentuckyCounty, 
-                           polyFine = kentuckyTract, 
-                           cellsCoarse = 6, 
-                           cellsFine = 100, 
-                           bw = c(10, 12, 15, 17, 20, 25) * 1000, 
-                           ncores = ncores, 
-                           idFile = 'id.grd', 
-                           offsetFile = 'offset.grd', 
-                           verbose = TRUE)
-
-
-lemSmoothMat = smoothingMatrix(rasterObjects = lemRaster, 
-                               ncores = ncores, 
-                               verbose = TRUE)
-
-lemCv = lemXv(x = kentuckyCounty, 
-             lemObjects = lemSmoothMat, 
-             Nxv = 5, 
-             ncores = ncores, 
-             verbose = TRUE)
-bestBw = lemCv$bw[which.min(lemCv$cv)]
-
-plot(lemCv[is.finite(lemCv$bw),], 
-    xlab = 'Bandwidth (m)', 
-    ylab = 'CV', 
-    log = 'x', col = 'red', type = 'o')
-abline(v = bestBw, lty = 3)
-}
-
-Computes the likelihood cross-validation by removing spatial regions and estimating risk for those regions
-This requires computations of new smoothing matrix for each training set
-Sampling Ratio: 75/25\% of data for training and testing sets
 }
