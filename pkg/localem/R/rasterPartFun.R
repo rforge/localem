@@ -115,7 +115,6 @@ rasterPartition = function(
     template=rasterFine,
     pattern='^expected$')
   names(rasterOffset) = 'offset'
-  
   # fine ID (iffset
   # scale the offsets to cases per cell
   # times 10 (roughly)
@@ -167,6 +166,7 @@ rasterPartition = function(
   } else {
     rasterOffsetAgg = rasterOffset
   }
+  rasterOffsetAgg = setMinMax(rasterOffsetAgg)
   
   if(is.null(focalSize))
     focalSize = 2.5*max(bw)
@@ -219,7 +219,7 @@ rasterPartition = function(
   
   outfile = file.path(path, "smoothedOffsetBrick.grd")
   
-  smoothedOffset <- try(
+  smoothedOffset <- tryCatch(
     suppressWarnings(spatial.tools::rasterEngine(
       x=rasterOffsetAgg, fun=focalFunction, 
       args = list(Scvsets=Scvsets, focalArray=focalArray),
@@ -229,14 +229,13 @@ rasterPartition = function(
       processing_unit = 'single',
       datatype='FLT8S',
       chunk_format = 'array',
-      filename = outfile, 
+      filename = gsub("[.]gr[id]$", "", outfile), 
       overwrite=TRUE,
       verbose=(verbose>2),
       blocksize=1,
       minblocks = nrow(rasterOffsetAgg)
-    )), silent=!verbose)
-  
-  if(class(smoothedOffset) == 'try-error') {
+    )), error = function(e) e)
+  if(any(class(smoothedOffset) == 'error') ) {
     dir.create(file.path(path, 'smoothedOffsetList'), showWarnings=FALSE)
     Soutfile = file.path(path, 'smoothedOffsetList', paste("smoothedOffsetList", 1:nrow(forSmooth), ".grd", sep=''))
     if(verbose) {
@@ -260,7 +259,7 @@ rasterPartition = function(
 #    	forSmooth=forSmooth, focalArray=focalArray, Soutfile=Soutfile)
 #        )
 # define x so package check is happy
-x = NULL
+   x = NULL
     smoothedOffset = foreach::foreach(
         x = 1:nrow(forSmooth), .packages='raster'
       ) %do% {
@@ -278,6 +277,9 @@ x = NULL
     smoothedOffset = raster::brick(
       smoothedOffsetStack, filename = outfile, overwrite = file.exists(outfile)
     )
+  } else {
+    # no errors
+     smoothedOffset = raster::brick(outfile)
   }  
   if(verbose) {
     cat(date(), "\n")

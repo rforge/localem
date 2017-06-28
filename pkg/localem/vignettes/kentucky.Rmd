@@ -40,11 +40,13 @@ if(Sys.info()['user'] == 'patrick' & interactive() & FALSE) {
   dir.create(path, showWarnings=FALSE, recursive=TRUE)
   Sbw = unique(round(exp(seq(log(5), log(50), len=11)))) * 1000
 } else {
+  # a less computationally intensive setup
   ncores = 2
   cellsFine = 100
   cellsSimulate = 200
   cellsCoarse= 8
   nsim = 3
+  # on unix systems results will be saved in /tmp/localEM
   path = file.path(dirname(tempdir()), 'localEM')
   Sbw = seq(10,30,by=10) * 1000
 }
@@ -188,7 +190,7 @@ scaleBar(kentuckyCounty,
 The first simulated dataset
 ```{r cvNew}
 library('localEM')
-fileHere = file.path(path, 'xvKentucky.RDdata')
+fileHere = file.path(path, 'xvKentucky.RData')
 if(!file.exists(fileHere)) {
   xvKentucky = lemXv(
       cases = kentuckyCounty[,c('id','count1')],   
