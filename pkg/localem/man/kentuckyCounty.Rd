@@ -3,12 +3,14 @@
 \name{kentuckyCounty}
 \alias{kentuckyCounty}
 \alias{kentuckyTract}
+\alias{kentuckyPuma}
 \alias{kMap}
 \title{Observed cancer case data in Kentucky}
 \format{A SpatialPolygonsDataFrame of Kentucky county boundaries and observed cancer cases.}
 \usage{
 data('kentuckyCounty')
 data('kentuckyTract')
+data('kentuckyPuma')
 data('kMap')
 }
 \description{
