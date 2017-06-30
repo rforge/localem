@@ -8,51 +8,35 @@
 #' @param ncores Number of cores/threads for parallel processing
 #' @param tol Tolerance for convergence
 #' @param maxIter Maximum number of iterations for convergence
-#' @param filename Passed to writeRaster
 #'
 #' @details After using the \code{riskEst} function, the risk estimations are computed on the raster cells of the fine polygons.
 
 #' @return The \code{riskEst} function returns a raster of risk estimations for the input bandwidth.
 #'
-#' @examples
+#' @examples 
 #' \dontrun{ 
-#' data(kentuckyCounty)
-#' data(kentuckyTract)
-#' 
-#' ncores = 1 + (.Platform$OS.type == 'unix')
+#' data('kentuckyCounty')
+#' data('kentuckyTract')
 #' 
 #' lemRaster = rasterPartition(polyCoarse = kentuckyCounty, 
 #'                            polyFine = kentuckyTract, 
 #'                            cellsCoarse = 6, 
 #'                            cellsFine = 100, 
-#'                            bw = c(10, 12, 15, 17, 20, 25) * 1000, 
-#'                            ncores = ncores, 
-#'                            idFile = 'id.grd', 
-#'                            offsetFile = 'offset.grd', 
+#'                            bw = c(10, 15) * 1000, 
+#'                            ncores = 2, 
+#'                            path=tempdir(), 
 #'                            verbose = TRUE)
 #'
 #'
 #' lemSmoothMat = smoothingMatrix(rasterObjects = lemRaster, 
-#'                                ncores = ncores, 
+#'                                ncores = 2, 
 #'                                verbose = TRUE)
-#'
-#' lemCv = lemXv(x = kentuckyCounty, 
-#'              lemObjects = lemSmoothMat, 
-#'              Nxv = 5, 
-#'              ncores = ncores, 
-#'              verbose = TRUE)
-#' bestBw = lemCv$bw[which.min(lemCv$cv)]
 #'
 #' lemRisk = riskEst(x = kentuckyCounty, 
 #'                  lemObjects = lemSmoothMat, 
-#'                  bw = bestBw, 
-#'                  ncores = ncores)
+#'                  bw = 15, 
+#'                  ncores = 2)
 #'
-#' rCol = mapmisc::colourScale(lemRisk, 
-#'                            breaks = 10, style = 'equal', dec = 1)
-#' plot(lemRisk, 
-#'     col = rCol$col, breaks = rCol$breaks, 
-#'     legend = TRUE)
 #'}
 #'
 #' @export
@@ -91,6 +75,10 @@ riskEst = function(
   }
   
   regionMat = lemObjects$regionMat
+  smoothingMat = lemObjects$smoothingArray[[bw]]
+
+  if(class(smoothingMat) == 'RasterLayer') {
+  
   smoothingMat = Matrix::Matrix(raster::values(lemObjects$smoothingArray[[bw]]),
       nrow = nrow(lemObjects$smoothingArray),
       ncol = ncol(lemObjects$smoothingArray),
@@ -98,6 +86,7 @@ riskEst = function(
       dimnames = list(
           lemObjects$partitions, lemObjects$partitions
       ))
+  }
   
   if(length(grep("xv[[:digit:]]+$", bwString))) {
     offsetMat = lemObjects$offsetMat[[
@@ -222,8 +211,13 @@ riskEst = function(
   # make sure everything's ordered correctly
   
   offsetMat = offsetMat[colnames(regionMat), colnames(regionMat)]
-  smoothingMat = smoothingMat[colnames(regionMat), colnames(regionMat)]
   partitionAreasMat = partitionAreasMat[colnames(regionMat), colnames(regionMat)]
+ 
+  smoothingMat = smoothingMat[colnames(regionMat), colnames(regionMat)]
+  if(requireNamespace("gpuR", quietly=TRUE)) {
+    smoothingMat = gpuR::gpuMatrix(as.matrix(smoothingMat))
+  }
+
   
   
   #risk estimation for aggregated regions
@@ -242,9 +236,6 @@ riskEst = function(
   
   regionOffset = regionMat %*% offsetMat
   
-  if(requireNamespace("gpuR", quietly=TRUE)) {
-    smoothingMat = gpuR::gpuMatrix(as.matrix(smoothingMat))
-  }
   
   while((absdiff > tol) && (Diter < maxIter)) {
     

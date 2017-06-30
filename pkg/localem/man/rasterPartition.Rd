@@ -21,9 +21,15 @@ rasterPartition(polyCoarse, polyFine, cellsCoarse, cellsFine, bw,
 
 \item{bw}{Vector of bandwidths}
 
-\item{focalSize}{Distance to truncate Gaussian kernel, default is 29 cells}
+\item{focalSize}{Distance to truncate Gaussian kernel, default is 2.5 times largest bandwidth}
+
+\item{fact}{aggregation factor for offsets prior to smoothing}
+
+\item{xv}{Number of cross-validation sets, or a matrix where rows are coarse polygons and columns are xv sets}
 
 \item{ncores}{Number of cores/threads for parallel processing}
+
+\item{path}{folder to store raster data}
 
 \item{idFile}{Filename (must have .grd extension) of the raster of partitions}
 
@@ -45,16 +51,14 @@ After using the \code{rasterPartition} function, the fine raster is a raster sta
 data(kentuckyCounty)
 data(kentuckyTract)
 
-ncores = 1 + (.Platform$OS.type == 'unix')
 
 lemRaster = rasterPartition(polyCoarse = kentuckyCounty, 
                            polyFine = kentuckyTract, 
                            cellsCoarse = 6, 
                            cellsFine = 100, 
-                           bw = c(10, 12, 15, 17, 20, 25) * 1000, 
-                           ncores = ncores, 
-                           idFile = 'id.grd', 
-                           offsetFile = 'offset.grd', 
+                           bw = c(10, 15) * 1000, 
+                           ncores = 2, 
+                           path= tempdir(), 
                            verbose = TRUE)
 }
 

@@ -4,6 +4,7 @@
 #'
 #' @param rasterObjects Raster objects of partitions and smoothed offsets
 #' @param ncores Number of cores/threads for parallel processing
+#' @param filename 
 #' @param verbose Verbose output
 #'
 #' @details After using the \code{smoothingMatrix} function, the smoothing matrix is an array containing the integrated kernel smoothing entries of the partitions divided by the integrated kernel smoothing entries of the study region for each specified bandwidth. 
@@ -12,24 +13,21 @@
 #'  
 #' @examples 
 #' \dontrun{ 
-#' data(kentuckyCounty)
-#' data(kentuckyTract)
-#' 
-#' ncores = 1 + (.Platform$OS.type == 'unix')
+#' data('kentuckyCounty')
+#' data('kentuckyTract')
 #' 
 #' lemRaster = rasterPartition(polyCoarse = kentuckyCounty, 
 #'                            polyFine = kentuckyTract, 
 #'                            cellsCoarse = 6, 
 #'                            cellsFine = 100, 
-#'                            bw = c(10, 12, 15, 17, 20, 25) * 1000, 
-#'                            ncores = ncores, 
-#'                            idFile = 'id.grd', 
-#'                            offsetFile = 'offset.grd', 
+#'                            bw = c(10, 15) * 1000, 
+#'                            ncores = 2, 
+#'                            path=tempdir(), 
 #'                            verbose = TRUE)
 #'
 #'
 #' lemSmoothMat = smoothingMatrix(rasterObjects = lemRaster, 
-#'                                ncores = ncores, 
+#'                                ncores = 2, 
 #'                                verbose = TRUE)
 #'}
 #'
@@ -37,7 +35,7 @@
 smoothingMatrix = function(
     rasterObjects,
     ncores = 1,
-    filename = 'smoothingMatrix.gri',
+    filename = file.path(tempdir(),'smoothingMatrix.grd'),
     verbose = FALSE
 ){
   

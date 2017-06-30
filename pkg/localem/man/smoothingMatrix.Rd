@@ -4,13 +4,15 @@
 \alias{smoothingMatrix}
 \title{Generates the smoothing matrix for the partitions and bandwidths}
 \usage{
-smoothingMatrix(rasterObjects, ncores = 1, filename = "smoothingMatrix.gri",
-  verbose = FALSE)
+smoothingMatrix(rasterObjects, ncores = 1, filename = file.path(tempdir(),
+  "smoothingMatrix.grd"), verbose = FALSE)
 }
 \arguments{
 \item{rasterObjects}{Raster objects of partitions and smoothed offsets}
 
 \item{ncores}{Number of cores/threads for parallel processing}
+
+\item{filename}{}
 
 \item{verbose}{Verbose output}
 }
@@ -25,24 +27,21 @@ After using the \code{smoothingMatrix} function, the smoothing matrix is an arra
 }
 \examples{
 \dontrun{ 
-data(kentuckyCounty)
-data(kentuckyTract)
-
-ncores = 1 + (.Platform$OS.type == 'unix')
+data('kentuckyCounty')
+data('kentuckyTract')
 
 lemRaster = rasterPartition(polyCoarse = kentuckyCounty, 
                            polyFine = kentuckyTract, 
                            cellsCoarse = 6, 
                            cellsFine = 100, 
-                           bw = c(10, 12, 15, 17, 20, 25) * 1000, 
-                           ncores = ncores, 
-                           idFile = 'id.grd', 
-                           offsetFile = 'offset.grd', 
+                           bw = c(10, 15) * 1000, 
+                           ncores = 2, 
+                           path=tempdir(), 
                            verbose = TRUE)
 
 
 lemSmoothMat = smoothingMatrix(rasterObjects = lemRaster, 
-                               ncores = ncores, 
+                               ncores = 2, 
                                verbose = TRUE)
 }
 

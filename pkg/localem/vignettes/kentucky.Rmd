@@ -21,24 +21,19 @@ knitr::opts_chunk$set(
 ```
 
 ```{r setup, message = FALSE}
-library('mapmisc')
-
-data('kentuckyCounty', package='localEM') 
-data('kentuckyTract', package='localEM')
-data('kMap', package='localEM')
 
 # specify number of grid cells and
 # number of cores for computations in parallel 
-if(Sys.info()['user'] == 'patrick' & interactive() & FALSE) {
+if(any(commandArgs()=='highRes')) {
   # this uses about 20GB of memory
-  cellsFine = 300
+  cellsFine = 400
   cellsSimulate = 600
   ncores = 8
-  cellsCoarse=20
+  cellsCoarse=25
   nsim = 12
-  path = '/store/patrick/localEM/kentuckyVignette/'
-  dir.create(path, showWarnings=FALSE, recursive=TRUE)
-  Sbw = unique(round(exp(seq(log(5), log(50), len=11)))) * 1000
+  path = file.path(dirname(tempdir()), 'localEMhighRes')
+  Sbw = unique(round(exp(seq(log(5), log(50), len=14)))) * 1000
+  knitr::opts_chunk$set(dpi = 200)      
 } else {
   # a less computationally intensive setup
   ncores = 2
@@ -50,10 +45,17 @@ if(Sys.info()['user'] == 'patrick' & interactive() & FALSE) {
   path = file.path(dirname(tempdir()), 'localEM')
   Sbw = seq(10,30,by=10) * 1000
 }
-
-
+dir.create(path, showWarnings=FALSE, recursive=TRUE)
+print(cellsFine)
 ```
 
+```{r data}
+library('mapmisc')
+
+data('kentuckyCounty', package='localEM') 
+data('kentuckyTract', package='localEM') 
+data('kMap', package='localEM')
+```
 
 ## Simulate Cases
 
@@ -67,6 +69,7 @@ simulated with the log Gaussian Cox process and  following parameters:
 * offsets: log of expected cases/m$^2$ of the census tracts
 
 The simulated cases are then aggregated to the appropriate counties. 
+
 
 ```{r simcases, message = FALSE}
 
@@ -206,6 +209,7 @@ if(!file.exists(fileHere)) {
 } else {
   load(fileHere)
 }
+
 ```
 
 ```{r cvPlotNew, fig.cap='cross validation scores', fig.height=4, fig.width=6}
@@ -269,6 +273,32 @@ matplot(xvAll$xv[,'bw']/1000,
     ylim = quantile(xvKentucky$xv[,-1], c(0, 0.8)) )
 ```
 
+
+```{r estPlotMult, fig.cap='Simulation 2,3', fig.subcap = c('2 true','2 est','3 true','3 est')}
+
+Ssim = unique(gsub(" .*", "", knitr::opts_current$get()$fig.subcap))
+
+for(Dsim in Ssim) {
+map.new(kentuckyCounty)
+plot(kCases$raster[[paste('relativeIntensity', Dsim, sep='')]], 
+    col = iCol$col, breaks = iCol$breaks, 
+    legend = FALSE, 
+    add = TRUE)
+plot(kMap, add = TRUE)
+
+
+
+map.new(kentuckyCounty)
+plot(xvAll$estimate[[grep(paste('[[:alpha:]]',Dsim,'$',sep=''), names(xvAll$estimate))[1]]], 
+    col = iCol$col, breaks=iCol$breaks,
+    legend=FALSE,
+    add=TRUE)
+plot(kMap, add = TRUE)
+legendBreaks('topleft', iCol)
+
+}
+
+```
 
 
 ## Exceedance Probabilities

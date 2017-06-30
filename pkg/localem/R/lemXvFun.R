@@ -224,14 +224,21 @@ lemXv = function(
     cat("done\n")
   }
   
+  
   result = list(
       xv = xvRes,
       xvFull = logProbFull,
-      risk = riskRaster,
+      riskAll = riskRaster,
       smoothingMatrix = xvSmoothMat,
       expected = polyCoarse,
       folds = xvMat
   )
+  
+  result$estimate = try(
+  	lemFinal(result), silent=TRUE
+  )
+  
+  
   return(result)
   
   

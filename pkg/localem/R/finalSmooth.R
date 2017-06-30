@@ -18,7 +18,9 @@ lemFinal = function(
     x, 
     counts = colnames(x$xv)[-1],
     bw = x$xv[apply(x$xv[,counts],2,which.min),'bw'], 
-    ncores=1, filename = tempfile(), verbose=FALSE) {
+    ncores=1, 
+    filename = tempfile(), 
+    verbose=FALSE) {
   
 
   finalBw = rep_len(bw, length(counts))
@@ -26,17 +28,17 @@ lemFinal = function(
   Scounts = counts
   Slayers = paste("bw", finalBw, "_", Scounts, sep='')
   
-  xFocal = x$smoothingMatrix$focal$array[,,paste('bw', finalBw, sep=''), drop=FALSE]
- 
+  xFocal = x$smoothingMatrix$focal$focal[paste("bw", finalBw, sep='')]
+  xFocal = do.call(abind::abind, c(xFocal, list(along=3)))
+  
   # smooth the risk and integrate kernel over non-NA area
   focalFunction = function(x, fa)  {
         apply(fa*x, 3, sum, na.rm=TRUE) / 
         apply(fa*(!is.na(x)), 3, sum)
   }
   
-  toSmooth = x$smoothingMatrix$rasterFine
-  levels(toSmooth)[[1]] = levels(x$smoothingMatrix$rasterFine)[[1]][,
-     c("ID", Slayers)]
+  toSmooth = x$riskAll
+  levels(toSmooth)[[1]] = levels(toSmooth)[[1]][, c("ID", Slayers)]
   toSmooth = deratify(toSmooth)
   
   if(ncores>1) spatial.tools::sfQuickInit(
