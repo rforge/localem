@@ -17,7 +17,7 @@ focalWeightWithSize = function(x, bw, size=NULL) {
 
 # Computes focal weight matrix for a Gaussian density kernel with specified bandwidth and size of sigma
 focalFromBw = function(
-    bw, fine, minDim = 60, focalSize = NULL
+    bw, fine, minDim = Inf, focalSize = NULL
 ){
   centreCell = 1+dim(fine)[1:2]
   
@@ -36,17 +36,17 @@ focalFromBw = function(
   }
   
 # define Dbw to make package check happy
-Dbw = NULL  
+  Dbw = NULL  
   focalList = foreach::foreach(
           Dbw = bw, 
           .export = "focalWeightWithSize", 
           .packages = "raster"
       ) %dopar% {
-        focalWeightWithSize(
+        invisible(focalWeightWithSize(
             bw=Dbw,
             x=fine,
             size = focalSize
-        )
+        ))
       }
   names(focalList) = bw
   
@@ -57,7 +57,8 @@ Dbw = NULL
   
   
   bigList = foreach::foreach(
-          Dbw = names(focalList)
+          Dbw = names(focalList), 
+          .packages = "raster"
       ) %dopar% {
         
         theDim = dim(focalList[[Dbw]])
@@ -89,7 +90,7 @@ Dbw = NULL
       bw=bw)
   
   for(D in sort(setdiff(unique(bw$fact),1))){
-    fineAgg = stats::aggregate(fine, fact=D)
+    fineAgg = raster	::aggregate(fine, fact=D)
     bwHere = sort(bw[bw$fact==D,'bw'])
     focalListD =
         mapply(

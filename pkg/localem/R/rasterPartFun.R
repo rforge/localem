@@ -263,7 +263,7 @@ rasterPartition = function(
    x = NULL
     smoothedOffset = foreach::foreach(
         x = 1:nrow(forSmooth), .packages='raster'
-      ) %do% {
+      ) %dopar% {
         raster::focal(
           rasterOffsetAgg[[ forSmooth[x,'layer'] ]],
           w = focalArray[,,forSmooth[x,'bw'] ],

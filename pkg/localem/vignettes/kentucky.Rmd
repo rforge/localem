@@ -32,7 +32,7 @@ if(any(commandArgs()=='highRes')) {
   cellsCoarse=25
   nsim = 12
   path = file.path(dirname(tempdir()), 'localEMhighRes')
-  Sbw = unique(round(exp(seq(log(5), log(50), len=14)))) * 1000
+  Sbw = unique(round(exp(seq(log(5), log(50), len=15)))) * 1000
   knitr::opts_chunk$set(dpi = 200)      
 } else {
   # a less computationally intensive setup
