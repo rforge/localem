@@ -1,9 +1,9 @@
-#' @title Computes the exceedance probabilities on the raster of fine polygons
+#' @title Computes the exceedance probabilities
 #'
-#' @description The \code{excProb} function first bootstraps cases with the input risk thresholds and expected counts of the fine raster, and then, computes the exceedance probablities with the same bandwidth as the risk estimation on the cells of the fine raster. 
+#' @description The \code{excProb} function first bootstraps cases with the input risk thresholds and expected counts from the rasterization of the spatial polygons of population data, and then, computes the exceedance probablities with the same bandwidth as the risk estimation on the raster cells. 
 #' 
 #' @param x Estimated risk intensity surface
-#' @param bw bandwidth, defaults to optimal for first dataset
+#' @param bw Bandwidth (defaults to optimal for first dataset
 #' @param threshold Vector of risk thresholds
 #' @param Nboot Number of bootstraps
 #' @param ncores Number of cores/threads for parallel processing

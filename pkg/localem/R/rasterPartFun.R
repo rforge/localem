@@ -1,40 +1,39 @@
-#' @title Generates the partitions by overlaying rasters of the coarse and fine polygons
+#' @title Generates the partitions by overlaying rasters of spatial polygons
 #'
-#' @description The \code{rasterPartition} function first rasterizes the coarse and fine spatial polygons based on their respective input resolutions, and then, overlays these rasters to generate the raster of partitions of the local-EM algorithm. It also applies the kernel smoothing function with input bandwidths to the expected counts of the fine polygons to obtain the smoothed offsets (i.e., smoothed expected counts / cell area) of the partitions. 
+#' @description The \code{rasterPartition} function first rasterizes the spatial polygons of the case and population data based on their respective input resolutions, and then, overlays these rasters to generate the raster of partitions of the local-EM algorithm. It also applies the kernel smoothing function with input bandwidths to the expected counts of the fine polygons to obtain the smoothed offsets (i.e., smoothed expected counts per cell area) of the partitions. If cross-validation is specified, smoothed offsets are computed for each cross-validation set.  
 #' 
 #' @param polyCoarse Spatial polygons of case data
 #' @param polyFine Spatial polygons of population data
 #' @param bw Vector of bandwidths
 #' @param focalSize Distance to truncate Gaussian kernel, default is 2.5 times largest bandwidth
-#' @param fact aggregation factor for offsets prior to smoothing
-#' @param cellsCoarse Horizontal/vertical resolution of raster applied to coarse polygons
-#' @param cellsFine Horizontal/vertical resolution of raster applied to fine polygons
-#' @param xv Number of cross-validation sets, or a matrix where rows are coarse polygons and columns are xv sets
+#' @param fact Aggregation factor for offsets prior to smoothing
+#' @param cellsCoarse Minimum resolution for rasterization of case data for numerical accuracy of smoothing matrix
+#' @param cellsFine Minimum resolution for rasterization of population data for numerical integration of smoothing matrix
+#' @param xv (Optional) Number of cross-validation sets, or matrix where rows are coarse polygons and columns are cross-validation sets
 #' @param ncores Number of cores/threads for parallel processing
-#' @param path folder to store raster data
+#' @param path Folder to store raster data
 #' @param idFile Filename (must have .grd extension) of the raster of partitions
 #' @param offsetFile Filename (must have .grd extension) of the rasters of smoothed offsets
 #' @param verbose Verbose output
 #' 
 #' 
-#' @details After using the \code{rasterPartition} function, the fine raster is a raster stack containing the IDs for the partitions created by overlaying the coarse and fine rasters. The offset raster is a raster stack containing the offsets of the partitions smoothed with the specified bandwidths. These values represent the denominator of the kernel smoothing matrix. 
+#' @details After using the \code{rasterPartition} function, the partition raster is a raster stack containing the IDs for the partitions created by overlaying the rasterizations of the spatial polygons of case and population data. The offset raster is a raster stack containing the offsets of the partitions smoothed with the specified bandwidths. These values represent the denominator of the kernel smoothing matrix. 
 #'
-#' @return The \code{rasterPartition} function returns a list containing the raster of the coarse polygons, raster stacks of the partitions and offsets, focal weight matrix of the Gaussian kernel, and the input coarse polygons. 
+#' @return The \code{rasterPartition} function returns a list containing the raster of the case data, raster stacks of the partitions and offsets, focal weight matrix of the Gaussian kernel, and the input coarse polygons. 
 #'  
 #' @examples 
 #' \dontrun{ 
-#' data(kentuckyCounty)
-#' data(kentuckyTract)
-#' 
+#' data('kentuckyCounty')
+#' data('kentuckyTract')
 #' 
 #' lemRaster = rasterPartition(polyCoarse = kentuckyCounty, 
-#'                            polyFine = kentuckyTract, 
-#'                            cellsCoarse = 6, 
-#'                            cellsFine = 100, 
-#'                            bw = c(10, 15) * 1000, 
-#'                            ncores = 2, 
-#'                            path= tempdir(), 
-#'                            verbose = TRUE)
+#' 								polyFine = kentuckyTract, 
+#'                            	cellsCoarse = 6, 
+#'                            	cellsFine = 100, 
+#'                            	bw = c(10, 15) * 1000, 
+#'                            	ncores = 2, 
+#'                            	path = tempdir(), 
+#'                            	verbose = TRUE)
 #'}
 #'
 #' @export
@@ -263,7 +262,7 @@ rasterPartition = function(
    x = NULL
     smoothedOffset = foreach::foreach(
         x = 1:nrow(forSmooth), .packages='raster'
-      ) %dopar% {
+      ) %do% {
         raster::focal(
           rasterOffsetAgg[[ forSmooth[x,'layer'] ]],
           w = focalArray[,,forSmooth[x,'bw'] ],

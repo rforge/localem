@@ -1,10 +1,10 @@
 #' @title Generates the smoothing matrix for the partitions and bandwidths
 #'
-#' @description The \code{smoothingMatrix} function computes the entries of the smoothing matrix for the local-EM algorithm for the input bandwidths based on the partitions created by rasterizing the coarse and fine polygons, and their smoothed offsets created by applying the kernel smoothing function with input bandwidths. 
+#' @description The \code{smoothingMatrix} function computes the entries of the smoothing matrix for the local-EM algorithm for the input bandwidths based on the partitions created by rasterizing the spatial polygons of case and population data, and their smoothed offsets created by applying the kernel smoothing function with input bandwidths. 
 #'
-#' @param rasterObjects Raster objects of partitions and smoothed offsets
+#' @param rasterObjects Raster stacks for partitions and smoothed offsets
 #' @param ncores Number of cores/threads for parallel processing
-#' @param filename 
+#' @param filename Filename (must have .grd extension) of the entries of smoothing matrix
 #' @param verbose Verbose output
 #'
 #' @details After using the \code{smoothingMatrix} function, the smoothing matrix is an array containing the integrated kernel smoothing entries of the partitions divided by the integrated kernel smoothing entries of the study region for each specified bandwidth. 
@@ -17,18 +17,19 @@
 #' data('kentuckyTract')
 #' 
 #' lemRaster = rasterPartition(polyCoarse = kentuckyCounty, 
-#'                            polyFine = kentuckyTract, 
-#'                            cellsCoarse = 6, 
-#'                            cellsFine = 100, 
-#'                            bw = c(10, 15) * 1000, 
-#'                            ncores = 2, 
-#'                            path=tempdir(), 
-#'                            verbose = TRUE)
+#'								polyFine = kentuckyTract, 
+#'  	                        cellsCoarse = 6, 
+#'                              cellsFine = 100, 
+#'                              bw = c(10, 15) * 1000, 
+#'                              ncores = 2, 
+#'                              path = tempdir(), 
+#'                              verbose = TRUE)
 #'
 #'
 #' lemSmoothMat = smoothingMatrix(rasterObjects = lemRaster, 
-#'                                ncores = 2, 
-#'                                verbose = TRUE)
+#'                                 ncores = 2, 
+#'                                 verbose = TRUE)
+#'
 #'}
 #'
 #' @export

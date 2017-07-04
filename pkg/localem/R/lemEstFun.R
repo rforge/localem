@@ -1,6 +1,6 @@
-#' @title Computes the relative risk estimation on the raster of fine polygons
+#' @title Computes the relative risk estimation
 #'
-#' @description The \code{riskEst} function computes the estimations of the relative risk on the cells of the fine raster. 
+#' @description The \code{riskEst} function computes the estimations of the relative risk with fine raster resolution. 
 #'
 #' @param x Spatial polygons of case data
 #' @param lemObjects List of arrays for the smoothing matrix, and raster stacks for the partition and smoothed offsets
@@ -9,7 +9,7 @@
 #' @param tol Tolerance for convergence
 #' @param maxIter Maximum number of iterations for convergence
 #'
-#' @details After using the \code{riskEst} function, the risk estimations are computed on the raster cells of the fine polygons.
+#' @details After using the \code{riskEst} function, the risk estimations are computed on a fine resolution based on the rasterization of the spatial polygons of population data.
 
 #' @return The \code{riskEst} function returns a raster of risk estimations for the input bandwidth.
 #'
@@ -19,23 +19,22 @@
 #' data('kentuckyTract')
 #' 
 #' lemRaster = rasterPartition(polyCoarse = kentuckyCounty, 
-#'                            polyFine = kentuckyTract, 
-#'                            cellsCoarse = 6, 
-#'                            cellsFine = 100, 
-#'                            bw = c(10, 15) * 1000, 
-#'                            ncores = 2, 
-#'                            path=tempdir(), 
-#'                            verbose = TRUE)
+#'								polyFine = kentuckyTract, 
+#'  	                        cellsCoarse = 6, 
+#'                              cellsFine = 100, 
+#'                              bw = c(10, 15) * 1000, 
+#'                              ncores = 2, 
+#'                              path = tempdir(), 
+#'                              verbose = TRUE)
 #'
 #'
 #' lemSmoothMat = smoothingMatrix(rasterObjects = lemRaster, 
-#'                                ncores = 2, 
-#'                                verbose = TRUE)
+#'                                 ncores = 2, 
+#'                                 verbose = TRUE)
 #'
 #' lemRisk = riskEst(x = kentuckyCounty, 
-#'                  lemObjects = lemSmoothMat, 
-#'                  bw = 15, 
-#'                  ncores = 2)
+#'                    lemObjects = lemSmoothMat, 
+#'                    bw = 15 * 1000) 
 #'
 #'}
 #'

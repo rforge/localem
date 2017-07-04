@@ -11,11 +11,12 @@ The `localEM` package contains functions to implement the kernel smoothing local
 
 The methodology of this package is demonstrated on simulated lung cancer cases for the state of Kentucky, USA. The spatial polygons for the census counties and tracts of Kentucky are included with this package. 
 
-```{r knitrSetup, include=FALSE}
+```{r knitrSetup, include = FALSE}
+
 # default chunk options
 knitr::opts_chunk$set(
-    dev='png',
-    fig.width=4, fig.height=2.5,
+	dev = 'png',
+    fig.width = 4, fig.height = 2.5,
     dpi = 100
 )
 ```
@@ -24,37 +25,39 @@ knitr::opts_chunk$set(
 
 # specify number of grid cells and
 # number of cores for computations in parallel 
-if(any(commandArgs()=='highRes')) {
-  # this uses about 20GB of memory
-  cellsFine = 400
-  cellsSimulate = 600
-  ncores = 8
-  cellsCoarse=25
-  nsim = 12
-  path = file.path(dirname(tempdir()), 'localEMhighRes')
-  Sbw = unique(round(exp(seq(log(5), log(50), len=15)))) * 1000
-  knitr::opts_chunk$set(dpi = 200)      
+if(any(commandArgs() == 'highRes')) {
+	# this uses about 20GB of memory
+	cellsFine = 400
+	cellsSimulate = 600
+	ncores = 8
+	cellsCoarse = 25
+	nsim = 12
+	path = file.path(dirname(tempdir()), 'localEMhighRes')
+	Sbw = unique(round(exp(seq(log(5), log(50), len = 14)))) * 1000
+	knitr::opts_chunk$set(dpi = 200)
 } else {
-  # a less computationally intensive setup
-  ncores = 2
-  cellsFine = 100
-  cellsSimulate = 200
-  cellsCoarse= 8
-  nsim = 3
-  # on unix systems results will be saved in /tmp/localEM
-  path = file.path(dirname(tempdir()), 'localEM')
-  Sbw = seq(10,30,by=10) * 1000
+	# a less computationally intensive setup
+	ncores = 2
+	cellsFine = 100
+	cellsSimulate = 200
+	cellsCoarse = 8
+	nsim = 3
+	# on unix systems results will be saved in /tmp/localEM
+	path = file.path(dirname(tempdir()), 'localEM')
+	Sbw = seq(10, 30, by = 10) * 1000
 }
-dir.create(path, showWarnings=FALSE, recursive=TRUE)
+
+dir.create(path, showWarnings = FALSE, recursive = TRUE)
 print(cellsFine)
 ```
 
 ```{r data}
+
 library('mapmisc')
 
-data('kentuckyCounty', package='localEM') 
-data('kentuckyTract', package='localEM') 
-data('kMap', package='localEM')
+data('kentuckyCounty', package = 'localEM') 
+data('kentuckyTract', package = 'localEM') 
+data('kMap', package = 'localEM')
 ```
 
 ## Simulate Cases
@@ -70,152 +73,152 @@ simulated with the log Gaussian Cox process and  following parameters:
 
 The simulated cases are then aggregated to the appropriate counties. 
 
+```{r simcases, message=FALSE}
 
-```{r simcases, message = FALSE}
-
-if(requireNamespace("RandomFields", quietly=TRUE)) {
-  NcellsSim = cellsSimulate
+if(requireNamespace('RandomFields', quietly = TRUE)) {
+	NcellsSim = cellsSimulate
 } else {
-  NcellsSim = 100
+	NcellsSim = 100
 }
-kentuckyOffset = geostatsp::spdfToBrick(
-    kentuckyTract,
-    geostatsp::squareRaster(kentuckyTract, NcellsSim),
-    pattern = '^expected$',
-    logSumExpected=TRUE
-)
 
+kentuckyOffset = geostatsp::spdfToBrick(
+    kentuckyTract, 
+    geostatsp::squareRaster(kentuckyTract, NcellsSim), 
+    pattern = '^expected$',
+    logSumExpected = TRUE
+)
 
 set.seed(0)
 kCases = geostatsp::simLgcp(
-    param = c(mean = 0, variance = 0.4^2, 
-        range = 120 * 1000, shape = 2),
+    param = c(mean = 0, variance = 0.4^2, range = 120 * 1000, shape = 2),
     covariates = list(logExpected = kentuckyOffset), 
-    offset = 'logExpected', n=nsim)
-#'
-```
-
-Aggregate events to counties
-
-```{r aggSim}
-kCases$agg = lapply(
-    kCases[grep("^events[[:digit:]]+?", names(kCases))],
-    function(qq) over(qq, kentuckyCounty)[,'id'])
-countyCounts = as.data.frame(lapply(
-        kCases$agg, 
-        function(xx) 
-          as.vector(table(xx,exclude=NULL)[as.character(kentuckyCounty$id)])
-    )
+    offset = 'logExpected', 
+	n = nsim
 )
+
+kCases$agg = lapply(
+    kCases[grep('^events[[:digit:]]+?', names(kCases))],
+    function(qq) over(qq, kentuckyCounty)[,'id']
+)
+countyCounts = as.data.frame(lapply(
+	kCases$agg,  
+	function(xx) as.vector(table(xx, exclude = NULL)[as.character(kentuckyCounty$id)])
+))
 countyCounts[is.na(countyCounts)] = 0
-names(countyCounts) = gsub("^events", 'count', names(countyCounts))
+names(countyCounts) = gsub('^events', 'count', names(countyCounts))
 rownames(countyCounts) = as.character(kentuckyCounty$id)
-kentuckyCounty = merge(kentuckyCounty, countyCounts,
-    by.x='id', by.y='row.names')
+kentuckyCounty = merge(kentuckyCounty, countyCounts, by.x = 'id', by.y = 'row.names')
 ```
 
 
-
-```{r plotOffset, echo = FALSE, fig.cap='simulated events', fig.subcap = c('offset','relative intensity', 'events', 'counts'), out.width='44%'}
+```{r plotOffset, echo = FALSE, fig.cap = 'Simulated Events', fig.subcap = c('Offset', 'Relative Intensity', 'Events', 'Counts'), out.width = '44%'}
 
 # offset map
 oCol = colourScale(
     c(0, exp(maxValue(kentuckyOffset))), 
-    breaks = 10, 
-    style = 'equal', dec = 7, 
-    transform = 'sqrt')
+    breaks = 10, style = 'equal', dec = 7, 
+	transform = 'sqrt'
+)
 
 map.new(kentuckyTract)
 plot(kentuckyOffset, 
     col = oCol$col, 
     breaks = pmax(-100,log(oCol$breaks)), 
     legend = FALSE, 
-    add = TRUE)
+    add = TRUE
+)
 plot(kMap, add = TRUE)
-
 legendBreaks('topleft', 
     breaks = oCol$breaks * 10^6, col = oCol$col, 
     title = expression(plain('cases/km')^2), 
-    bg = 'white')
-
+    bg = 'white'
+)
 
 
 # simulated risk map
 iCol = colourScale(
     kCases$raster$relativeIntensity1, 
-    breaks = 8, style = 'equal', dec = -log10(0.5))
+    breaks = 8, style = 'equal', dec = -log10(0.5)
+)
 
 map.new(kentuckyTract)
-
 plot(kCases$raster$relativeIntensity1, 
     col = iCol$col, breaks = iCol$breaks, 
     legend = FALSE, 
-    add = TRUE)
+    add = TRUE
+)
 plot(kMap, add = TRUE)
-
 legendBreaks('topleft', 
     col = iCol$col, breaks = iCol$breaks, 
     title = 'relative risk', 
-    bg = 'white')
+    bg = 'white'
+)
 
 
 # simulated events map
 map.new(kentuckyTract)
 plot(kMap, add = TRUE)
-
-points(kCases$events1, col = '#FF000030', pch = 20, cex=0.5)
-
+points(kCases$events1, col = '#FF000030', pch = 20, cex = 0.5)
 scaleBar(kentuckyCounty, 
-    pos = 'topleft',   bg = 'white')
+    pos = 'topleft', 
+	bg = 'white'
+)
+
 
 # simulated counts
 cCol = colourScale(
     kentuckyCounty$count1, 
-    breaks = 10, 
-    style = 'quantile', dec = -1)
+    breaks = 10, style = 'quantile', dec = -1
+)
 
 map.new(kentuckyTract)
-plot(kentuckyCounty, col=cCol$plot, add=TRUE)
+plot(kentuckyCounty, col = cCol$plot, add = TRUE)
 plot(kMap, add = TRUE)
-legendBreaks("topleft", cCol)
-
-
+legendBreaks('topleft', 
+	cCol
+)
 scaleBar(kentuckyCounty, 
-    pos = 'topleft',   
-    inset = c(0.2,0),
-    bg = 'white')
+    pos = 'topleft', 
+	inset = c(0.2, 0), 
+    bg = 'white'
+)
 ```
-
 
 
 # Estimation
 
 The first simulated dataset
+
 ```{r cvNew}
+
 library('localEM')
 fileHere = file.path(path, 'xvKentucky.RData')
+
 if(!file.exists(fileHere)) {
-  xvKentucky = lemXv(
-      cases = kentuckyCounty[,c('id','count1')],   
-      population = kentuckyTract,   
-      cellsCoarse = cellsCoarse,   
-      cellsFine = cellsFine,   
-      bw = Sbw,
-      xv = 4, 
-      ncores = ncores,
-      path = path,
-      verbose = TRUE)
-  save(xvKentucky, file=fileHere)  
+	xvKentucky = lemXv(
+		cases = kentuckyCounty[,c('id', 'count1')], 
+		population = kentuckyTract,   
+		cellsCoarse = cellsCoarse,   
+		cellsFine = cellsFine,   
+		bw = Sbw,
+		xv = 4, 
+		ncores = ncores,
+		path = path,
+		verbose = TRUE
+)
+
+save(xvKentucky, file = fileHere)  
 } else {
-  load(fileHere)
+	load(fileHere)
 }
 
 ```
 
-```{r cvPlotNew, fig.cap='cross validation scores', fig.height=4, fig.width=6}
+```{r cvPlotNew, fig.cap = 'Cross Validation Scores', fig.height = 4, fig.width = 6}
 plot(xvKentucky$xv[,1]/1000, xvKentucky$xv[,2], 
-    xlab='km', ylab='-log p', 
-    type='o')
+    xlab ='km', ylab = '-log p', 
+    type = 'o'
+)
 ```
 
 
