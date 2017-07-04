@@ -30,8 +30,8 @@ if(any(commandArgs()=='highRes' | basename(getwd())=='www') ) {
   cellsFine = 400
   cellsSimulate = 600
   ncores = 8
-  cellsCoarse=25
-  nsim = 12
+  cellsCoarse=20
+  nsim = 20
   nxv = 8
   path = file.path(dirname(tempdir()), 'localEMhighRes')
   Sbw = unique(round(exp(seq(log(5), log(50), len=15)))) * 1000
