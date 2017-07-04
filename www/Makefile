@@ -13,3 +13,7 @@ simulations.Rmd: FORCE
 	$(REXE) -e "file.copy(system.file(file.path('doc','kentucky.Rmd'),package='localEM'),'simulations.Rmd')"
 
 FORCE:	
+
+clean:
+	rm *.md *.Rmd
+

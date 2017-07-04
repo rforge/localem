@@ -25,26 +25,31 @@ knitr::opts_chunk$set(
 
 # specify number of grid cells and
 # number of cores for computations in parallel 
-if(any(commandArgs() == 'highRes')) {
-	# this uses about 20GB of memory
-	cellsFine = 400
-	cellsSimulate = 600
-	ncores = 8
-	cellsCoarse = 25
-	nsim = 12
-	path = file.path(dirname(tempdir()), 'localEMhighRes')
-	Sbw = unique(round(exp(seq(log(5), log(50), len = 14)))) * 1000
-	knitr::opts_chunk$set(dpi = 200)
+if(any(commandArgs()=='highRes' | basename(getwd())=='www') ) {
+  # this uses about 20GB of memory
+  cellsFine = 400
+  cellsSimulate = 600
+  ncores = 8
+  cellsCoarse=25
+  nsim = 12
+  nxv = 8
+  path = file.path(dirname(tempdir()), 'localEMhighRes')
+  Sbw = unique(round(exp(seq(log(5), log(50), len=15)))) * 1000
+  knitr::opts_chunk$set(dpi = 200)      
 } else {
-	# a less computationally intensive setup
-	ncores = 2
-	cellsFine = 100
-	cellsSimulate = 200
-	cellsCoarse = 8
-	nsim = 3
-	# on unix systems results will be saved in /tmp/localEM
-	path = file.path(dirname(tempdir()), 'localEM')
-	Sbw = seq(10, 30, by = 10) * 1000
+  # a less computationally intensive setup
+  ncores = 2
+  cellsFine = 100
+  cellsSimulate = 200
+  cellsCoarse= 8
+  nsim = 3
+  nxv = 4
+  # on unix systems results will be saved in /tmp/localEM
+  path = file.path(dirname(tempdir()), 'localEM')
+  Sbw = seq(10,30,by=10) * 1000
+}
+if(!requireNamespace("RandomFields", quietly=TRUE)) {
+  cellsSimulate = 100
 }
 
 dir.create(path, showWarnings = FALSE, recursive = TRUE)
@@ -75,15 +80,10 @@ The simulated cases are then aggregated to the appropriate counties.
 
 ```{r simcases, message=FALSE}
 
-if(requireNamespace('RandomFields', quietly = TRUE)) {
-	NcellsSim = cellsSimulate
-} else {
-	NcellsSim = 100
-}
 
 kentuckyOffset = geostatsp::spdfToBrick(
-    kentuckyTract, 
-    geostatsp::squareRaster(kentuckyTract, NcellsSim), 
+    kentuckyTract,
+    geostatsp::squareRaster(kentuckyTract, cellsSimulate),
     pattern = '^expected$',
     logSumExpected = TRUE
 )
@@ -92,10 +92,12 @@ set.seed(0)
 kCases = geostatsp::simLgcp(
     param = c(mean = 0, variance = 0.4^2, range = 120 * 1000, shape = 2),
     covariates = list(logExpected = kentuckyOffset), 
-    offset = 'logExpected', 
-	n = nsim
-)
+    offset = 'logExpected', n=nsim)
+```
 
+Aggregate events to counties
+
+```{r aggregateCases}
 kCases$agg = lapply(
     kCases[grep('^events[[:digit:]]+?', names(kCases))],
     function(qq) over(qq, kentuckyCounty)[,'id']
@@ -195,19 +197,17 @@ library('localEM')
 fileHere = file.path(path, 'xvKentucky.RData')
 
 if(!file.exists(fileHere)) {
-	xvKentucky = lemXv(
-		cases = kentuckyCounty[,c('id', 'count1')], 
-		population = kentuckyTract,   
-		cellsCoarse = cellsCoarse,   
-		cellsFine = cellsFine,   
-		bw = Sbw,
-		xv = 4, 
-		ncores = ncores,
-		path = path,
-		verbose = TRUE
-)
-
-save(xvKentucky, file = fileHere)  
+  xvKentucky = lemXv(
+      cases = kentuckyCounty[,c('id','count1')],   
+      population = kentuckyTract,   
+      cellsCoarse = cellsCoarse,   
+      cellsFine = cellsFine,   
+      bw = Sbw,
+      xv = nxv, 
+      ncores = ncores,
+      path = path,
+      verbose = TRUE)
+  save(xvKentucky, file=fileHere)  
 } else {
 	load(fileHere)
 }

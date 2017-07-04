@@ -142,7 +142,7 @@ rasterPartition = function(
   names(rasterOffset) = c("offset", 
     paste('xvOffset', colnames(xvMat), sep=''))
   
-  offsetTempFile = paste(tempfile(), '.grd', sep='')
+  offsetTempFile = file.path(path, 'offsetTemp.grd')
   
   rasterOffset = raster::mask(rasterOffset, rasterIdCoarse[['idCoarse']],
     filename=offsetTempFile, overwrite = file.exists(offsetTempFile))
@@ -162,8 +162,12 @@ rasterPartition = function(
   rasterOffset = setMinMax(rasterOffset)
   
   if(fact > 1) {
-    rasterOffsetAgg = raster::aggregate(rasterOffset, fact=fact)
+    offsetTempFileAgg = file.path(path, 'offsetTempAgg.grd')
+    rasterOffsetAgg = raster::aggregate(rasterOffset, fact=fact, 
+    	filename=offsetTempFileAgg, overwrite=file.exists(offsetTempFileAgg)
+    	)
   } else {
+    offsetTempFileAgg = filename(rasterOffset)
     rasterOffsetAgg = rasterOffset
   }
   rasterOffsetAgg = setMinMax(rasterOffsetAgg)
@@ -237,7 +241,8 @@ rasterPartition = function(
     )), error = function(e) e)
   if(any(class(smoothedOffset) == 'error') ) {
     dir.create(file.path(path, 'smoothedOffsetList'), showWarnings=FALSE)
-    Soutfile = file.path(path, 'smoothedOffsetList', paste("smoothedOffsetList", 1:nrow(forSmooth), ".grd", sep=''))
+    Soutfile = file.path(path, 'smoothedOffsetList', 
+    	paste("smoothedOffsetList", 1:nrow(forSmooth), ".grd", sep=''))
     if(verbose) {
       cat("smoothing with spatial.tools failed, using raster\n")
       cat("temporary files", Soutfile[1], " ",  Soutfile[length(Soutfile)], "\n")
@@ -259,17 +264,19 @@ rasterPartition = function(
 #    	forSmooth=forSmooth, focalArray=focalArray, Soutfile=Soutfile)
 #        )
 # define x so package check is happy
-   x = NULL
-    smoothedOffset = foreach::foreach(
+    x = NULL
+    smoothedOffsetForeachResult = foreach::foreach(
         x = 1:nrow(forSmooth), .packages='raster'
-      ) %do% {
-        raster::focal(
-          rasterOffsetAgg[[ forSmooth[x,'layer'] ]],
+      ) %dopar% { 
+        offsetHere = brick(offsetTempFileAgg)[[ forSmooth[x,'layer'] ]]
+        res = raster::focal(
+		  offsetHere,
           w = focalArray[,,forSmooth[x,'bw'] ],
           na.rm=TRUE, pad=TRUE,
           filename = Soutfile[x],
           overwrite = file.exists(Soutfile[x])
         )
+        filename(res)
       }
     smoothedOffsetStack = raster::stack(Soutfile)
     names(smoothedOffsetStack) = dimnames(focalArray)[[3]]
