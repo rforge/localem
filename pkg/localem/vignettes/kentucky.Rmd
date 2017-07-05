@@ -209,7 +209,7 @@ if(!file.exists(fileHere)) {
       verbose = TRUE)
   save(xvKentucky, file=fileHere)  
 } else {
-	load(fileHere)
+	load(fileHere)  
 }
 
 ```
@@ -273,7 +273,7 @@ matplot(xvAll$xv[,'bw']/1000,
     xvAll$xv[,-1], 
     xlab='km', ylab='-log p', 
     type='l', lty=1, log='x',
-    ylim = quantile(xvKentucky$xv[,-1], c(0, 0.8)) )
+    ylim = quantile(unlist(xvAll$xv[,-1]), c(0, 0.8)) )
 ```
 
 

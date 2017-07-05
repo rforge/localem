@@ -114,7 +114,6 @@ lemXv = function(
     cat("running local-EM for validation sets\n")
   }
   # estimate risk (by partition, not continuous) for each bw/cv combinantion
-#  estList = parallel::mcmapply(
   
   if(ncores > 1) spatial.tools::sfQuickInit(
       ncores, 
@@ -123,8 +122,8 @@ lemXv = function(
 
   estList = foreach::foreach(
           bw = xvSmoothMat$bw,
-          .packages=c('raster','localEM', 'Matrix')) %dopar% {
-       try(riskEst(bw,
+          .packages=c('raster','Matrix')) %dopar% {
+       try(localEM::riskEst(bw,
             x=cases[,countcol, drop=FALSE],
             lemObjects = xvSmoothMat,
             tol = tol, 
@@ -158,7 +157,6 @@ lemXv = function(
   estListRisk = lapply(estList, function(x) x$risk)
   
   estDf = as.matrix(do.call(cbind, estListExp))
-  colnames(estDf)
   riskDf = as.matrix(do.call(cbind, estListRisk))
   colnames(estDf) = colnames(riskDf) = paste(
     rep(names(estList), unlist(lapply(estListExp, function(xx) dim(xx)[2]))),
@@ -205,9 +203,9 @@ lemXv = function(
   )
   colnames(xvRes) = gsub("^x[.]", "", colnames(xvRes))    
   xvRes = xvRes[,c('bw',countcol)]
-#  minXvScore = apply(xvRes[,countcol, drop=FALSE],2,min)
-#  xvRes[,countcol] = xvRes[,countcol] - 
-#      matrix(minXvScore, nrow=nrow(xvRes), ncol=length(minXvScore), byrow=TRUE)
+  minXvScore = apply(xvRes[,countcol, drop=FALSE],2,min)
+  xvRes[,countcol] = xvRes[,countcol] - 
+      matrix(minXvScore, nrow=nrow(xvRes), ncol=length(minXvScore), byrow=TRUE)
   if(verbose) {
     cat("putting estimated risk in raster\n")
   }

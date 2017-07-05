@@ -214,7 +214,8 @@ riskEst = function(
  
   smoothingMat = smoothingMat[colnames(regionMat), colnames(regionMat)]
   if(requireNamespace("gpuR", quietly=TRUE)) {
-    smoothingMat = gpuR::gpuMatrix(as.matrix(smoothingMat))
+#    smoothingMat = gpuR::gpuMatrix(as.matrix(smoothingMat))
+    smoothingMat = gpuR::vclMatrix(as.matrix(smoothingMat))
   }
 
   

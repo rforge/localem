@@ -33,8 +33,8 @@ oneLemIter = function(
 
 #  resultOld = as.matrix(t(smoothingMat) %*% em)
 
-  if(length(grep('gpuMatrix',class(smoothingMat)))) {
-    em = gpuR::gpuMatrix(as.matrix(em))
+  if(length(grep('vclMatrix',class(smoothingMat)))) {
+    em = gpuR::vclMatrix(as.matrix(em))
     result = as.matrix(gpuR::crossprod(smoothingMat, em))
   } else {
     result = as.matrix(Matrix::crossprod(smoothingMat, em))    
