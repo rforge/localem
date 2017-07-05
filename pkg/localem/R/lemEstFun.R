@@ -42,7 +42,7 @@ riskEst = function(
     x, 
     lemObjects, 
     bw, 
-    tol = 1e-6, 
+    tol = 1e-6,
     maxIter = 2000
 ) {
   
@@ -213,8 +213,11 @@ riskEst = function(
  
   smoothingMat = smoothingMat[colnames(regionMat), colnames(regionMat)]
   if(requireNamespace("gpuR", quietly=TRUE)) {
-#    smoothingMat = gpuR::gpuMatrix(as.matrix(smoothingMat))
-    smoothingMat = gpuR::vclMatrix(as.matrix(smoothingMat))
+    smoothingMatGpu = try(gpuR::vclMatrix(as.matrix(smoothingMat)), silent=TRUE)
+    if(class(smoothingMatGpu) != 'try-error'){
+    	warning('putting smoothing matrix in gpu failed, probably out of memory')
+    	smoothingMat = smoothingMatGpu
+    }
   }
 
   

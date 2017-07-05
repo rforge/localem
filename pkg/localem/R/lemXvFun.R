@@ -80,6 +80,9 @@ lemXv = function(
     if(ncores > 1)
       spatial.tools::sfQuickStop()   
     
+    # save smoothing matrix, useful in case of failure later on
+    saveRDS(xvSmoothMat, filename = file.path(path, 'smoothingMatrix.rds'))
+    
     xvMat = xvSmoothMat$xv
     
   } else {

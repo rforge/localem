@@ -29,13 +29,18 @@ if(any(commandArgs()=='highRes' | basename(getwd())=='www') ) {
   # this uses about 20GB of memory
   cellsFine = 400
   cellsSimulate = 600
-  ncores = 8
   cellsCoarse=20
   nsim = 20
   nxv = 8
   path = file.path(dirname(tempdir()), 'localEMhighRes')
   Sbw = unique(round(exp(seq(log(5), log(50), len=15)))) * 1000
-  knitr::opts_chunk$set(dpi = 200)      
+  knitr::opts_chunk$set(dpi = 200)
+  # number of cores set to total available, min 2, max 32
+  if(.Platform$OS.type == 'unix')
+    ncores = pmin(32, pmax(2,
+            length(grep("processor", scan("/proc/cpuinfo", what='a', sep='\n', quiet=TRUE), value=TRUE)),
+            na.rm=TRUE
+            ))
 } else {
   # a less computationally intensive setup
   ncores = 2
@@ -262,7 +267,9 @@ library('localEM')
 xvAll = lemXv(
     cases = kentuckyCounty@data[,grep("^count[[:digit:]]", names(kentuckyCounty))],   
     lemObjects = xvKentucky$smoothingMatrix,
-    ncores = ncores,
+    # only 2 cores if gpu will be used
+    # otherwise the gpu memory will fill up
+    ncores = ifelse(requireNamespace("gpuR", quietly=TRUE),2,ncores),
     verbose = TRUE,
     path=tempdir())
 ```
