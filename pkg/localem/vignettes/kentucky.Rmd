@@ -49,7 +49,7 @@ if(any(commandArgs()=='highRes' | basename(getwd())=='www') ) {
   cellsCoarse= 8
   nsim = 3
   nxv = 4
-  # on unix systems results will be saved in /tmp/localEM
+  # on unix systems results will be saved in /tmp/localEMusername
   path = file.path(dirname(tempdir()),  paste('localEM', Sys.info()['user'], sep=''))
   Sbw = seq(10,30,by=10) * 1000
 }
