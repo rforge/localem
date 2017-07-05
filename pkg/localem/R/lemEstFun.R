@@ -185,7 +185,7 @@ riskEst = function(
     } else {
       
       obsCounts = as.matrix(x[match(idCoarse, x[[idColX]]),countcol])
-      dimnames(obsCounts) = list(idCoarse, col=names(x[,countcol]))
+      dimnames(obsCounts) = list(idCoarse, countcol)
     }
   } else { # x is a vector
     idCoarse = 1:length(x)

@@ -18,40 +18,28 @@
 #' 
 #' @examples 
 #' \dontrun{ 
-#' data(kentuckyCounty)
-#' data(kentuckyTract)
-#' 
-#' ncores = 1 + (.Platform$OS.type == 'unix')
+#' data('kentuckyCounty')
+#' data('kentuckyTract')
 #' 
 #' lemRaster = rasterPartition(polyCoarse = kentuckyCounty, 
-#'                            polyFine = kentuckyTract, 
-#'                            cellsCoarse = 6, 
-#'                            cellsFine = 100, 
-#'                            bw = c(10, 12, 15, 17, 20, 25) * 1000, 
-#'                            ncores = ncores, 
-#'                            idFile = 'id.grd', 
-#'                            offsetFile = 'offset.grd', 
-#'                            verbose = TRUE)
+#'								polyFine = kentuckyTract, 
+#'  	                        cellsCoarse = 6, 
+#'                              cellsFine = 100, 
+#'                              bw = c(10, 15) * 1000, 
+#'                              ncores = 2, 
+#'                              path = tempdir(), 
+#'                              verbose = TRUE)
 #'
 #'
 #' lemSmoothMat = smoothingMatrix(rasterObjects = lemRaster, 
-#'                                ncores = ncores, 
-#'                                verbose = TRUE)
-#'
-#' lemCv = lemXv(x = kentuckyCounty, 
-#'              lemObjects = lemSmoothMat, 
-#'              Nxv = 5, 
-#'              ncores = ncores, 
-#'              verbose = TRUE)
-#' bestBw = lemCv$bw[which.min(lemCv$cv)]
+#'                                 ncores = 2, 
+#'                                 verbose = TRUE)
 #'
 #' lemRisk = riskEst(x = kentuckyCounty, 
-#'                  lemObjects = lemSmoothMat, 
-#'                  bw = bestBw, 
-#'                  ncores = ncores)
-#'                    
-#' lemExcProb = excProb(lemEst = lemRisk, 
-#'                     lemObjects = lemSmoothMat, 
+#'                    lemObjects = lemSmoothMat, 
+#'                    bw = 15 * 1000) 
+#'
+#' lemExcProb = excProb(x = lemRisk, 
 #'                     threshold = c(1, 1.25, 1.5), 
 #'                     Nboot = 200, 
 #'                     ncores = ncores)
