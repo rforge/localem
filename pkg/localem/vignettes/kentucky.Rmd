@@ -32,7 +32,7 @@ if(any(commandArgs()=='highRes' | basename(getwd())=='www') ) {
   cellsCoarse=20
   nsim = 20
   nxv = 8
-  path = file.path(dirname(tempdir()), paste('localEMhighRes', Sys.info()$user, sep=''))
+  path = file.path(dirname(tempdir()), paste('localEMhighRes', Sys.info()['user'], sep=''))
   Sbw = unique(round(exp(seq(log(5), log(50), len=15)))) * 1000
   knitr::opts_chunk$set(dpi = 200)
   # number of cores set to total available, min 2, max 32
@@ -50,7 +50,7 @@ if(any(commandArgs()=='highRes' | basename(getwd())=='www') ) {
   nsim = 3
   nxv = 4
   # on unix systems results will be saved in /tmp/localEM
-  path = file.path(dirname(tempdir()),  paste('localEM', Sys.info()$user, sep=''))
+  path = file.path(dirname(tempdir()),  paste('localEM', Sys.info()['user'], sep=''))
   Sbw = seq(10,30,by=10) * 1000
 }
 if(!requireNamespace("RandomFields", quietly=TRUE)) {
