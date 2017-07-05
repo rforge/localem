@@ -5,7 +5,8 @@
 \title{Computes final smoothed LEM estimate}
 \usage{
 lemFinal(x, counts = colnames(x$xv)[-1], bw = x$xv[apply(x$xv[, counts], 2,
-  which.min), "bw"], ncores = 1, filename = tempfile(), verbose = FALSE)
+  which.min), "bw"], ncores = 1, filename = paste(tempfile(), ".grd", sep =
+  ""), verbose = FALSE)
 }
 \arguments{
 \item{x}{result from lemXV}

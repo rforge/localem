@@ -2,7 +2,7 @@
 % Please edit documentation in R/rasterPartFun.R
 \name{rasterPartition}
 \alias{rasterPartition}
-\title{Generates the partitions by overlaying rasters of the coarse and fine polygons}
+\title{Generates the partitions by overlaying rasters of spatial polygons}
 \usage{
 rasterPartition(polyCoarse, polyFine, cellsCoarse, cellsFine, bw,
   focalSize = NULL, fact = 1, xv = NULL, ncores = 1, path = getwd(),
@@ -15,21 +15,21 @@ rasterPartition(polyCoarse, polyFine, cellsCoarse, cellsFine, bw,
 
 \item{polyFine}{Spatial polygons of population data}
 
-\item{cellsCoarse}{Horizontal/vertical resolution of raster applied to coarse polygons}
+\item{cellsCoarse}{Minimum resolution for rasterization of case data for numerical accuracy of smoothing matrix}
 
-\item{cellsFine}{Horizontal/vertical resolution of raster applied to fine polygons}
+\item{cellsFine}{Minimum resolution for rasterization of population data for numerical integration of smoothing matrix}
 
 \item{bw}{Vector of bandwidths}
 
 \item{focalSize}{Distance to truncate Gaussian kernel, default is 2.5 times largest bandwidth}
 
-\item{fact}{aggregation factor for offsets prior to smoothing}
+\item{fact}{Aggregation factor for offsets prior to smoothing}
 
-\item{xv}{Number of cross-validation sets, or a matrix where rows are coarse polygons and columns are xv sets}
+\item{xv}{(Optional) Number of cross-validation sets, or matrix where rows are coarse polygons and columns are cross-validation sets}
 
 \item{ncores}{Number of cores/threads for parallel processing}
 
-\item{path}{folder to store raster data}
+\item{path}{Folder to store raster data}
 
 \item{idFile}{Filename (must have .grd extension) of the raster of partitions}
 
@@ -38,28 +38,27 @@ rasterPartition(polyCoarse, polyFine, cellsCoarse, cellsFine, bw,
 \item{verbose}{Verbose output}
 }
 \value{
-The \code{rasterPartition} function returns a list containing the raster of the coarse polygons, raster stacks of the partitions and offsets, focal weight matrix of the Gaussian kernel, and the input coarse polygons.
+The \code{rasterPartition} function returns a list containing the raster of the case data, raster stacks of the partitions and offsets, focal weight matrix of the Gaussian kernel, and the input coarse polygons.
 }
 \description{
-The \code{rasterPartition} function first rasterizes the coarse and fine spatial polygons based on their respective input resolutions, and then, overlays these rasters to generate the raster of partitions of the local-EM algorithm. It also applies the kernel smoothing function with input bandwidths to the expected counts of the fine polygons to obtain the smoothed offsets (i.e., smoothed expected counts / cell area) of the partitions.
+The \code{rasterPartition} function first rasterizes the spatial polygons of the case and population data based on their respective input resolutions, and then, overlays these rasters to generate the raster of partitions of the local-EM algorithm. It also applies the kernel smoothing function with input bandwidths to the expected counts of the fine polygons to obtain the smoothed offsets (i.e., smoothed expected counts per cell area) of the partitions. If cross-validation is specified, smoothed offsets are computed for each cross-validation set.
 }
 \details{
-After using the \code{rasterPartition} function, the fine raster is a raster stack containing the IDs for the partitions created by overlaying the coarse and fine rasters. The offset raster is a raster stack containing the offsets of the partitions smoothed with the specified bandwidths. These values represent the denominator of the kernel smoothing matrix.
+After using the \code{rasterPartition} function, the partition raster is a raster stack containing the IDs for the partitions created by overlaying the rasterizations of the spatial polygons of case and population data. The offset raster is a raster stack containing the offsets of the partitions smoothed with the specified bandwidths. These values represent the denominator of the kernel smoothing matrix.
 }
 \examples{
 \dontrun{ 
-data(kentuckyCounty)
-data(kentuckyTract)
-
+data('kentuckyCounty')
+data('kentuckyTract')
 
 lemRaster = rasterPartition(polyCoarse = kentuckyCounty, 
-                           polyFine = kentuckyTract, 
-                           cellsCoarse = 6, 
-                           cellsFine = 100, 
-                           bw = c(10, 15) * 1000, 
-                           ncores = 2, 
-                           path= tempdir(), 
-                           verbose = TRUE)
+								polyFine = kentuckyTract, 
+                           	cellsCoarse = 6, 
+                           	cellsFine = 100, 
+                           	bw = c(10, 15) * 1000, 
+                           	ncores = 2, 
+                           	path = tempdir(), 
+                           	verbose = TRUE)
 }
 
 }

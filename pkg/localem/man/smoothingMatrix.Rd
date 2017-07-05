@@ -8,11 +8,11 @@ smoothingMatrix(rasterObjects, ncores = 1, filename = file.path(tempdir(),
   "smoothingMatrix.grd"), verbose = FALSE)
 }
 \arguments{
-\item{rasterObjects}{Raster objects of partitions and smoothed offsets}
+\item{rasterObjects}{Raster stacks for partitions and smoothed offsets}
 
 \item{ncores}{Number of cores/threads for parallel processing}
 
-\item{filename}{}
+\item{filename}{Filename (must have .grd extension) of the entries of smoothing matrix}
 
 \item{verbose}{Verbose output}
 }
@@ -20,7 +20,7 @@ smoothingMatrix(rasterObjects, ncores = 1, filename = file.path(tempdir(),
 The \code{smoothingMatrix} function returns a list containing an array of smoothing matrix entries, and the input rasters of partitions and smoothed offsets.
 }
 \description{
-The \code{smoothingMatrix} function computes the entries of the smoothing matrix for the local-EM algorithm for the input bandwidths based on the partitions created by rasterizing the coarse and fine polygons, and their smoothed offsets created by applying the kernel smoothing function with input bandwidths.
+The \code{smoothingMatrix} function computes the entries of the smoothing matrix for the local-EM algorithm for the input bandwidths based on the partitions created by rasterizing the spatial polygons of case and population data, and their smoothed offsets created by applying the kernel smoothing function with input bandwidths.
 }
 \details{
 After using the \code{smoothingMatrix} function, the smoothing matrix is an array containing the integrated kernel smoothing entries of the partitions divided by the integrated kernel smoothing entries of the study region for each specified bandwidth.
@@ -31,18 +31,19 @@ data('kentuckyCounty')
 data('kentuckyTract')
 
 lemRaster = rasterPartition(polyCoarse = kentuckyCounty, 
-                           polyFine = kentuckyTract, 
-                           cellsCoarse = 6, 
-                           cellsFine = 100, 
-                           bw = c(10, 15) * 1000, 
-                           ncores = 2, 
-                           path=tempdir(), 
-                           verbose = TRUE)
+							polyFine = kentuckyTract, 
+ 	                        cellsCoarse = 6, 
+                             cellsFine = 100, 
+                             bw = c(10, 15) * 1000, 
+                             ncores = 2, 
+                             path = tempdir(), 
+                             verbose = TRUE)
 
 
 lemSmoothMat = smoothingMatrix(rasterObjects = lemRaster, 
-                               ncores = 2, 
-                               verbose = TRUE)
+                                ncores = 2, 
+                                verbose = TRUE)
+
 }
 
 }

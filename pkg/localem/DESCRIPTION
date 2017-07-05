@@ -17,7 +17,8 @@ Imports:
     geostatsp (>= 1.4.4),
     stats,
     spatial.tools,
-    foreach
+    foreach,
+    abind
 Suggests:
     spdep,
     diseasemapping,

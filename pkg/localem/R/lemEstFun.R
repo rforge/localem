@@ -5,7 +5,6 @@
 #' @param x Spatial polygons of case data
 #' @param lemObjects List of arrays for the smoothing matrix, and raster stacks for the partition and smoothed offsets
 #' @param bw Bandwidth specifying which smoothing matrix in \code{lemObjects} to use
-#' @param ncores Number of cores/threads for parallel processing
 #' @param tol Tolerance for convergence
 #' @param maxIter Maximum number of iterations for convergence
 #'

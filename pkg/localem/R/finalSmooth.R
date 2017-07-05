@@ -17,9 +17,9 @@
 lemFinal = function(
     x, 
     counts = colnames(x$xv)[-1],
-    bw = x$xv[apply(x$xv[counts],2,which.min),'bw'], 
+    bw = x$xv[apply(x$xv[,counts],2,which.min),'bw'], 
     ncores=1, 
-    filename = tempfile(), 
+    filename = paste(tempfile(), '.grd', sep=''), 
     verbose=FALSE) {
   
 
