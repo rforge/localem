@@ -31,7 +31,7 @@ if(any(commandArgs()=='highRes' | basename(getwd())=='www') ) {
   cellsSimulate = 600
   cellsCoarse=20
   nsim = 20
-  nxv = 8
+  nxv = 12
   path = file.path(dirname(tempdir()), paste('localEMhighRes', Sys.info()['user'], sep=''))
   Sbw = unique(round(exp(seq(log(5), log(50), len=15)))) * 1000
   knitr::opts_chunk$set(dpi = 200)
