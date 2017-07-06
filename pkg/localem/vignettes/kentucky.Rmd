@@ -267,9 +267,7 @@ library('localEM')
 xvAll = lemXv(
     cases = kentuckyCounty@data[,grep("^count[[:digit:]]", names(kentuckyCounty))],   
     lemObjects = xvKentucky$smoothingMatrix,
-    # only 2 cores if gpu will be used
-    # otherwise the gpu memory will fill up
-    ncores = ifelse(requireNamespace("gpuR", quietly=TRUE),2,ncores),
+    ncores = ncores,
     verbose = TRUE,
     path=tempdir())
 ```
@@ -280,7 +278,7 @@ matplot(xvAll$xv[,'bw']/1000,
     xvAll$xv[,-1], 
     xlab='km', ylab='-log p', 
     type='l', lty=1, log='x',
-    ylim = quantile(unlist(xvAll$xv[,-1]), c(0, 0.8)) )
+    ylim = c(0,25) ) 
 ```
 
 
