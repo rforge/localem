@@ -73,6 +73,13 @@ smoothingMatrix = function(
   theType = structure(numeric(0), bytes = 8L, signed = 1L, class = c("Ctype", 
           "double"))
   
+  
+  # dimensions, from spatial.tools::binary_image_write
+  image_dims = dim(smoothingRaster)
+  image_x=image_dims[1]
+  image_y=image_dims[2]
+  image_z=image_dims[3]
+  
   # define x for package check
   x = NULL
   offDiag = foreach::foreach(
@@ -101,21 +108,46 @@ smoothingMatrix = function(
               
               theOrder = lapply(matchPartHere, order)
               
+              
+             data_position = t(expand.grid(
+                            as.vector(matchPartHere[[1]][theOrder[[1]] ]), 
+                            as.vector(matchPartHere[[2]][theOrder[[2]] ]), 
+                            layerSeq)
+                            )
+                            
+                        cell_position=
+              ( (data_position[2,]-1)*image_x)+
+              (data_position[1,])+
+              ((data_position[3,]-1)*(image_x*image_y))
+                        
+              
               haveWritten = FALSE
               writeCounter1 = 0
               
               while(!haveWritten & (writeCounter1 < 20)) {
-                haveWritten = tryCatch(spatial.tools::binary_image_write(
-                        smoothingRasterFile,
-                        mode = theType, 
-                        image_dims = dim(smoothingRaster),
-                        data=as.double(partHere[theOrder[[1]], theOrder[[2]],,] ),
-                        data_position = list(
-                            as.vector(matchPartHere[[1]][theOrder[[1]] ]), 
-                            as.vector(matchPartHere[[2]][theOrder[[2]] ]), 
-                            layerSeq)), 
-                    error = function(err) {warning(err);-1} )
-                haveWritten = (haveWritten != -1)
+              
+              
+             out = mmap::mmap(
+                smoothingRasterFile,
+                mode=theType
+            )	
+            
+            out[cell_position] = as.double(partHere[theOrder[[1]], theOrder[[2]],,] )      
+            
+            haveWrittenFirst = mmap::munmap(out)  
+              
+              
+#                haveWritten = tryCatch(spatial.tools::binary_image_write(
+#                        smoothingRasterFile,
+#                        mode = theType, 
+#                        image_dims = dim(smoothingRaster),
+#                        data=as.double(partHere[theOrder[[1]], theOrder[[2]],,] ),
+#                        data_position = list(
+#                            as.vector(matchPartHere[[1]][theOrder[[1]] ]), 
+#                            as.vector(matchPartHere[[2]][theOrder[[2]] ]), 
+#                            layerSeq)), 
+#                    error = function(err) {warning(err);-1} )
+            haveWritten = identical(haveWrittenFirst, 0L)
                 writeCounter1 = writeCounter1 + 1
               }
               if(writeCounter1 >= 20) warning(paste("dist", x, "cells", Dcell1, Dcell2))
@@ -125,22 +157,50 @@ smoothingMatrix = function(
                   table=Spartitions)
               theOrder = lapply(matchPartHere, order)
               
+              
+                    data_position = t(expand.grid(
+                            as.vector(matchPartHere[[1]][theOrder[[1]] ]), 
+                            as.vector(matchPartHere[[2]][theOrder[[2]] ]), 
+                            layerSeq)
+                            )
+                            
+                        cell_position=
+              ( (data_position[2,]-1)*image_x)+
+              (data_position[1,])+
+              ((data_position[3,]-1)*(image_x*image_y))
+       
+              
               haveWritten = FALSE
               writeCounter2 = 0
               
               
+              
               while(!haveWritten & (writeCounter2 < 20)) {
-                haveWritten = tryCatch(spatial.tools::binary_image_write(
-                        smoothingRasterFile, 
-                        mode = theType, 
-                        image_dims = dim(smoothingRaster),
-                        data=as.double(partHere[theOrder[[1]], theOrder[[2]],,] ),
-                        data_position = list(
-                            as.vector(matchPartHere[[1]][theOrder[[1]] ]), 
-                            as.vector(matchPartHere[[2]][theOrder[[2]] ]), 
-                            layerSeq)), 
-                    error = function(err) {warning(err);-1} )
-                haveWritten = (haveWritten != -1)
+              
+              
+                      
+             out = mmap::mmap(
+                smoothingRasterFile,
+                mode=theType
+            )	
+            
+            out[cell_position] = as.double(partHere[theOrder[[1]], theOrder[[2]],,] )      
+            
+            haveWrittenFirst = mmap::munmap(out)  
+    
+              
+#                haveWritten = tryCatch(spatial.tools::binary_image_write(
+#                        smoothingRasterFile, 
+#                        mode = theType, 
+#                        image_dims = dim(smoothingRaster),
+#                        data=as.double(partHere[theOrder[[1]], theOrder[[2]],,] ),
+#                        data_position = list(
+#                            as.vector(matchPartHere[[1]][theOrder[[1]] ]), 
+#                            as.vector(matchPartHere[[2]][theOrder[[2]] ]), 
+#                            layerSeq)), 
+#                    error = function(err) {warning(err);-1} )
+#                haveWritten = (haveWritten != -1)
+            haveWritten = identical(haveWrittenFirst, 0L)
                 writeCounter2 = writeCounter2 + 1
               }
               if(writeCounter2 >= 20) warning(paste("dist", x, "cells", Dcell1, Dcell2))
