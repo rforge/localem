@@ -290,11 +290,11 @@ smoothingMatrixDiag = function(
   Dcell1 = NULL # defined for package check 
   diagBlocks = foreach::foreach(
           Dcell1 = 1:ncell(rasterCoarse), 
-          .packages=c('raster','Matrix','localEM'), 
-          .export = 'smoothingMatrixEntries'
+          .packages=c('raster','Matrix')#,'localEM')#, 
+#          .export = 'smoothingMatrixEntries'
       ) %dopar% {
 #       ) %do% {
-        cat(Dcell1)
+#        cat(Dcell1)
         thisBlock = try(smoothingMatrixEntries(cell1 = Dcell1,
                 focalList=kernelArrayD,
                 coarse=rasterCoarse,
@@ -303,7 +303,7 @@ smoothingMatrixDiag = function(
             ))
         if(class(thisBlock) == 'try-error') {
           warning(paste("Error in smoothingMatrixEntries", Dcell1))
-          thisBlock = NA 
+          thisBlock = NULL
         }
         
         if(!is.null(thisBlock)) {
