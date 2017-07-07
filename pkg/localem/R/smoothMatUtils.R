@@ -247,6 +247,11 @@ smoothingMatrixDiag = function(
   )
   names(smoothingRasterTemplate) = Sbw		
   
+#  nTotalCells = as.integer(prod(dim(smoothingRasterTemplate)))
+#  if(is.na(nTotalCells)) {
+#  	warning("too many cells in smoothing array. Reduce number of bandwidths or xv sets")
+#  }
+  
   firstFile = filename
   
   # write zeros in the smoothing matrix
@@ -272,7 +277,15 @@ smoothingMatrixDiag = function(
   theType = structure(numeric(0), bytes = 8L, signed = 1L, class = c("Ctype", 
           "double"))
   
+  
   if(verbose) cat("looping through diagonal cells\n")
+  
+# dimensions, from spatial.tools::binary_image_write
+  image_dims = dim(smoothingRasterTemplate)
+  image_x=image_dims[1]
+  image_y=image_dims[2]
+  image_z=image_dims[3]
+  
   
   Dcell1 = NULL # defined for package check 
   diagBlocks = foreach::foreach(
@@ -280,46 +293,78 @@ smoothingMatrixDiag = function(
           .packages=c('raster','Matrix','localEM'), 
           .export = 'smoothingMatrixEntries'
       ) %dopar% {
-        
-# for(Dcell1 in 1:ncell(rasterCoarse)) {     
+#       ) %do% {
+        cat(Dcell1)
         thisBlock = try(smoothingMatrixEntries(cell1 = Dcell1,
-            focalList=kernelArrayD,
-            coarse=rasterCoarse,
-            fine=rasterFine,
-            offsetRaster=offsetRaster
-        ))
+                focalList=kernelArrayD,
+                coarse=rasterCoarse,
+                fine=rasterFine,
+                offsetRaster=offsetRaster
+            ))
         if(class(thisBlock) == 'try-error') {
           warning(paste("Error in smoothingMatrixEntries", Dcell1))
           thisBlock = NA 
         }
         
         if(!is.null(thisBlock)) {
+          
           partHere = dimnames(thisBlock)[[1]]
           matchPartHere = match(partHere, Spartitions)
           
           theOrder = order(matchPartHere)
+          # from spatial.tools::binary_image_write          
+          data_position = t(expand.grid(
+                  matchPartHere[theOrder], 
+                  matchPartHere[theOrder], 
+                  layerSeq
+              ))
+          
+          
+#    cell_position=
+#			as.integer64( (data_position[2,]-1)*image_x)+
+#			as.integer64(data_position[1,])+
+#			as.integer64((data_position[3,]-1)*(image_x*image_y))
+# turns out cell_position doesn't need to be an integer
+          
+          cell_position=
+              ( (data_position[2,]-1)*image_x)+
+              (data_position[1,])+
+              ((data_position[3,]-1)*(image_x*image_y))
           
           haveWritten = FALSE
           writeCounter1 = 0
+          
           while( (!haveWritten) & (writeCounter1 < 20) ) {
-            haveWrittenFirst = tryCatch(
-                spatial.tools::binary_image_write(
-                    filename = smoothingRaster,
-                    mode=theType,
-                    image_dims = dim(smoothingRasterTemplate),
-                    data=as.double(thisBlock[theOrder,theOrder,]), 
-                    data_position = list(
-                        matchPartHere[theOrder], 
-                        matchPartHere[theOrder], 
-                        layerSeq
-                    )
-                ), error = function(err) {warning(err);-1}  )
-            haveWritten = !identical(haveWrittenFirst, -1)
+            
+            out = mmap::mmap(
+                smoothingRaster,
+                mode=theType
+            )	
+            
+            out[cell_position] = as.numeric(thisBlock[theOrder,theOrder,])        
+            
+            haveWrittenFirst = mmap::munmap(out)  
+            
+            
+#          while( (!haveWritten) & (writeCounter1 < 20) ) {
+#            haveWrittenFirst = tryCatch(
+#                spatial.tools::binary_image_write(
+#                    filename = smoothingRaster,
+#                    mode=theType,
+#                    image_dims = dim(smoothingRasterTemplate),
+#                    data=as.double(thisBlock[theOrder,theOrder,]), 
+#                    data_position = list(
+#                        matchPartHere[theOrder], 
+#                        matchPartHere[theOrder], 
+#                        layerSeq
+#                    )
+#                ), error = function(err) {warning(err);-1}  )
+            haveWritten = identical(haveWrittenFirst, 0L)
             if(!haveWritten & verbose){
               warning(paste("error in write attempt", writeCounter1, "of cell", Dcell1, haveWrittenFirst))
             }
             writeCounter1 = writeCounter1 + 1
-          }
+          } # end while 
         } # end not null
         dim(thisBlock)
       } # end foreach loop
