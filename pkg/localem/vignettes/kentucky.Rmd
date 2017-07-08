@@ -219,7 +219,7 @@ if(!file.exists(fileHere)) {
 
 ```
 
-```{r cvPlotNew, fig.cap = 'Cross Validation Scores', fig.height = 4, fig.width = 6}
+```{r cvPlotNew, fig.cap = 'Cross Validation Scores', fig.height = 4, fig.width = 6, out.width = '60%'}
 plot(xvKentucky$xv[,1]/1000, xvKentucky$xv[,2], 
     xlab ='km', ylab = '-log p', 
     type = 'o'
@@ -234,8 +234,7 @@ plot(xvKentucky$xv[,1]/1000, xvKentucky$xv[,2],
 
 
 
-```{r intensPlots, fig.cap = 'rr', fig.subcap = xvKentucky$xv$bw, fig.ncol=2}
-
+```{r intensPlots, fig.cap = 'rr', fig.subcap = xvKentucky$xv$bw, fig.ncol=2, out.width = '44%'}
 
 riskEst = levels(xvKentucky$risk)[[1]]
 toPlot = xvKentucky$risk
@@ -273,7 +272,7 @@ xvAll = lemXv(
 ```
 
 
-```{r cvPlotAll, fig.cap='cross validation scores', fig.height=4, fig.width=6}
+```{r cvPlotAll, fig.cap='cross validation scores', fig.height=4, fig.width=6, out.width = '60%'}
 matplot(xvAll$xv[,'bw']/1000, 
     xvAll$xv[,-1], 
     xlab='km', ylab='-log p', 
@@ -282,7 +281,7 @@ matplot(xvAll$xv[,'bw']/1000,
 ```
 
 
-```{r estPlotMult, fig.cap='Simulation 2,3', fig.subcap = c('2 true','2 est','3 true','3 est')}
+```{r estPlotMult, fig.cap='Simulation 2,3', fig.subcap = c('2 true','2 est','3 true','3 est'), fig.ncol=2, out.width = '44%'}
 
 Ssim = unique(gsub(" .*", "", knitr::opts_current$get()$fig.subcap))
 
