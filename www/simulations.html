@@ -1,0 +1,270 @@
+<!--
+%\VignetteEngine{knitr::docco_linear}
+%\VignetteIndexEntry{Local-EM Example with Cancer Cases in Kentucky}
+-->
+    
+<h1 id="local-em-example-with-cancer-cases-in-kentucky">Local-EM Example with Cancer Cases in Kentucky</h1>
+<h2 id="introduction">Introduction</h2>
+<p>The <code>localEM</code> package contains functions to implement the kernel smoothing local-EM algorithm<span class="math"><em></em><sup>1</sup></span> of disease data aggregated to geographical regions. This algorithm provides an nonparametric alternative to the standard geospatial models, such as the Besag-York-Mollie (BYM) model<span class="math"><em></em><sup>2</sup></span>, for estimating spatial risk of areal disease data. With disease cases typically aggregated to highly coarse geographical regions (e.g., census counties, or census subdivisions), the local-EM method creates a tessellation of distinct regions by overlaying the map of these coarse regions with another map containing fine geographical regions (e.g., census tracts, census blocks, or census dissemination areas) of population data. This allows for the spatial risk to be estimated at a better resolution with the fine regions.</p>
+<p>The methodology of this package is demonstrated on simulated lung cancer cases for the state of Kentucky, USA. The spatial polygons for the census counties and tracts of Kentucky are included with this package.</p>
+<pre class="sourceCode r"><code class="sourceCode r"><span class="co"># specify number of grid cells and</span>
+<span class="co"># number of cores for computations in parallel </span>
+if(<span class="kw">any</span>(<span class="kw">commandArgs</span>()==<span class="st">&#39;highRes&#39;</span> |<span class="st"> </span><span class="kw">basename</span>(<span class="kw">getwd</span>())==<span class="st">&#39;www&#39;</span>) ) {
+  <span class="co"># this uses about 20GB of memory</span>
+  cellsFine =<span class="st"> </span><span class="dv">400</span>
+  cellsSimulate =<span class="st"> </span><span class="dv">600</span>
+  cellsCoarse=<span class="dv">20</span>
+  nsim =<span class="st"> </span><span class="dv">20</span>
+  nxv =<span class="st"> </span><span class="dv">12</span>
+  path =<span class="st"> </span><span class="kw">file.path</span>(<span class="kw">dirname</span>(<span class="kw">tempdir</span>()), <span class="kw">paste</span>(<span class="st">&#39;localEMhighRes&#39;</span>, <span class="kw">Sys.info</span>()[<span class="st">&#39;user&#39;</span>], <span class="dt">sep=</span><span class="st">&#39;&#39;</span>))
+  Sbw =<span class="st"> </span><span class="kw">unique</span>(<span class="kw">round</span>(<span class="kw">exp</span>(<span class="kw">seq</span>(<span class="kw">log</span>(<span class="dv">5</span>), <span class="kw">log</span>(<span class="dv">50</span>), <span class="dt">len=</span><span class="dv">15</span>)))) *<span class="st"> </span><span class="dv">1000</span>
+  knitr::opts_chunk$<span class="kw">set</span>(<span class="dt">dpi =</span> <span class="dv">200</span>)
+  <span class="co"># number of cores set to total available, min 2, max 32</span>
+  if(.Platform$OS.type ==<span class="st"> &#39;unix&#39;</span>)
+    ncores =<span class="st"> </span><span class="kw">pmin</span>(<span class="dv">32</span>, <span class="kw">pmax</span>(<span class="dv">2</span>,
+            <span class="kw">length</span>(<span class="kw">grep</span>(<span class="st">&quot;processor&quot;</span>, <span class="kw">scan</span>(<span class="st">&quot;/proc/cpuinfo&quot;</span>, <span class="dt">what=</span><span class="st">&#39;a&#39;</span>, <span class="dt">sep=</span><span class="st">&#39;</span><span class="ch">\n</span><span class="st">&#39;</span>, <span class="dt">quiet=</span><span class="ot">TRUE</span>), <span class="dt">value=</span><span class="ot">TRUE</span>)),
+            <span class="dt">na.rm=</span><span class="ot">TRUE</span>
+            ))
+} else {
+  <span class="co"># a less computationally intensive setup</span>
+  ncores =<span class="st"> </span><span class="dv">2</span>
+  cellsFine =<span class="st"> </span><span class="dv">100</span>
+  cellsSimulate =<span class="st"> </span><span class="dv">200</span>
+  cellsCoarse=<span class="st"> </span><span class="dv">8</span>
+  nsim =<span class="st"> </span><span class="dv">3</span>
+  nxv =<span class="st"> </span><span class="dv">4</span>
+  <span class="co"># on unix systems results will be saved in /tmp/localEMusername</span>
+  path =<span class="st"> </span><span class="kw">file.path</span>(<span class="kw">dirname</span>(<span class="kw">tempdir</span>()),  <span class="kw">paste</span>(<span class="st">&#39;localEM&#39;</span>, <span class="kw">Sys.info</span>()[<span class="st">&#39;user&#39;</span>], <span class="dt">sep=</span><span class="st">&#39;&#39;</span>))
+  Sbw =<span class="st"> </span><span class="kw">seq</span>(<span class="dv">10</span>,<span class="dv">30</span>,<span class="dt">by=</span><span class="dv">10</span>) *<span class="st"> </span><span class="dv">1000</span>
+}
+if(!<span class="kw">requireNamespace</span>(<span class="st">&quot;RandomFields&quot;</span>, <span class="dt">quietly=</span><span class="ot">TRUE</span>)) {
+  cellsSimulate =<span class="st"> </span><span class="dv">100</span>
+}
+
+<span class="kw">dir.create</span>(path, <span class="dt">showWarnings =</span> <span class="ot">FALSE</span>, <span class="dt">recursive =</span> <span class="ot">TRUE</span>)
+<span class="kw">print</span>(cellsFine)</code></pre>
+<pre><code>## [1] 400</code></pre>
+<pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(<span class="st">&#39;mapmisc&#39;</span>)</code></pre>
+<pre><code>## Loading required package: sp</code></pre>
+<pre><code>## Loading required package: raster</code></pre>
+<pre><code>## map images will be cached in  /tmp/mapmiscCache_patrick</code></pre>
+<pre class="sourceCode r"><code class="sourceCode r"><span class="kw">data</span>(<span class="st">&#39;kentuckyCounty&#39;</span>, <span class="dt">package =</span> <span class="st">&#39;localEM&#39;</span>) 
+<span class="kw">data</span>(<span class="st">&#39;kentuckyTract&#39;</span>, <span class="dt">package =</span> <span class="st">&#39;localEM&#39;</span>) 
+<span class="kw">data</span>(<span class="st">&#39;kMap&#39;</span>, <span class="dt">package =</span> <span class="st">&#39;localEM&#39;</span>)</code></pre>
+<h2 id="simulate-cases">Simulate Cases</h2>
+<p>Using the <code>simLgcp()</code> function from the <code>geostatsp</code> package, case locations are simulated with the log Gaussian Cox process and following parameters:</p>
+<ul>
+<li>mean: 0</li>
+<li>variance: 0.16</li>
+<li>shape: 2</li>
+<li>range: 120 km</li>
+<li>offsets: log of expected cases/m<span class="math"><em></em><sup>2</sup></span> of the census tracts</li>
+</ul>
+<p>The simulated cases are then aggregated to the appropriate counties.</p>
+<pre class="sourceCode r"><code class="sourceCode r">kentuckyOffset =<span class="st"> </span>geostatsp::<span class="kw">spdfToBrick</span>(
+    kentuckyTract,
+    geostatsp::<span class="kw">squareRaster</span>(kentuckyTract, cellsSimulate),
+    <span class="dt">pattern =</span> <span class="st">&#39;^expected$&#39;</span>,
+    <span class="dt">logSumExpected =</span> <span class="ot">TRUE</span>
+)
+
+<span class="kw">set.seed</span>(<span class="dv">0</span>)
+kCases =<span class="st"> </span>geostatsp::<span class="kw">simLgcp</span>(
+    <span class="dt">param =</span> <span class="kw">c</span>(<span class="dt">mean =</span> <span class="dv">0</span>, <span class="dt">variance =</span> <span class="fl">0.4</span>^<span class="dv">2</span>, <span class="dt">range =</span> <span class="dv">120</span> *<span class="st"> </span><span class="dv">1000</span>, <span class="dt">shape =</span> <span class="dv">2</span>),
+    <span class="dt">covariates =</span> <span class="kw">list</span>(<span class="dt">logExpected =</span> kentuckyOffset), 
+    <span class="dt">offset =</span> <span class="st">&#39;logExpected&#39;</span>, <span class="dt">n=</span>nsim)</code></pre>
+<pre><code>## ....................</code></pre>
+<p>Aggregate events to counties</p>
+<pre class="sourceCode r"><code class="sourceCode r">kCases$agg =<span class="st"> </span><span class="kw">lapply</span>(
+    kCases[<span class="kw">grep</span>(<span class="st">&#39;^events[[:digit:]]+?&#39;</span>, <span class="kw">names</span>(kCases))],
+    function(qq) <span class="kw">over</span>(qq, kentuckyCounty)[,<span class="st">&#39;id&#39;</span>]
+)
+countyCounts =<span class="st"> </span><span class="kw">as.data.frame</span>(<span class="kw">lapply</span>(
+    kCases$agg,  
+    function(xx) <span class="kw">as.vector</span>(<span class="kw">table</span>(xx, <span class="dt">exclude =</span> <span class="ot">NULL</span>)[<span class="kw">as.character</span>(kentuckyCounty$id)])
+))
+countyCounts[<span class="kw">is.na</span>(countyCounts)] =<span class="st"> </span><span class="dv">0</span>
+<span class="kw">names</span>(countyCounts) =<span class="st"> </span><span class="kw">gsub</span>(<span class="st">&#39;^events&#39;</span>, <span class="st">&#39;count&#39;</span>, <span class="kw">names</span>(countyCounts))
+<span class="kw">rownames</span>(countyCounts) =<span class="st"> </span><span class="kw">as.character</span>(kentuckyCounty$id)
+kentuckyCounty =<span class="st"> </span><span class="kw">merge</span>(kentuckyCounty, countyCounts, <span class="dt">by.x =</span> <span class="st">&#39;id&#39;</span>, <span class="dt">by.y =</span> <span class="st">&#39;row.names&#39;</span>)</code></pre>
+<p><img src="figure/plotOffset-1.png" title="Simulated Events" alt="Simulated Events" width="44%" /><img src="figure/plotOffset-2.png" title="Simulated Events" alt="Simulated Events" width="44%" /><img src="figure/plotOffset-3.png" title="Simulated Events" alt="Simulated Events" width="44%" /><img src="figure/plotOffset-4.png" title="Simulated Events" alt="Simulated Events" width="44%" /></p>
+<h1 id="estimation">Estimation</h1>
+<p>The first simulated dataset</p>
+<pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(<span class="st">&#39;localEM&#39;</span>)
+fileHere =<span class="st"> </span><span class="kw">file.path</span>(path, <span class="st">&#39;xvKentucky.RData&#39;</span>)
+
+if(!<span class="kw">file.exists</span>(fileHere)) {
+  xvKentucky =<span class="st"> </span><span class="kw">lemXv</span>(
+      <span class="dt">cases =</span> kentuckyCounty[,<span class="kw">c</span>(<span class="st">&#39;id&#39;</span>,<span class="st">&#39;count1&#39;</span>)],   
+      <span class="dt">population =</span> kentuckyTract,   
+      <span class="dt">cellsCoarse =</span> cellsCoarse,   
+      <span class="dt">cellsFine =</span> cellsFine,   
+      <span class="dt">bw =</span> Sbw,
+      <span class="dt">xv =</span> nxv, 
+      <span class="dt">ncores =</span> ncores,
+      <span class="dt">path =</span> path,
+      <span class="dt">verbose =</span> <span class="ot">TRUE</span>)
+  <span class="kw">save</span>(xvKentucky, <span class="dt">file=</span>fileHere)  
+} else {
+    <span class="kw">load</span>(fileHere)  
+}</code></pre>
+<pre><code>## computing smoothing matrix
+## Fri Jul  7 15:43:27 2017 
+## obtaining rasters
+## Fri Jul  7 15:43:55 2017 
+## computing focal array
+## Fri Jul  7 15:44:05 2017 
+## smoothing offsets
+## smoothing with spatial.tools failed, using raster
+## temporary files /tmp/localEMhighRespatrick/smoothedOffsetList/smoothedOffsetList1.grd   /tmp/localEMhighRespatrick/smoothedOffsetList/smoothedOffsetList195.grd 
+## Fri Jul  7 15:46:21 2017 
+## smoothing offsets done
+## Fri Jul  7 15:46:43 2017 
+## done
+## Fri Jul  7 15:46:43 2017 
+## diagonal blocks of smoothing matrix
+## if there are errors stop the cluster with spatial.tools::sfQuickStop()
+## creating raster to hold smoothing matrix</code></pre>
+<pre><code>## Warning in writeBin(v[, i], x@file@con, size = x@file@dsize): closing
+## unused connection 38 (/tmp/localEMhighRespatrick/offsetTemp.gri)</code></pre>
+<pre><code>## Warning in writeBin(v[, i], x@file@con, size = x@file@dsize): closing
+## unused connection 37 (/tmp/localEMhighRespatrick/offsetTemp.gri)</code></pre>
+<pre><code>## looping through diagonal cells
+## off-diagonals of smoothing matrix 
+## Fri Jul  7 15:59:22 2017 
+## Fri Jul  7 18:43:16 2017 
+## replacing NA&#39;s with zeros
+## Fri Jul  7 18:43:16 2017 
+## done
+## Fri Jul  7 18:43:16 2017 
+## done
+## running local-EM for validation sets
+## computing CV scores
+## putting estimated risk in raster
+## done</code></pre>
+<pre><code>## rgdal: version: 1.2-7, (SVN revision 660)
+##  Geospatial Data Abstraction Library extensions to R successfully loaded
+##  Loaded GDAL runtime: GDAL 2.1.0, released 2016/04/25
+##  Path to GDAL shared files: /usr/share/gdal/2.1
+##  Loaded PROJ.4 runtime: Rel. 4.8.0, 6 March 2012, [PJ_VERSION: 480]
+##  Path to PROJ.4 shared files: (autodetected)
+##  Linking to sp version: 1.2-3</code></pre>
+<pre><code>## Loading required package: mmap</code></pre>
+<pre><code>## Loading required package: abind</code></pre>
+<pre><code>## Loading required package: doParallel</code></pre>
+<pre><code>## Loading required package: foreach</code></pre>
+<pre><code>## Loading required package: iterators</code></pre>
+<pre><code>## Loading required package: parallel</code></pre>
+<pre><code>## Loading required package: compiler</code></pre>
+<pre class="sourceCode r"><code class="sourceCode r"><span class="kw">plot</span>(xvKentucky$xv[,<span class="dv">1</span>]/<span class="dv">1000</span>, xvKentucky$xv[,<span class="dv">2</span>], 
+    <span class="dt">xlab =</span><span class="st">&#39;km&#39;</span>, <span class="dt">ylab =</span> <span class="st">&#39;-log p&#39;</span>, 
+    <span class="dt">type =</span> <span class="st">&#39;o&#39;</span>
+)</code></pre>
+<figure>
+<img src="figure/cvPlotNew-1.png" alt="Cross Validation Scores" /><figcaption>Cross Validation Scores</figcaption>
+</figure>
+<h1 id="risk-estimation">Risk Estimation</h1>
+<pre class="sourceCode r"><code class="sourceCode r">riskEst =<span class="st"> </span><span class="kw">levels</span>(xvKentucky$risk)[[<span class="dv">1</span>]]
+toPlot =<span class="st"> </span>xvKentucky$risk
+
+for(Dbw in xvKentucky$xv$bw) {
+  
+  rCol =<span class="st"> </span>mapmisc::<span class="kw">colourScale</span>(
+      riskEst[,<span class="kw">paste</span>(<span class="st">&#39;bw&#39;</span>, Dbw, <span class="st">&#39;_count1&#39;</span>, <span class="dt">sep=</span><span class="st">&#39;&#39;</span>) ], 
+      <span class="dt">breaks =</span> iCol$breaks,
+      <span class="dt">style =</span> <span class="st">&#39;fixed&#39;</span>,  
+      <span class="dt">col =</span> iCol$col)
+  toPlot@legend@colortable =<span class="st"> </span><span class="kw">c</span>(<span class="ot">NA</span>,rCol$plot)
+  
+  <span class="kw">map.new</span>(kentuckyCounty)
+  <span class="kw">plot</span>(toPlot, <span class="dt">add=</span><span class="ot">TRUE</span>)
+  <span class="kw">plot</span>(kMap, <span class="dt">add =</span> <span class="ot">TRUE</span>)
+  
+  <span class="kw">legendBreaks</span>(<span class="st">&#39;topleft&#39;</span>, rCol,  <span class="dt">bg =</span> <span class="st">&#39;white&#39;</span>)
+}</code></pre>
+<p><img src="figure/intensPlots-1.png" alt="rr" /><img src="figure/intensPlots-2.png" alt="rr" /><img src="figure/intensPlots-3.png" alt="rr" /><img src="figure/intensPlots-4.png" alt="rr" /><img src="figure/intensPlots-5.png" alt="rr" /><img src="figure/intensPlots-6.png" alt="rr" /><img src="figure/intensPlots-7.png" alt="rr" /><img src="figure/intensPlots-8.png" alt="rr" /><img src="figure/intensPlots-9.png" alt="rr" /><img src="figure/intensPlots-10.png" alt="rr" /><img src="figure/intensPlots-11.png" alt="rr" /><img src="figure/intensPlots-12.png" alt="rr" /><img src="figure/intensPlots-13.png" alt="rr" /><img src="figure/intensPlots-14.png" alt="rr" /><img src="figure/intensPlots-15.png" alt="rr" /></p>
+<h1 id="multiple-datasets">Multiple datasets</h1>
+<pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(<span class="st">&#39;localEM&#39;</span>)
+xvAll =<span class="st"> </span><span class="kw">lemXv</span>(
+    <span class="dt">cases =</span> kentuckyCounty@data[,<span class="kw">grep</span>(<span class="st">&quot;^count[[:digit:]]&quot;</span>, <span class="kw">names</span>(kentuckyCounty))],   
+    <span class="dt">lemObjects =</span> xvKentucky$smoothingMatrix,
+    <span class="dt">ncores =</span> ncores,
+    <span class="dt">verbose =</span> <span class="ot">TRUE</span>,
+    <span class="dt">path=</span><span class="kw">tempdir</span>())</code></pre>
+<pre><code>## using supplied smoothing matrix
+## running local-EM for validation sets
+## computing CV scores
+## putting estimated risk in raster
+## done</code></pre>
+<pre class="sourceCode r"><code class="sourceCode r"><span class="kw">matplot</span>(xvAll$xv[,<span class="st">&#39;bw&#39;</span>]/<span class="dv">1000</span>, 
+    xvAll$xv[,-<span class="dv">1</span>], 
+    <span class="dt">xlab=</span><span class="st">&#39;km&#39;</span>, <span class="dt">ylab=</span><span class="st">&#39;-log p&#39;</span>, 
+    <span class="dt">type=</span><span class="st">&#39;l&#39;</span>, <span class="dt">lty=</span><span class="dv">1</span>, <span class="dt">log=</span><span class="st">&#39;x&#39;</span>,
+    <span class="dt">ylim =</span> <span class="kw">c</span>(<span class="dv">0</span>,<span class="dv">25</span>) ) </code></pre>
+<figure>
+<img src="figure/cvPlotAll-1.png" alt="cross validation scores" /><figcaption>cross validation scores</figcaption>
+</figure>
+<pre class="sourceCode r"><code class="sourceCode r">Ssim =<span class="st"> </span><span class="kw">unique</span>(<span class="kw">gsub</span>(<span class="st">&quot; .*&quot;</span>, <span class="st">&quot;&quot;</span>, knitr::opts_current$<span class="kw">get</span>()$fig.subcap))
+
+for(Dsim in Ssim) {
+<span class="kw">map.new</span>(kentuckyCounty)
+<span class="kw">plot</span>(kCases$raster[[<span class="kw">paste</span>(<span class="st">&#39;relativeIntensity&#39;</span>, Dsim, <span class="dt">sep=</span><span class="st">&#39;&#39;</span>)]], 
+    <span class="dt">col =</span> iCol$col, <span class="dt">breaks =</span> iCol$breaks, 
+    <span class="dt">legend =</span> <span class="ot">FALSE</span>, 
+    <span class="dt">add =</span> <span class="ot">TRUE</span>)
+<span class="kw">plot</span>(kMap, <span class="dt">add =</span> <span class="ot">TRUE</span>)
+
+
+
+<span class="kw">map.new</span>(kentuckyCounty)
+<span class="kw">plot</span>(xvAll$estimate[[<span class="kw">grep</span>(<span class="kw">paste</span>(<span class="st">&#39;[[:alpha:]]&#39;</span>,Dsim,<span class="st">&#39;$&#39;</span>,<span class="dt">sep=</span><span class="st">&#39;&#39;</span>), <span class="kw">names</span>(xvAll$estimate))[<span class="dv">1</span>]]], 
+    <span class="dt">col =</span> iCol$col, <span class="dt">breaks=</span>iCol$breaks,
+    <span class="dt">legend=</span><span class="ot">FALSE</span>,
+    <span class="dt">add=</span><span class="ot">TRUE</span>)
+<span class="kw">plot</span>(kMap, <span class="dt">add =</span> <span class="ot">TRUE</span>)
+<span class="kw">legendBreaks</span>(<span class="st">&#39;topleft&#39;</span>, iCol)
+
+}</code></pre>
+<p><img src="figure/estPlotMult-1.png" alt="Simulation 2,3" /><img src="figure/estPlotMult-2.png" alt="Simulation 2,3" /><img src="figure/estPlotMult-3.png" alt="Simulation 2,3" /><img src="figure/estPlotMult-4.png" alt="Simulation 2,3" /></p>
+<h2 id="exceedance-probabilities">Exceedance Probabilities</h2>
+<p>Exceedance probabilities are computed with the <code>excProb()</code> function to measure the uncertainty of the local-EM risk estimation. Bootstrapping is used to obtain these exceedance probabilities for the local-EM algorithm.</p>
+<p>Specifically, under the assumption that disease events are a realisation from the background population and constant risk threshold, cases are bootstrapped and randomly aggregated to the counties. Using the same bandwidth as the observed data, the local-EM risk is then estimated for each of the bootstrapped data. Afterwards, exceedance probabilities are computed as the proportion of the observed risk estimate at least as large as the ones of the bootstrap data. Large exceedance probabilities are consistent with the risk being greater than the specified threshold.</p>
+<pre class="sourceCode r"><code class="sourceCode r">lemExcProb =<span class="st"> </span><span class="kw">excProb</span>(
+    <span class="dt">lemEst =</span> lemRisk, 
+    <span class="dt">lemObjects =</span> xvKentucky, 
+    <span class="dt">threshold =</span> <span class="kw">c</span>(<span class="fl">1.25</span>, <span class="dv">2</span>), 
+    <span class="dt">Nboot =</span> <span class="dv">20</span>, 
+    <span class="dt">ncores =</span> ncores)</code></pre>
+<pre class="sourceCode r"><code class="sourceCode r"><span class="co">#exceedance probability maps</span>
+pCol =<span class="st"> </span><span class="kw">colourScale</span>(lemExcProb, 
+    <span class="dt">breaks =</span> <span class="kw">c</span>(<span class="dv">0</span>, <span class="fl">0.2</span>, <span class="fl">0.8</span>, <span class="fl">0.95</span>, <span class="dv">1</span>), <span class="dt">style =</span> <span class="st">&#39;fixed&#39;</span>, 
+    <span class="dt">col =</span> <span class="kw">c</span>(<span class="st">&#39;green&#39;</span>, <span class="st">&#39;yellow&#39;</span>, <span class="st">&#39;orange&#39;</span>, <span class="st">&#39;red&#39;</span>)
+)                               
+
+for(Dthreshold in <span class="kw">names</span>(lemExcProb)) {
+  
+  threshold =<span class="st"> </span><span class="kw">gsub</span>(<span class="st">&#39;threshold</span><span class="ch">\\</span><span class="st">.&#39;</span>, <span class="st">&#39;&#39;</span>, Dthreshold)
+  <span class="kw">map.new</span>(kentuckyTract, 
+      <span class="dt">mar =</span> <span class="kw">c</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">0</span>), 
+      <span class="dt">main =</span> <span class="kw">paste</span>(<span class="st">&#39;Exceedance Probabilities, t = &#39;</span>, threshold, <span class="dt">sep =</span> <span class="st">&#39;&#39;</span>))
+  <span class="kw">plot</span>(lemExcProb[[Dthreshold]], 
+      <span class="dt">col =</span> pCol$col, <span class="dt">breaks =</span> pCol$breaks, 
+      <span class="dt">legend =</span> <span class="ot">FALSE</span>, 
+      <span class="dt">add =</span> <span class="ot">TRUE</span>)
+  <span class="kw">plot</span>(kMap, <span class="dt">add =</span> <span class="ot">TRUE</span>)
+  
+  <span class="kw">legendBreaks</span>(<span class="st">&#39;topleft&#39;</span>, 
+      <span class="dt">col =</span> pCol$col, <span class="dt">breaks =</span> pCol$breaks, 
+      <span class="dt">title =</span> <span class="st">&#39;prob&#39;</span>, 
+      <span class="dt">bg =</span> <span class="st">&#39;white&#39;</span>)
+  
+  <span class="kw">scaleBar</span>(kentuckyCounty, 
+      <span class="dt">pos =</span> <span class="st">&#39;topleft&#39;</span>, 
+      <span class="dt">inset =</span> <span class="kw">c</span>(<span class="fl">0.3</span>, <span class="fl">0.1</span>), 
+      <span class="dt">bg =</span> <span class="st">&#39;white&#39;</span>)
+}</code></pre>
+<h2 id="references">References</h2>
+<ol type="1">
+<li><p>Nguyen P, Brown PE, Stafford J. Mapping cancer risk in southwestern Ontario with changing census boundaries. Biometrics. 2012; 68(4): 1229-37.</p></li>
+<li><p>Besag J, York J, Mollie A. Bayesian image restoration, with two applications in spatial statistics. Ann Inst Statist Math. 1991; 43(1): 1-59.</p></li>
+</ol>
