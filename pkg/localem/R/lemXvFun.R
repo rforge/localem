@@ -10,8 +10,7 @@
 #' @param xv Number of cross-validation datasets
 #' @param lemObjects List of arrays for the smoothing matrix, and raster stacks for the partition and smoothed offsets
 #' @param ncores Number of cores/threads for parallel processing
-#' @param tol Tolerance for convergence
-#' @param maxIter Maximum number of iterations for convergence
+#' @param iterations convergence tolerance, number of iterations, and use of gpuR package for running local-EM recursions
 #' @param fact Aggregation factor for offsets prior to smoothing
 #' @param randomSeed Seed for random number generator
 #' @param verbose Verbose output
@@ -32,8 +31,7 @@ lemXv = function(
     xv = 4, 
     lemObjects, 
     ncores = 1, 
-    tol = 1e-6, 
-    maxIter = 2000, 
+    iterations = list(tol = 1e-5, maxIter = 1000, gpu=FALSE), 
     fact = 1,
     randomSeed = NULL, 
     verbose = FALSE,
@@ -46,6 +44,10 @@ lemXv = function(
   if(!is.null(randomSeed)) {
     set.seed(randomSeed)
   }
+  
+  if(!length(iterations$tol)) iterations$tol = 1e-6
+  if(!length(iterations$maxIter)) iterations$maxIter = 2000
+  if(!length(iterations$gpu)) iterations$gpu = FALSE
   
   if(missing(lemObjects)) {  
     if(verbose) {
@@ -118,7 +120,8 @@ lemXv = function(
   }
   # estimate risk (by partition, not continuous) for each bw/cv combinantion
   
-  if(ncores > 1) spatial.tools::sfQuickInit(
+  if(ncores > 1 & !identical(iterations$gpu, TRUE)) 
+  	spatial.tools::sfQuickInit(
       ncores, 
       methods = TRUE,
       .packages = c('Matrix','localEM', 'raster'))
@@ -129,10 +132,13 @@ lemXv = function(
        try(localEM::riskEst(bw,
             x=cases[,countcol, drop=FALSE],
             lemObjects = xvSmoothMat,
-            tol = tol, 
-            maxIter =maxIter))
+            tol = iterations$tol, 
+            maxIter = iterations$maxIter,
+            gpu = iterations$gpu,
+            verbose=verbose))
       }
-  if(ncores > 1) spatial.tools::sfQuickStop()
+  if(ncores > 1 & !identical(iterations$gpu, TRUE)) 
+		spatial.tools::sfQuickStop()
   names(estList) = xvSmoothMat$bw
   
   if(any(unlist(lapply(estList, class)) == 'try-error') ) {

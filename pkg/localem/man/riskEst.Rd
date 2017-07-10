@@ -4,7 +4,8 @@
 \alias{riskEst}
 \title{Computes the relative risk estimation}
 \usage{
-riskEst(x, lemObjects, bw, tol = 1e-06, maxIter = 2000)
+riskEst(x, lemObjects, bw, tol = 1e-05, maxIter = 1000, gpu = FALSE,
+  verbose = FALSE)
 }
 \arguments{
 \item{x}{Spatial polygons of case data}
@@ -16,6 +17,10 @@ riskEst(x, lemObjects, bw, tol = 1e-06, maxIter = 2000)
 \item{tol}{Tolerance for convergence}
 
 \item{maxIter}{Maximum number of iterations for convergence}
+
+\item{gpu}{use the gpuR package for matrix multiplication?}
+
+\item{verbose}{Verbose output}
 }
 \value{
 The \code{riskEst} function returns a raster of risk estimations for the input bandwidth.

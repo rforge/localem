@@ -19,6 +19,7 @@ oneLemIter = function(
   Lambda, smoothingMat, regionMat, offsetMat, counts,
 		regionOffset = regionMat %*% offsetMat
 ){
+# to do: write this all in C, with option to link to gpuR 
 	
 #  denomOld = t(regionMat) %*% offsetMat %*% Lambda
 
@@ -27,20 +28,22 @@ oneLemIter = function(
 #  emOld = t(t(counts/denom) %*% t(regionMat) %*% offsetMat) * Lambda
  
   # the script M(Lambda) object
-	em = Matrix::crossprod(regionOffset, counts/denom) * Lambda
+	em = crossprod(regionOffset, counts/denom) * Lambda
 	
   em[as.vector(!is.finite(em))] = 0
 
 #  resultOld = as.matrix(t(smoothingMat) %*% em)
 
-  if(length(grep('vclMatrix',class(smoothingMat)))) {
-    em = gpuR::vclMatrix(as.matrix(em))
-    result = as.matrix(gpuR::crossprod(smoothingMat, em))
-  } else {
-    result = as.matrix(Matrix::crossprod(smoothingMat, em))    
-  }
+result = crossprod(smoothingMat, em)
+
+#  if(length(grep('vclMatrix',class(smoothingMat)))) {
+#    em = gpuR::vclMatrix(as.matrix(em))
+#    result = as.matrix(gpuR::crossprod(smoothingMat, em))
+#  } else {
+#    result = as.matrix(Matrix::crossprod(smoothingMat, em))    
+#  }
 	
-	attributes(result)$em = em
+#	attributes(result)$em = em
 	
   return(result)
 }

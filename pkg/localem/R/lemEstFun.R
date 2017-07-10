@@ -7,9 +7,11 @@
 #' @param bw Bandwidth specifying which smoothing matrix in \code{lemObjects} to use
 #' @param tol Tolerance for convergence
 #' @param maxIter Maximum number of iterations for convergence
+#' @param gpu use the gpuR package for matrix multiplication?
+#' @param verbose Verbose output
 #'
 #' @details After using the \code{riskEst} function, the risk estimations are computed on a fine resolution based on the rasterization of the spatial polygons of population data.
-
+#'
 #' @return The \code{riskEst} function returns a raster of risk estimations for the input bandwidth.
 #'
 #' @examples 
@@ -42,8 +44,10 @@ riskEst = function(
     x, 
     lemObjects, 
     bw, 
-    tol = 1e-6,
-    maxIter = 2000
+    tol = 1e-5,
+    maxIter = 1000,
+    gpu=FALSE, 
+    verbose=FALSE
 ) {
   
   if(length(bw) > 1) {
@@ -212,14 +216,6 @@ riskEst = function(
   partitionAreasMat = partitionAreasMat[colnames(regionMat), colnames(regionMat)]
  
   smoothingMat = smoothingMat[colnames(regionMat), colnames(regionMat)]
-  if(requireNamespace("gpuR", quietly=TRUE)) {
-    smoothingMatGpu = try(gpuR::vclMatrix(as.matrix(smoothingMat)), silent=TRUE)
-    if(class(smoothingMatGpu) != 'try-error'){
-    	warning('putting smoothing matrix in gpu failed, probably out of memory')
-    	smoothingMat = smoothingMatGpu
-    }
-  }
-
   
   
   #risk estimation for aggregated regions
@@ -232,33 +228,71 @@ riskEst = function(
               colnames(obsCounts))
       )
   
-  Diter = 1
-  absdiff = Inf
-  
+
+
   
   regionOffset = regionMat %*% offsetMat
+
+  crossprodFun = Matrix::crossprod
+
+  if(verbose) cat("starting lem, bandwidth", bwString, '\n')
+
+  if(requireNamespace("gpuR", quietly=TRUE) & gpu) {
+    smoothingMatGpu = try(gpuR::vclMatrix(as.matrix(smoothingMat), type='double'), silent=TRUE)
+    regionOffsetGpu = try(gpuR::vclMatrix(as.matrix(regionOffset), type='double'), silent=TRUE)
+    oldLambdaGpu = try(gpuR::vclMatrix(as.matrix(oldLambda), type='double'), silent=TRUE)
+    if(class(smoothingMatGpu) != 'try-error'){
+    	smoothingMat = smoothingMatGpu
+    	regionOffset = regionOffsetGpu
+    	oldLambda = oldLambdaGpu
+    	obsCounts = gpuR::vclMatrix(as.matrix(obsCounts), type='double')
+    	crossprodFun = gpuR::crossprod
+    	if(verbose) cat("using GPU, ")
+    } else {
+        	warning('putting smoothing matrix in gpu failed, probably out of memory\n')
+    }
+  }
+  
+  Diter = 1
+  absdiff = Inf
+
   
   
   while((absdiff > tol) && (Diter < maxIter)) {
-    
-    Lambda = oneLemIter(
-        Lambda = oldLambda,
-        smoothingMat = smoothingMat,
-        regionOffset = regionOffset,
-        counts = obsCounts)
-    
-    absdiff = mean(abs(oldLambda - Lambda))
+    # to do: use gpuR's cpp_gpuMatrix_custom_igemm to reuse memory
+#    Lambda = oneLemIter(
+#        Lambda = oldLambda,
+#        smoothingMat = smoothingMat,
+#        regionOffset = regionOffset,
+#        counts = obsCounts)
+
+   	denom = regionOffset %*% oldLambda
+	countsDivDenom = obsCounts/denom
+
+	roCprod = crossprodFun(regionOffset, countsDivDenom)
+	em = roCprod * oldLambda
+	
+#  em[as.vector(!is.finite(em))] = 0
+
+	Lambda = crossprodFun(smoothingMat, em)
+        
+    lDiff = abs(oldLambda - Lambda)    
+        
+    absdiff = max(lDiff)
     if(all(is.na(absdiff))) {
       warning("missing values in Lambda")
       absdiff = -Inf
     }
     
+    lambdaTemp = oldLambda
     oldLambda = Lambda
+    Lambda = lambdaTemp
     Diter = Diter + 1
   }
   colnames(Lambda) = colnames(obsCounts)
+  if(verbose) cat("done lem,", Diter, 'iterations\n')
   
-  littleLambda = solve(partitionAreasMat) %*% Lambda
+  littleLambda = solve(partitionAreasMat) %*% as.matrix(Lambda)
   
     # expected count using full offsets, not xv offests
     expectedCoarseRegions = 

@@ -5,8 +5,8 @@
 \title{Computes the likelihood cross-validation of the raster partitions}
 \usage{
 lemXv(cases, population, cellsCoarse, cellsFine, bw, xv = 4, lemObjects,
-  ncores = 1, tol = 1e-06, maxIter = 2000, fact = 1,
-  randomSeed = NULL, verbose = FALSE, path = getwd())
+  ncores = 1, iterations = list(tol = 1e-05, maxIter = 1000, gpu = FALSE),
+  fact = 1, randomSeed = NULL, verbose = FALSE, path = getwd())
 }
 \arguments{
 \item{cases}{Spatial polygons with case data}
@@ -25,9 +25,7 @@ lemXv(cases, population, cellsCoarse, cellsFine, bw, xv = 4, lemObjects,
 
 \item{ncores}{Number of cores/threads for parallel processing}
 
-\item{tol}{Tolerance for convergence}
-
-\item{maxIter}{Maximum number of iterations for convergence}
+\item{iterations}{convergence tolerance, number of iterations, and use of gpuR package for running local-EM recursions}
 
 \item{fact}{Aggregation factor for offsets prior to smoothing}
 

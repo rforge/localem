@@ -32,7 +32,7 @@ if(any(commandArgs()=='highRes' | basename(getwd())=='www') ) {
   cellsCoarse=20
   nsim = 20
   nxv = 12
-  path = file.path(dirname(tempdir()), paste('localEMhighRes', Sys.info()['user'], sep=''))
+  path = paste('/store/', Sys.info()['user'], '/localem/highRes',sep='')
   Sbw = unique(round(exp(seq(log(5), log(50), len=15)))) * 1000
   knitr::opts_chunk$set(dpi = 200)
   # number of cores set to total available, min 2, max 32
@@ -207,6 +207,7 @@ if(!file.exists(fileHere)) {
       population = kentuckyTract,   
       cellsCoarse = cellsCoarse,   
       cellsFine = cellsFine,   
+#      lemObjects = readRDS(file.path(path, 'smoothingMatrix.rds')),
       bw = Sbw,
       xv = nxv, 
       ncores = ncores,
@@ -266,7 +267,7 @@ library('localEM')
 xvAll = lemXv(
     cases = kentuckyCounty@data[,grep("^count[[:digit:]]", names(kentuckyCounty))],   
     lemObjects = xvKentucky$smoothingMatrix,
-    ncores = ncores,
+    ncores = ncores, 
     verbose = TRUE,
     path=tempdir())
 ```
