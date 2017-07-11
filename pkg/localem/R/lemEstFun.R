@@ -261,7 +261,7 @@ riskEst = function(
   	zerosToAdd = gpuR::vclMatrix(zerosToAdd, type='double')
    	crossprodFun = gpuR::crossprod
    	
-    if(class(smoothingMatGpu) == 'try-error'){
+    if(class(smoothingMat) == 'try-error'){
         	warning('putting smoothing matrix in gpu failed, probably out of memory\n')
     }
   } else {
