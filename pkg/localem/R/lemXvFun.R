@@ -271,6 +271,7 @@ lemXv = function(
       folds = xvMat
   )
   
+  if(length(countcol) ==1) {
   if(verbose) {
     cat("final smoothing step\n")
   }
@@ -278,7 +279,7 @@ lemXv = function(
   result$estimate = try(
   	lemFinal(result), silent=TRUE
   )
-  
+  }
   
   return(result)
   
