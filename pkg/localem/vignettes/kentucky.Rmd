@@ -37,10 +37,7 @@ if(any(commandArgs()=='highRes' | basename(getwd())=='www') ) {
   knitr::opts_chunk$set(dpi = 200)
   # number of cores set to total available, min 2, max 32
   if(.Platform$OS.type == 'unix')
-    ncores = pmin(32, pmax(2,
-            length(grep("processor", scan("/proc/cpuinfo", what='a', sep='\n', quiet=TRUE), value=TRUE)),
-            na.rm=TRUE
-            ))
+    ncores = pmin(32, parallel::detectCores() )
 } else {
   # a less computationally intensive setup
   ncores = 2
@@ -207,7 +204,7 @@ if(!file.exists(fileHere)) {
       population = kentuckyTract,   
       cellsCoarse = cellsCoarse,   
       cellsFine = cellsFine,   
-#      lemObjects = readRDS(file.path(path, 'smoothingMatrix.rds')),
+ #     lemObjects = readRDS(file.path(path, 'smoothingMatrix.rds')),
       bw = Sbw,
       xv = nxv, 
       ncores = ncores,

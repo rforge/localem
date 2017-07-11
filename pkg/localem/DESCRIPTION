@@ -19,6 +19,7 @@ Imports:
     spatial.tools,
     mmap,
     foreach,
+    parallel,
     abind
 Suggests:
     spdep,

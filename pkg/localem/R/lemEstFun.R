@@ -80,14 +80,15 @@ riskEst = function(
   smoothingMat = lemObjects$smoothingArray[[bw]]
 
   if(class(smoothingMat) == 'RasterLayer') {
-  
-  smoothingMat = Matrix::Matrix(raster::values(lemObjects$smoothingArray[[bw]]),
+  if(verbose) cat("loading smoothing matrix..")
+  smoothingMat = matrix(raster::values(lemObjects$smoothingArray[[bw]]),
       nrow = nrow(lemObjects$smoothingArray),
       ncol = ncol(lemObjects$smoothingArray),
       byrow = FALSE,
       dimnames = list(
           lemObjects$partitions, lemObjects$partitions
       ))
+  if(verbose) cat("done.\n")
   }
   
   if(length(grep("xv[[:digit:]]+$", bwString))) {
@@ -215,8 +216,9 @@ riskEst = function(
   offsetMat = offsetMat[colnames(regionMat), colnames(regionMat)]
   partitionAreasMat = partitionAreasMat[colnames(regionMat), colnames(regionMat)]
  
-  smoothingMat = smoothingMat[colnames(regionMat), colnames(regionMat)]
-  
+  if(!all(rownames(smoothingMat) == colnames(regionMat))) {
+	  smoothingMat = smoothingMat[colnames(regionMat), colnames(regionMat)]
+  }
   
   #risk estimation for aggregated regions
   oldLambda = partitionAreasMat %*%
@@ -228,36 +230,50 @@ riskEst = function(
               colnames(obsCounts))
       )
   
-
-
-  
   regionOffset = regionMat %*% offsetMat
 
   crossprodFun = Matrix::crossprod
 
-  if(verbose) cat("starting lem, bandwidth", bwString, '\n')
+
+# a fix for zero counts zero offset give ratio of zero
+  theZerosDenom = which(apply(regionOffset, 1, sum)<=0)
+  zerosToAdd = matrix(0, nrow(obsCounts), ncol(obsCounts))		
+  zerosToAdd[theZerosDenom,] = -1
+ 
+  		
+  theZerosCount = which(as.matrix(obsCounts) <=0 )
+    theZerosDenomX = sort(outer(
+    	theZerosDenom, 
+  		seq(from=0, by=nrow(obsCounts), len = ncol(obsCounts)), 
+  		'+'))
+  
+  if(!all(theZerosDenomX %in% theZerosCount)) {
+  	warning("zero denominator but non-zero count")
+  	}
+
 
   if(requireNamespace("gpuR", quietly=TRUE) & gpu) {
-    smoothingMatGpu = try(gpuR::vclMatrix(as.matrix(smoothingMat), type='double'), silent=TRUE)
-    regionOffsetGpu = try(gpuR::vclMatrix(as.matrix(regionOffset), type='double'), silent=TRUE)
-    oldLambdaGpu = try(gpuR::vclMatrix(as.matrix(oldLambda), type='double'), silent=TRUE)
-    if(class(smoothingMatGpu) != 'try-error'){
-    	smoothingMat = smoothingMatGpu
-    	regionOffset = regionOffsetGpu
-    	oldLambda = oldLambdaGpu
-    	obsCounts = gpuR::vclMatrix(as.matrix(obsCounts), type='double')
-    	crossprodFun = gpuR::crossprod
-    	if(verbose) cat("using GPU, ")
-    } else {
+   	if(verbose) cat("using GPU, ")
+    smoothingMat = try(gpuR::vclMatrix(as.matrix(smoothingMat), type='double'), silent=TRUE)
+    regionOffset = try(gpuR::vclMatrix(as.matrix(regionOffset), type='double'), silent=TRUE)
+    oldLambda = try(gpuR::vclMatrix(as.matrix(oldLambda), type='double'), silent=TRUE)
+  	obsCounts = gpuR::vclMatrix(as.matrix(obsCounts), type='double')
+  	zerosToAdd = gpuR::vclMatrix(zerosToAdd, type='double')
+   	crossprodFun = gpuR::crossprod
+   	
+    if(class(smoothingMatGpu) == 'try-error'){
         	warning('putting smoothing matrix in gpu failed, probably out of memory\n')
     }
+  } else {
+  	smoothingMat = Matrix::Matrix(smoothingMat)
   }
   
   Diter = 1
   absdiff = Inf
 
-  
-  
+
+  if(verbose) cat("starting lem, bandwidth", bwString, '\n')
+
   while((absdiff > tol) && (Diter < maxIter)) {
     # to do: use gpuR's cpp_gpuMatrix_custom_igemm to reuse memory
 #    Lambda = oneLemIter(
@@ -267,30 +283,32 @@ riskEst = function(
 #        counts = obsCounts)
 
    	denom = regionOffset %*% oldLambda
+   	denom = denom + zerosToAdd
+   	
 	countsDivDenom = obsCounts/denom
 
 	roCprod = crossprodFun(regionOffset, countsDivDenom)
+	
 	em = roCprod * oldLambda
 	
-#  em[as.vector(!is.finite(em))] = 0
-
 	Lambda = crossprodFun(smoothingMat, em)
         
-    lDiff = abs(oldLambda - Lambda)    
+    lDiff = oldLambda - Lambda    
         
-    absdiff = max(lDiff)
+    absdiff = max(abs(c(max(lDiff), min(lDiff))))
     if(all(is.na(absdiff))) {
       warning("missing values in Lambda")
       absdiff = -Inf
     }
     
-    lambdaTemp = oldLambda
+    lDiff = oldLambda
     oldLambda = Lambda
-    Lambda = lambdaTemp
+    Lambda = lDiff
     Diter = Diter + 1
+   	if(verbose) cat(".")
   }
+  if(verbose) cat("\ndone lem,", Diter, 'iterations\n')
   colnames(Lambda) = colnames(obsCounts)
-  if(verbose) cat("done lem,", Diter, 'iterations\n')
   
   littleLambda = solve(partitionAreasMat) %*% as.matrix(Lambda)
   

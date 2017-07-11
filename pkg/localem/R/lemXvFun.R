@@ -54,9 +54,11 @@ lemXv = function(
       cat("computing smoothing matrix\n")
     }
 
-    if(ncores > 1)
-      spatial.tools::sfQuickInit(ncores, methods = TRUE, 
-        .packages = c('Matrix','raster'))
+
+    if(ncores > 1) {
+  		theCluster = parallel::makeCluster(spec=ncores, type='PSOCK', methods=TRUE)
+		parallel::setDefaultCluster(theCluster)
+	}
     
     ##raster partition
     xvLemRaster = rasterPartition(
@@ -120,25 +122,56 @@ lemXv = function(
   }
   # estimate risk (by partition, not continuous) for each bw/cv combinantion
   
-  if(ncores > 1 & !identical(iterations$gpu, TRUE)) 
-  	spatial.tools::sfQuickInit(
-      ncores, 
-      methods = TRUE,
-      .packages = c('Matrix','localEM', 'raster'))
-
-  estList = foreach::foreach(
-          bw = xvSmoothMat$bw,
-          .packages=c('raster','Matrix')) %dopar% {
-       try(localEM::riskEst(bw,
+  if(ncores > 1 & !identical(iterations$gpu, TRUE)) {
+  	theCluster = parallel::makeCluster(spec=ncores, type='PSOCK', methods=TRUE)
+	parallel::setDefaultCluster(theCluster)
+	
+	estList = parallel::clusterMap(
+		theCluster,
+		riskEst,
+		bw = xvSmoothMat$bw,
+		MoreArgs = list(
             x=cases[,countcol, drop=FALSE],
             lemObjects = xvSmoothMat,
             tol = iterations$tol, 
             maxIter = iterations$maxIter,
             gpu = iterations$gpu,
-            verbose=verbose))
-      }
-  if(ncores > 1 & !identical(iterations$gpu, TRUE)) 
-		spatial.tools::sfQuickStop()
+            verbose=verbose)
+	)
+	
+    parallel::stopCluster(theCluster) #spatial.tools::sfQuickStop()
+  } else {
+  	estList = mapply(
+		riskEst,
+		bw = xvSmoothMat$bw,
+		MoreArgs = list(
+            x=cases[,countcol, drop=FALSE],
+            lemObjects = xvSmoothMat,
+            tol = iterations$tol, 
+            maxIter = iterations$maxIter,
+            gpu = iterations$gpu,
+            verbose=verbose)
+	)
+  }
+  #	spatial.tools::sfQuickInit(
+  #    ncores, 
+  #    methods = TRUE,
+  #    .packages = c('Matrix','localEM', 'raster'))
+
+  
+#  estList = foreach::foreach(
+#          bw = xvSmoothMat$bw,
+#          .packages=c('raster','Matrix')) %dopar% {
+#       try(localEM::riskEst(bw,
+#            x=cases[,countcol, drop=FALSE],
+#            lemObjects = xvSmoothMat,
+#            tol = iterations$tol, 
+#            maxIter = iterations$maxIter,
+#            gpu = iterations$gpu,
+#            verbose=verbose))
+#      }
+#  if(ncores > 1 & !identical(iterations$gpu, TRUE)) 
+
   names(estList) = xvSmoothMat$bw
   
   if(any(unlist(lapply(estList, class)) == 'try-error') ) {
