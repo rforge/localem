@@ -271,7 +271,7 @@ lemXv = function(
       folds = xvMat
   )
   
-  if(length(countcol) ==1) {
+  if(length(countcol) < 10) {
   if(verbose) {
     cat("final smoothing step\n")
   }
