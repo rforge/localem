@@ -302,7 +302,7 @@ plot(kMap, add = TRUE)
 
 
 map.new(kentuckyCounty)
-plot(xvAll$estimate[[grep(paste('[[:alpha:]]',Dsim,'$',sep=''), names(xvAll$estimate))[1]]], 
+plot(kentuckyFinal[[grep(paste('[[:alpha:]]',Dsim,'$',sep=''), names(kentuckyFinal))[1]]], 
     col = iCol$col, breaks=iCol$breaks,
     legend=FALSE,
     add=TRUE)
