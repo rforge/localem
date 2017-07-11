@@ -45,9 +45,34 @@ lemFinal = function(
         ncores, methods = TRUE,        
         .packages = c('Matrix','raster'))
   
+  Soutfile = file.path(tempdir(), paste('finalSmooth', Slayers, '.grd', sep='')) 
+  names(Soutfile) = Slayers
+  Dsmooth = NULL
+  foreachResult = foreach::foreach(
+          Dsmooth = Slayers, .packages='raster'
+      ) %dopar% { 
+        res = raster::focal(
+            toSmooth[[Dsmooth]],
+            w = xFocal[,,gsub("_.*$", "", Dsmooth)],
+            na.rm=TRUE, pad=TRUE,
+            filename = Soutfile[Dsmooth],
+            overwrite = file.exists(Soutfile[Dsmooth])
+        )
+        filename(res)
+      }
+  if(ncores>1) spatial.tools::sfQuickStop()
   
+  smoothedStack = raster::stack(foreachResult)
+  names(smoothedStack) = Scounts
+  
+  result = raster::brick(
+      smoothedStack, filename = filename, overwrite = file.exists(filename)
+  )
+  names(result) = Scounts
+  
+  if(FALSE) {
   suppressWarnings(
-      smoothedRisk <- spatial.tools::rasterEngine(
+      result <- spatial.tools::rasterEngine(
           x=toSmooth, fun=focalFunction, 
           args = list(fa=xFocal),
           window_dims = dim(xFocal),
@@ -58,9 +83,8 @@ lemFinal = function(
           filename = gsub("[.]gr(d|i)$", "", filename), overwrite=TRUE,
           verbose=(verbose>2)
       ))
-  if(ncores>1) spatial.tools::sfQuickStop()
-  names(smoothedRisk) = Slayers
+}
   
-  smoothedRisk
+result
   
 }
