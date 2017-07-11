@@ -260,10 +260,7 @@ lemXv = function(
     ID = raster::levels(xvSmoothMat$rasterFine)[[1]]$ID,
     newDf))
     
-  if(verbose) {
-    cat("done\n")
-  }
-  
+
   
   result = list(
       xv = xvRes,
@@ -273,6 +270,10 @@ lemXv = function(
       expected = polyCoarse,
       folds = xvMat
   )
+  
+  if(verbose) {
+    cat("final smoothing step\n")
+  }
   
   result$estimate = try(
   	lemFinal(result), silent=TRUE
