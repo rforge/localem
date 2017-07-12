@@ -1,25 +1,33 @@
-<!--
-%\VignetteEngine{knitr::docco_linear}
-%\VignetteIndexEntry{Local-EM Example with Cancer Cases in Kentucky}
--->
-	
-# Local-EM Example with Cancer Cases in Kentucky
+```{r vignetteHeader, eval=FALSE, purl=FALSE, include=FALSE}
+'
+%\VignetteEngine{knitr::docco_linear} 
+%\VignetteIndexEntry{Local-EM Example with Kentucky}
+'
+```
+
+```{r knitrSetup, echo = FALSE, purl=FALSE, results='asis'}
+knitr::opts_chunk$set(
+    dev = 'png',
+    fig.width = 4, fig.height = 2.5,
+    dpi = 100, out.width='45%', fig.ncol=2)
+
+if(requireNamespace('Pmisc', quietly=TRUE) & basename(getwd())=='www') {
+  knitr::knit_hooks$set(plot=Pmisc::hook_plot_mdsubfig)
+  Pmisc::markdownHeader(
+      title="High resolution Local-EM Example with Kentucky", 		
+      author='Patrick Brown, Paul Nguyen')
+} else {
+  cat('\n# Local-EM Example with Kentucky\n')
+  knitr::knit_hooks$set(plot=knitr::hook_plot_html)
+}
+```
+
 	
 ## Introduction 
 
 The `localEM` package contains functions to implement the kernel smoothing local-EM algorithm$^1$ of disease data aggregated to geographical regions. This algorithm provides an nonparametric alternative to the standard geospatial models, such as the Besag-York-Mollie (BYM) model$^2$, for estimating spatial risk of areal disease data. With disease cases typically aggregated to highly coarse geographical regions (e.g., census counties, or census subdivisions), the local-EM method creates a tessellation of distinct regions by overlaying the map of these coarse regions with another map containing fine geographical regions (e.g., census tracts, census blocks, or census dissemination areas) of population data. This allows for the spatial risk to be estimated at a better resolution with the fine regions. 
 
 The methodology of this package is demonstrated on simulated lung cancer cases for the state of Kentucky, USA. The spatial polygons for the census counties and tracts of Kentucky are included with this package. 
-
-```{r knitrSetup, include = FALSE}
-
-# default chunk options
-knitr::opts_chunk$set(
-	dev = 'png',
-    fig.width = 4, fig.height = 2.5,
-    dpi = 100
-)
-```
 
 ```{r setup, message = FALSE}
 
@@ -55,7 +63,8 @@ if(!requireNamespace("RandomFields", quietly=TRUE)) {
 }
 
 dir.create(path, showWarnings = FALSE, recursive = TRUE)
-print(cellsFine)
+dir.create('cache', showWarnings = FALSE, recursive = TRUE)
+
 ```
 
 ```{r data}
@@ -80,8 +89,7 @@ simulated with the log Gaussian Cox process and  following parameters:
 
 The simulated cases are then aggregated to the appropriate counties. 
 
-```{r simcases, message=FALSE}
-
+```{r simcases, message=FALSE, cache=(basename(getwd())=='www'), cache.path='cache'}
 
 kentuckyOffset = geostatsp::spdfToBrick(
     kentuckyTract,
@@ -105,9 +113,9 @@ kCases$agg = lapply(
     function(qq) over(qq, kentuckyCounty)[,'id']
 )
 countyCounts = as.data.frame(lapply(
-	kCases$agg,  
-	function(xx) as.vector(table(xx, exclude = NULL)[as.character(kentuckyCounty$id)])
-))
+        kCases$agg,  
+        function(xx) as.vector(table(xx, exclude = NULL)[as.character(kentuckyCounty$id)])
+    ))
 countyCounts[is.na(countyCounts)] = 0
 names(countyCounts) = gsub('^events', 'count', names(countyCounts))
 rownames(countyCounts) = as.character(kentuckyCounty$id)
@@ -115,13 +123,13 @@ kentuckyCounty = merge(kentuckyCounty, countyCounts, by.x = 'id', by.y = 'row.na
 ```
 
 
-```{r plotOffset, echo = FALSE, fig.cap = 'Simulated Events', fig.subcap = c('Offset', 'Relative Intensity', 'Events', 'Counts'), out.width = '44%'}
+```{r plotOffset, echo = FALSE, fig.cap = 'Simulated Events', fig.subcap = c('Offset', 'Relative Intensity', 'Events', 'Counts')}
 
 # offset map
 oCol = colourScale(
     c(0, exp(maxValue(kentuckyOffset))), 
     breaks = 10, style = 'equal', dec = 7, 
-	transform = 'sqrt'
+    transform = 'sqrt'
 )
 
 map.new(kentuckyTract)
@@ -165,7 +173,7 @@ plot(kMap, add = TRUE)
 points(kCases$events1, col = '#FF000030', pch = 20, cex = 0.5)
 scaleBar(kentuckyCounty, 
     pos = 'topleft', 
-	bg = 'white'
+    bg = 'white'
 )
 
 
@@ -179,11 +187,11 @@ map.new(kentuckyTract)
 plot(kentuckyCounty, col = cCol$plot, add = TRUE)
 plot(kMap, add = TRUE)
 legendBreaks('topleft', 
-	cCol
+    cCol
 )
 scaleBar(kentuckyCounty, 
     pos = 'topleft', 
-	inset = c(0.2, 0), 
+    inset = c(0.2, 0), 
     bg = 'white'
 )
 ```
@@ -204,7 +212,7 @@ if(!file.exists(fileHere)) {
       population = kentuckyTract,   
       cellsCoarse = cellsCoarse,   
       cellsFine = cellsFine,   
- #     lemObjects = readRDS(file.path(path, 'smoothingMatrix.rds')),
+      #     lemObjects = readRDS(file.path(path, 'smoothingMatrix.rds')),
       bw = Sbw,
       xv = nxv, 
       ncores = ncores,
@@ -212,7 +220,7 @@ if(!file.exists(fileHere)) {
       verbose = TRUE)
   save(xvKentucky, file=fileHere)  
 } else {
-	load(fileHere)  
+  load(fileHere)  
 }
 
 ```
@@ -259,14 +267,14 @@ for(Dbw in xvKentucky$xv$bw) {
 # Multiple datasets
 
 
-```{r cvNewAll}
+```{r cvNewAll, cache=(basename(getwd())=='www'), cache.path='cache'}
 library('localEM')
 xvAll = lemXv(
     cases = kentuckyCounty@data[,grep("^count[[:digit:]]", names(kentuckyCounty))],   
     lemObjects = xvKentucky$smoothingMatrix,
     ncores = ncores, 
     verbose = TRUE,
-    path=tempdir())
+    path='cache')
 ```
 
 
@@ -278,12 +286,12 @@ matplot(xvAll$xv[,'bw']/1000,
     ylim = c(0,15) ) 
 ```
 
-```{r finalStep}
+```{r finalStep, cache=(basename(getwd())=='www'), cache.path='cache'}
 kentuckyFinal = lemFinal(
     x=xvAll,
     counts=paste("count", 2:3, sep=''),
     ncores = 2,
-    filename = file.path(path, 'lemFinal.grd'),
+    filename = file.path('cache', 'lemFinal.grd'),
     verbose = TRUE)
 ```
 
@@ -292,23 +300,23 @@ kentuckyFinal = lemFinal(
 Ssim = unique(gsub(" .*", "", knitr::opts_current$get()$fig.subcap))
 
 for(Dsim in Ssim) {
-map.new(kentuckyCounty)
-plot(kCases$raster[[paste('relativeIntensity', Dsim, sep='')]], 
-    col = iCol$col, breaks = iCol$breaks, 
-    legend = FALSE, 
-    add = TRUE)
-plot(kMap, add = TRUE)
-
-
-
-map.new(kentuckyCounty)
-plot(kentuckyFinal[[grep(paste('[[:alpha:]]',Dsim,'$',sep=''), names(kentuckyFinal))[1]]], 
-    col = iCol$col, breaks=iCol$breaks,
-    legend=FALSE,
-    add=TRUE)
-plot(kMap, add = TRUE)
-legendBreaks('topleft', iCol)
-
+  map.new(kentuckyCounty)
+  plot(kCases$raster[[paste('relativeIntensity', Dsim, sep='')]], 
+      col = iCol$col, breaks = iCol$breaks, 
+      legend = FALSE, 
+      add = TRUE)
+  plot(kMap, add = TRUE)
+  
+  
+  
+  map.new(kentuckyCounty)
+  plot(kentuckyFinal[[grep(paste('[[:alpha:]]',Dsim,'$',sep=''), names(kentuckyFinal))[1]]], 
+      col = iCol$col, breaks=iCol$breaks,
+      legend=FALSE,
+      add=TRUE)
+  plot(kMap, add = TRUE)
+  legendBreaks('topleft', iCol)
+  
 }
 
 ```
