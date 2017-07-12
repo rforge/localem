@@ -225,7 +225,7 @@ if(!file.exists(fileHere)) {
 
 ```
 
-```{r cvPlotNew, fig.cap = 'Cross Validation Scores', fig.height = 4, fig.width = 6, out.width = '60%'}
+```{r cvPlotNew, fig.cap = 'Cross Validation Scores', fig.height=4, fig.width=6, out.width = '80%', fig.ncol=NULL}
 plot(xvKentucky$xv[,1]/1000, xvKentucky$xv[,2], 
     xlab ='km', ylab = '-log p', 
     type = 'o'
@@ -278,7 +278,7 @@ xvAll = lemXv(
 ```
 
 
-```{r cvPlotAll, fig.cap='cross validation scores', fig.height=4, fig.width=6, out.width = '60%'}
+```{r cvPlotAll, fig.cap='cross validation scores', fig.height=4, fig.width=6, out.width = '80%', fig.ncol=NULL}
 matplot(xvAll$xv[,'bw']/1000, 
     xvAll$xv[,-1], 
     xlab='km', ylab='-log p', 
