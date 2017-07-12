@@ -3,8 +3,11 @@ PANDOC = pandoc
 
 all: simulations.html
 
+.PRECIOUS: *.md
+
+
 %.html: %.md
-	$(PANDOC) --to=html5 --output=$@ $<
+	$(PANDOC) --standalone --smart --filter=pandoc-citeproc --filter=pandoc-crossref --from=markdown --to=html5 --output=$@ $<
 
 %.md: %.Rmd
 	$(REXE) -e "knitr::knit('$<', encoding='UTF-8')" highRes
