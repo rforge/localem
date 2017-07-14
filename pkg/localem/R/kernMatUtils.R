@@ -76,9 +76,6 @@ focalFromBw = function(
   )
 
   
-  stuff1 <<- forMoreArgs
-  stuff2 <<- bw
-  
   
   if(!is.null(cl)) {
     bigList = parallel::clusterMap(
