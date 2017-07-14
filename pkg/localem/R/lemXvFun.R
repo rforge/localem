@@ -116,12 +116,20 @@ lemXv = function(
   } else {
     polyCoarse = NULL
   }
-  
+   
   if(verbose) {
-    cat("running local-EM for validation sets\n")
+    cat("running local-EM for validation sets")
   }
   # estimate risk (by partition, not continuous) for each bw/cv combinantion
-  
+
+forMoreArgs = list(
+  x=cases[,countcol, drop=FALSE],
+  lemObjects = xvSmoothMat,
+  tol = iterations$tol, 
+  maxIter = iterations$maxIter,
+  gpu = iterations$gpu,
+  verbose=verbose)
+
   if(ncores > 1 & !identical(iterations$gpu, TRUE)) {
     theCluster = parallel::makeCluster(spec=ncores, type='PSOCK', methods=TRUE)
     parallel::setDefaultCluster(theCluster)
@@ -130,49 +138,23 @@ lemXv = function(
       theCluster,
       riskEst,
       bw = xvSmoothMat$bw,
-      MoreArgs = list(
-        x=cases[,countcol, drop=FALSE],
-        lemObjects = xvSmoothMat,
-        tol = iterations$tol, 
-        maxIter = iterations$maxIter,
-        gpu = iterations$gpu,
-        verbose=verbose)
+      MoreArgs = forMoreArgs,
+      SIMPLIFY=FALSE
     )
     
-    parallel::stopCluster(theCluster) #spatial.tools::sfQuickStop()
+    parallel::stopCluster(theCluster)
   } else {
     estList = mapply(
       riskEst,
       bw = xvSmoothMat$bw,
-      MoreArgs = list(
-        x=cases[,countcol, drop=FALSE],
-        lemObjects = xvSmoothMat,
-        tol = iterations$tol, 
-        maxIter = iterations$maxIter,
-        gpu = iterations$gpu,
-        verbose=verbose)
+      MoreArgs = forMoreArgs,
+      SIMPLIFY=FALSE
     )
   }
-  #	spatial.tools::sfQuickInit(
-  #    ncores, 
-  #    methods = TRUE,
-  #    .packages = c('Matrix','localEM', 'raster'))
+  if(verbose) {
+    cat(" done\n")
+  }
   
-  
-#  estList = foreach::foreach(
-#          bw = xvSmoothMat$bw,
-#          .packages=c('raster','Matrix')) %dopar% {
-#       try(localEM::riskEst(bw,
-#            x=cases[,countcol, drop=FALSE],
-#            lemObjects = xvSmoothMat,
-#            tol = iterations$tol, 
-#            maxIter = iterations$maxIter,
-#            gpu = iterations$gpu,
-#            verbose=verbose))
-#      }
-#  if(ncores > 1 & !identical(iterations$gpu, TRUE)) 
-  
-  names(estList) = xvSmoothMat$bw
   
   if(any(unlist(lapply(estList, class)) == 'try-error') ) {
     warning("errors in local-em estimation")

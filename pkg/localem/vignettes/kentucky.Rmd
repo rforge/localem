@@ -68,7 +68,6 @@ dir.create('cache', showWarnings = FALSE, recursive = TRUE)
 ```
 
 ```{r data}
-
 library('mapmisc')
 
 data('kentuckyCounty', package = 'localEM') 

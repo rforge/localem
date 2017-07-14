@@ -271,16 +271,11 @@ riskEst = function(
   Diter = 1
   absdiff = Inf
 
-
   if(verbose) cat("starting lem, bandwidth", bwString, '\n')
 
-  while((absdiff > tol) && (Diter < maxIter)) {
+  
+  while((absdiff > tol) && (Diter < maxIter) ) {
     # to do: use gpuR's cpp_gpuMatrix_custom_igemm to reuse memory
-#    Lambda = oneLemIter(
-#        Lambda = oldLambda,
-#        smoothingMat = smoothingMat,
-#        regionOffset = regionOffset,
-#        counts = obsCounts)
 
    	denom = regionOffset %*% oldLambda
    	denom = denom + zerosToAdd

@@ -202,8 +202,6 @@ oneBlockOffdiagFun = function(
         writeCounter1 = 0
         
         while(!haveWritten & (writeCounter1 < 20)) {
-          
-          
           out = mmap::mmap(
             smoothingRasterFile,
             mode=theType
@@ -222,7 +220,6 @@ oneBlockOffdiagFun = function(
         matchPartHere = lapply(dimnames(partHere)[1:2], match, 
           table=Spartitions)
         theOrder = lapply(matchPartHere, order)
-        
         
         data_position = t(expand.grid(
             as.vector(matchPartHere[[1]][theOrder[[1]] ]), 
