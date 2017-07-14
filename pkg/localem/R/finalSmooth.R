@@ -12,7 +12,7 @@
 #' @details The optimal bandwidth for each layer is 
 #' @return A raster brick
 #'
-
+#' @import foreach
 #' @export
 lemFinal = function(
     x, 
@@ -48,7 +48,7 @@ lemFinal = function(
   Soutfile = file.path(tempdir(), paste('finalSmooth', Slayers, '.grd', sep='')) 
   names(Soutfile) = Slayers
   Dsmooth = NULL
-  foreachResult = foreach::foreach(
+  foreachResult = foreach(
           Dsmooth = Slayers, .packages='raster'
       ) %dopar% { 
         res = raster::focal(
