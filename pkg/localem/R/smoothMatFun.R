@@ -50,10 +50,12 @@ smoothingMatrix = function(
   theCluster = NULL
   if(length(grep("cluster", class(ncores))) ) {
     theCluster = ncores
-  } else if(ncores > 1) {
-    theCluster = parallel::makeCluster(spec=ncores, type='PSOCK', methods=TRUE)
-    parallel::setDefaultCluster(theCluster)
-    endCluster = TRUE
+  } else if(!is.null(ncores)) {
+    if(ncores > 1) {
+      theCluster = parallel::makeCluster(spec=ncores, type='PSOCK', methods=TRUE)
+      parallel::setDefaultCluster(theCluster)
+      endCluster = TRUE
+    }
   }
   
   theMat = smoothingMatrixDiag(
@@ -237,7 +239,7 @@ oneBlockOffdiagFun = function(
         writeCounter2 = 0
         
         while(!haveWritten & (writeCounter2 < 20)) {
-
+          
           out = mmap::mmap(
             smoothingRasterFile,
             mode=theType

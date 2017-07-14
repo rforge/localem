@@ -8,16 +8,29 @@ focalWeightWithSize = function(x, bw, size=NULL) {
     size = 3*bw
   
   raster::focalWeight(
-      x=x, d=c(bw, size),
-      type='Gauss'
+    x=x, d=c(bw, size),
+    type='Gauss'
   )
   
 }
 
+bigListFun = function(Dbw, focalList, bigCentreCell, bigMat) {
+  theDim = dim(focalList[[Dbw]])
+  topleft = bigCentreCell - (theDim-1)/2
+  xseq = seq(topleft[1], len=theDim[1], by=1)
+  xNotZero = (xseq > 0) & (xseq <= dim(bigMat)[1])
+  yseq = seq(topleft[2], len=theDim[2], by=1)
+  yNotZero = (yseq > 0) & (yseq <= dim(bigMat)[2])
+  res = bigMat
+  res[
+    xseq[xNotZero], yseq[yNotZero]
+  ] = focalList[[Dbw]][xNotZero,yNotZero]
+  Matrix::Matrix(res)
+}
 
 # Computes focal weight matrix for a Gaussian density kernel with specified bandwidth and size of sigma
 focalFromBw = function(
-    bw, fine, minDim = Inf, focalSize = NULL
+  bw, fine, minDim = Inf, focalSize = NULL, cl=NULL
 ){
   centreCell = 1+dim(fine)[1:2]
   
@@ -25,10 +38,10 @@ focalFromBw = function(
   bigCentreCell = (theDim-1)/2
   
   bigMat = matrix(0,
-      theDim[1],theDim[2]
+    theDim[1],theDim[2]
   )
   names(bw) = gsub("[[:space:]]", "",
-      format(bw, scientific=FALSE)
+    format(bw, scientific=FALSE)
   )
   
   if(is.null(focalSize)) {
@@ -36,74 +49,81 @@ focalFromBw = function(
   }
   
 # define Dbw to make package check happy
-  Dbw = NULL  
-  focalList = foreach::foreach(
-          Dbw = bw, 
-          .export = "focalWeightWithSize", 
-          .packages = "raster"
-      ) %dopar% {
-        invisible(focalWeightWithSize(
-            bw=Dbw,
-            x=fine,
-            size = focalSize
-        ))
-      }
-  names(focalList) = bw
   
+  forMoreArgs = list(x=fine, size=focalSize)
+  if(!is.null(cl)) {
+    focalList = parallel::clusterMap(
+      cl, focalWeightWithSize, 
+      bw=bw,
+      MoreArgs = forMoreArgs,
+      SIMPLIFY=FALSE)
+  } else {
+    focalList = mapply(
+      focalWeightWithSize, 
+      bw=bw,
+      MoreArgs = forMoreArgs,
+      SIMPLIFY=FALSE)
+  }
+
   
   names(focalList) = paste("bw",
-      names(bw),
-      sep="")
+    names(bw),
+    sep="")
+
+  
+  forMoreArgs = list(
+    focalList=focalList, bigCentreCell=bigCentreCell, bigMat=bigMat
+  )
+
+  
+  stuff1 <<- forMoreArgs
+  stuff2 <<- bw
   
   
-  bigList = foreach::foreach(
-          Dbw = names(focalList), 
-          .packages = "raster"
-      ) %dopar% {
-        
-        theDim = dim(focalList[[Dbw]])
-        topleft = bigCentreCell - (theDim-1)/2
-        xseq = seq(topleft[1], len=theDim[1], by=1)
-        xNotZero = (xseq > 0) & (xseq <= dim(bigMat)[1])
-        yseq = seq(topleft[2], len=theDim[2], by=1)
-        yNotZero = (yseq > 0) & (yseq <= dim(bigMat)[2])
-        res = bigMat
-        res[
-            xseq[xNotZero], yseq[yNotZero]
-        ] = focalList[[Dbw]][xNotZero,yNotZero]
-        Matrix::Matrix(res)
-      }
-  names(bigList) = names(focalList)   
+  if(!is.null(cl)) {
+    bigList = parallel::clusterMap(
+      cl, bigListFun, 
+      Dbw=names(focalList),
+      MoreArgs = forMoreArgs,
+      SIMPLIFY=FALSE)
+  } else {
+    bigList = mapply(
+      bigListFun, 
+      Dbw=names(focalList),
+      MoreArgs = forMoreArgs,
+      SIMPLIFY=FALSE)
+  }
+
   
   
   bw = data.frame(
-      bw=bw,
-      dim=unlist(lapply(focalList,
-              function(qq) min(dim(qq))))
+    bw=bw,
+    dim=unlist(lapply(focalList,
+        function(qq) min(dim(qq))))
   )
   
   bw$factLog2 = floor(pmax(0,log2(bw$dim) - log2(minDim)))
   bw$fact = 2^bw$factLog2
   
   result = list(focal=focalList,
-      extended=bigList,centreCell=bigCentreCell,
-      bw=bw)
+    extended=bigList,centreCell=bigCentreCell,
+    bw=bw)
   
   for(D in sort(setdiff(unique(bw$fact),1))){
-    fineAgg = raster	::aggregate(fine, fact=D)
+    fineAgg = raster::aggregate(fine, fact=D)
     bwHere = sort(bw[bw$fact==D,'bw'])
     focalListD =
-        mapply(
-            focalWeightWithSize,
-            bw=bwHere,
-            MoreArgs=list(
-                x=fineAgg,
-                size = focalSize
-            )
+      mapply(
+        focalWeightWithSize,
+        bw=bwHere,
+        MoreArgs=list(
+          x=fineAgg,
+          size = focalSize
         )
+      )
     names(focalListD) = paste("bw",
-        bwHere,
-        sep="")
+      bwHere,
+      sep="")
     result[[paste('focalAgg', D,sep='')]] = focalListD
   }
   
@@ -124,21 +144,21 @@ reorderCellsTranslate = function(Ncell){
   switchRowCol = as.vector(t(cellMat))
   
   list(
-      q2=cellSeq[switchRowCol],
-      q3=reorderRows[switchRowCol],
-      q4=reorderRows
+    q2=cellSeq[switchRowCol],
+    q3=reorderRows[switchRowCol],
+    q4=reorderRows
   )
 }
 
 
 # Computes the kernel smoothing function for specified bandwidth
 kernMat = function(
-    cellDist, focalList,
-    fineRelativeRes,
-    cell1=c(0,0),
-    coarse=NULL,
-    reorder=FALSE,
-    xv = NULL
+  cellDist, focalList,
+  fineRelativeRes,
+  cell1=c(0,0),
+  coarse=NULL,
+  reorder=FALSE,
+  xv = NULL
 ) {
   
   
@@ -171,8 +191,8 @@ kernMat = function(
   # construct array to hold result
   Ncell = round(prod(fineRelativeRes))
   kernelArray = array(NA,
-      c(Ncell, Ncell, length(Sbw)),
-      dimnames=list(NULL, NULL, Sbw)
+    c(Ncell, Ncell, length(Sbw)),
+    dimnames=list(NULL, NULL, Sbw)
   )
   
   # loop through fine cells in coarse cell 1
@@ -181,17 +201,17 @@ kernMat = function(
     firstCellInCol = fineRelativeRes[2]*(Dcol-1)
     
     Scol = seq(
-        focalList$centreCell[2]+cellDistFine[2]-Dcol+1,
-        len= fineRelativeRes[2],by=1)[1:fineRelativeRes[2]]
+      focalList$centreCell[2]+cellDistFine[2]-Dcol+1,
+      len= fineRelativeRes[2],by=1)[1:fineRelativeRes[2]]
     
     for(Drow in 1:(fineRelativeRes[1])){
       Dcell = firstCellInCol + Drow
       Srow = seq(
-          focalList$centreCell[1]+cellDistFine[1]-Drow+1,
-          len= fineRelativeRes[1],by=1)[1:fineRelativeRes[1]]
+        focalList$centreCell[1]+cellDistFine[1]-Drow+1,
+        len= fineRelativeRes[1],by=1)[1:fineRelativeRes[1]]
       for(Dbw in Sbw){
         kernelArray[Dcell,,Dbw] = as.vector(
-            focalList$extended[[Dbw]][Srow, Scol])
+          focalList$extended[[Dbw]][Srow, Scol])
       } # for Dbw
     } #  for Drow
   } # for Dcol
@@ -210,7 +230,7 @@ kernMat = function(
     with(resEnv, kernelArray <- kernelArray)
     
     with(resEnv,
-        reorder <- reorderCellsTranslate(fineRelativeRes)
+      reorder <- reorderCellsTranslate(fineRelativeRes)
     )
     
     resFun = function(qx) {

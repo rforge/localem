@@ -52,7 +52,7 @@ rasterPartition = function(
   offsetFile = paste(tempfile('lemOffset', path), '.grd', sep=''),
   verbose = FALSE
 ){
-
+  
   if(verbose) {
     cat(date(), "\n")
     cat("obtaining rasters\n")
@@ -151,8 +151,8 @@ rasterPartition = function(
   rasterFineId = brick(rasterIdCoarse, rasterIdFine, rasterFine)	
   
   rasterFineId = writeRaster(rasterFineId, 
-      filename = idFile,
-      overwrite=file.exists(idFile))
+    filename = idFile,
+    overwrite=file.exists(idFile))
   
   if(verbose) {
     cat(date(), "\n")
@@ -164,8 +164,8 @@ rasterPartition = function(
   if(fact > 1) {
     offsetTempFileAgg = file.path(path, 'offsetTempAgg.grd')
     rasterOffsetAgg = raster::aggregate(rasterOffset, fact=fact, 
-    	filename=offsetTempFileAgg, overwrite=file.exists(offsetTempFileAgg)
-    	)
+      filename=offsetTempFileAgg, overwrite=file.exists(offsetTempFileAgg)
+    )
   } else {
     offsetTempFileAgg = filename(rasterOffset)
     rasterOffsetAgg = rasterOffset
@@ -178,25 +178,38 @@ rasterPartition = function(
   endCluster = FALSE
   theCluster = NULL
   if(length(grep("cluster", class(ncores))) ) {
+    if(verbose) cat("using existing cluster\n")
     theCluster = ncores
-  } else if(ncores > 1) {
-    theCluster = parallel::makeCluster(spec=ncores, type='PSOCK', methods=TRUE)
-    parallel::setDefaultCluster(theCluster)
-    endCluster = TRUE
+  } else if(!is.null(ncores)) {
+    if(ncores > 1) {
+      if(verbose) cat("starting new cluster\n")
+      theCluster = parallel::makeCluster(spec=ncores, type='PSOCK', methods=TRUE)
+      parallel::setDefaultCluster(theCluster)
+      endCluster = TRUE
+    }
   }
+  
+  if(verbose) cat("creating arrays")
   
   # focal used for smoothing matrix
   theFocalResult = focalFromBw(
     bw = bw, 
     fine=rasterFine, 
-    focalSize=focalSize)
+    focalSize=focalSize,
+    cl=theCluster)
   
 #	focal used for offsets
-  theFocal = focalFromBw(
-    bw=bw,
-    fine = rasterOffsetAgg,
-    focalSize = focalSize
-  )
+  if(fact != 1) {
+    theFocal = focalFromBw(
+      bw=bw,
+      fine = rasterOffsetAgg,
+      focalSize = focalSize,
+      cl=theCluster
+    )
+  } else {
+    theFocal = theFocalResult
+  }
+  if(verbose) cat(".\n")
   
   forSmooth = expand.grid(
     bw=names(theFocal$focal),
@@ -223,33 +236,29 @@ rasterPartition = function(
   }
   
   
-  focalFunction = function(x, focalArray, Scvsets)  {
-    apply(focalArray*x[,,Scvsets,drop=FALSE], 
-      3, sum, na.rm=TRUE)
-  }
   
   outfile = file.path(path, "smoothedOffsetBrick.grd")
   
   smoothedOffset <- tryCatch(
     suppressWarnings(spatial.tools::rasterEngine(
-      x=rasterOffsetAgg, fun=focalFunction, 
-      args = list(Scvsets=Scvsets, focalArray=focalArray),
-      window_dims = dim(focalArray),
-      outbands=length(Scvsets),
-      outfiles = 1,
-      processing_unit = 'single',
-      datatype='FLT8S',
-      chunk_format = 'array',
-      filename = gsub("[.]gr[id]$", "", outfile), 
-      overwrite=TRUE,
-      verbose=(verbose>2),
-      blocksize=1,
-      minblocks = nrow(rasterOffsetAgg)
-    )), error = function(e) e)
+        x=rasterOffsetAgg, fun=focalFunction, 
+        args = list(Scvsets=Scvsets, focalArray=focalArray),
+        window_dims = dim(focalArray),
+        outbands=length(Scvsets),
+        outfiles = 1,
+        processing_unit = 'single',
+        datatype='FLT8S',
+        chunk_format = 'array',
+        filename = gsub("[.]gr[id]$", "", outfile), 
+        overwrite=TRUE,
+        verbose=(verbose>2),
+        blocksize=1,
+        minblocks = nrow(rasterOffsetAgg)
+      )), error = function(e) e)
   if(any(class(smoothedOffset) == 'error') ) {
     dir.create(file.path(path, 'smoothedOffsetList'), showWarnings=FALSE)
     Soutfile = file.path(path, 'smoothedOffsetList', 
-    	paste("smoothedOffsetList", 1:nrow(forSmooth), ".grd", sep=''))
+      paste("smoothedOffsetList", 1:nrow(forSmooth), ".grd", sep=''))
     if(verbose) {
       cat("smoothing with spatial.tools failed, using raster\n")
       cat("temporary files", Soutfile[1], " ",  Soutfile[length(Soutfile)], "\n")
@@ -271,20 +280,39 @@ rasterPartition = function(
 #    	forSmooth=forSmooth, focalArray=focalArray, Soutfile=Soutfile)
 #        )
 # define x so package check is happy
-    x = NULL
-    smoothedOffsetForeachResult = foreach::foreach(
-        x = 1:nrow(forSmooth), .packages='raster'
-      ) %dopar% { 
-        offsetHere = brick(offsetTempFileAgg)[[ forSmooth[x,'layer'] ]]
-        res = raster::focal(
-		  offsetHere,
-          w = focalArray[,,forSmooth[x,'bw'] ],
-          na.rm=TRUE, pad=TRUE,
-          filename = Soutfile[x],
-          overwrite = file.exists(Soutfile[x])
-        )
-        filename(res)
-      }
+    
+    forMoreArgs = list(
+      offsetTempFileAgg=offsetTempFileAgg, 
+      focalArray=focalArray, 
+      forSmooth=forSmooth, Soutfile = Soutfile)
+    
+    if(!is.null(theCluster)) {
+      smoothedOffsetForeachResult = parallel::clusterMap(
+        theCluster, smoothedOffsetMapFun, 
+        x = 1:nrow(forSmooth),
+        MoreArgs = forMoreArgs)
+    } else {
+      smoothedOffsetForeachResult = mapply(
+        smoothedOffsetMapFun,
+        x = 1:nrow(forSmooth),
+        MoreArgs = forMoreArgs)
+    }
+    
+    
+#    smoothedOffsetForeachResult = foreach::foreach(
+#        x = 1:nrow(forSmooth), .packages='raster'
+#      ) %dopar% { 
+#        offsetHere = brick(offsetTempFileAgg)[[ forSmooth[x,'layer'] ]]
+#        res = raster::focal(
+#          offsetHere,
+#          w = focalArray[,,forSmooth[x,'bw'] ],
+#          na.rm=TRUE, pad=TRUE,
+#          filename = Soutfile[x],
+#          overwrite = file.exists(Soutfile[x])
+#        )
+#        filename(res)
+#      }
+    
     smoothedOffsetStack = raster::stack(Soutfile)
     names(smoothedOffsetStack) = dimnames(focalArray)[[3]]
     
@@ -293,7 +321,7 @@ rasterPartition = function(
     )
   } else {
     # no errors
-     smoothedOffset = raster::brick(outfile)
+    smoothedOffset = raster::brick(outfile)
   }  
   if(verbose) {
     cat(date(), "\n")
@@ -385,3 +413,29 @@ rasterPartition = function(
   return(result)
   
 }
+
+
+
+focalFunction = function(x, focalArray, Scvsets)  {
+  apply(focalArray*x[,,Scvsets,drop=FALSE], 
+    3, sum, na.rm=TRUE)
+}
+
+
+smoothedOffsetMapFun = function(
+  x=x, offsetTempFileAgg, 
+  focalArray, 
+  forSmooth, Soutfile
+) {
+  offsetHere = raster::brick(offsetTempFileAgg)[[ forSmooth[x,'layer'] ]]
+  res = raster::focal(
+    offsetHere,
+    w = focalArray[,,forSmooth[x,'bw'] ],
+    na.rm=TRUE, pad=TRUE,
+    filename = Soutfile[x],
+    overwrite = file.exists(Soutfile[x])
+  )
+  filename(res)
+}
+
+

@@ -20,7 +20,6 @@
 #' 
 #' @return The \code{lemXv} function returns a data frame of specified bandwidths and their cross-validation scores, and a raster of the risk estimation of the bandwidth with the lowest cross-validiation score. 
 #'  
-#' @import raster sp
 #' @export
 lemXv = function(
   cases, 
@@ -40,6 +39,15 @@ lemXv = function(
   
   dir.create(path, showWarnings=FALSE, recursive=TRUE)
   
+  if(ncores > 1) {
+    theCluster = parallel::makeCluster(spec=ncores, type='PSOCK', methods=TRUE)
+    parallel::setDefaultCluster(theCluster)
+  } else {
+    theCluster = NULL
+  }
+  
+  
+  
   # forcross-validation scores
   if(!is.null(randomSeed)) {
     set.seed(randomSeed)
@@ -55,10 +63,6 @@ lemXv = function(
     }
     
     
-    if(ncores > 1) {
-      theCluster = parallel::makeCluster(spec=ncores, type='PSOCK', methods=TRUE)
-      parallel::setDefaultCluster(theCluster)
-    }
     
     ##raster partition
     xvLemRaster = rasterPartition(
@@ -69,7 +73,7 @@ lemXv = function(
       xv = xv,
       bw = bw,
       fact = fact,
-      ncores = 0, 
+      ncores = theCluster, 
       path = path,
       idFile = file.path(path,'idXv.grd'), 
       offsetFile = file.path(path, 'offsetXv.grd'), 
@@ -77,13 +81,11 @@ lemXv = function(
     
     xvSmoothMat =  smoothingMatrix(
       rasterObjects = xvLemRaster, 
-      ncores = 0, 
+      ncores = theCluster, 
       filename = file.path(path, 'smoothingMatrix.grd'),
       verbose = verbose)
     
-    if(ncores > 1)
-      parallel::stopCluster(theCluster)
-    
+   
     # save smoothing matrix, useful in case of failure later on
     saveRDS(xvSmoothMat, file = file.path(path, 'smoothingMatrix.rds'))
     
@@ -130,10 +132,8 @@ forMoreArgs = list(
   gpu = iterations$gpu,
   verbose=verbose)
 
-  if(ncores > 1 & !identical(iterations$gpu, TRUE)) {
-    theCluster = parallel::makeCluster(spec=ncores, type='PSOCK', methods=TRUE)
-    parallel::setDefaultCluster(theCluster)
-    
+  if(!is.null(theCluster)) {
+
     estList = parallel::clusterMap(
       theCluster,
       riskEst,
@@ -141,8 +141,7 @@ forMoreArgs = list(
       MoreArgs = forMoreArgs,
       SIMPLIFY=FALSE
     )
-    
-    parallel::stopCluster(theCluster)
+
   } else {
     estList = mapply(
       riskEst,
@@ -156,27 +155,12 @@ forMoreArgs = list(
   }
   
   
+  
   if(any(unlist(lapply(estList, class)) == 'try-error') ) {
     warning("errors in local-em estimation")
-    return(list(
-        estList = estList,
-        smoothingMatrix = xvSmoothMat,
-        expected = polyCoarse,
-        folds = xvMat
-      ))
   }
   
   estListExp = try(lapply(estList, function(x) x$expected))
-  
-  if(class(estListExp) == "try-error") {
-    return(list(
-        xv = NULL,
-        xvFull = NULL,
-        smoothingMatrix = xvSmoothMat,
-        expected = polyCoarse,
-        folds = xvMat
-      ))
-  }
   
   estListRisk = lapply(estList, function(x) x$risk)
   
@@ -262,10 +246,12 @@ forMoreArgs = list(
       lemFinal(result), silent=TRUE
     )
   }
+  # done with the cluster
+  if(!is.null(theCluster))
+    parallel::stopCluster(theCluster)
+  
   
   return(result)
-  
-  
   
   
 }

@@ -12,17 +12,15 @@
 #' @details The optimal bandwidth for each layer is 
 #' @return A raster brick
 #'
-#' @import foreach
 #' @export
 lemFinal = function(
-    x, 
-    counts = colnames(x$xv)[-1],
-    bw = x$xv[apply(x$xv[,counts],2,which.min),'bw'], 
-    ncores=1, 
-    filename = paste(tempfile(), '.grd', sep=''), 
-    verbose=FALSE) {
+  x, 
+  counts = colnames(x$xv)[-1],
+  bw = x$xv[apply(x$xv[,counts],2,which.min),'bw'], 
+  ncores=1, 
+  filename = paste(tempfile(), '.grd', sep=''), 
+  verbose=FALSE) {
   
-
   finalBw = rep_len(bw, length(counts))
   
   Scounts = counts
@@ -33,58 +31,103 @@ lemFinal = function(
   
   # smooth the risk and integrate kernel over non-NA area
   focalFunction = function(x, fa)  {
-        apply(fa*x, 3, sum, na.rm=TRUE) / 
-        apply(fa*(!is.na(x)), 3, sum)
+    apply(fa*x, 3, sum, na.rm=TRUE) / 
+      apply(fa*(!is.na(x)), 3, sum)
   }
   
   toSmooth = x$riskAll
   levels(toSmooth)[[1]] = levels(toSmooth)[[1]][, c("ID", Slayers)]
   toSmooth = deratify(toSmooth)
-  
-  if(ncores>1) spatial.tools::sfQuickInit(
-        ncores, methods = TRUE,        
-        .packages = c('Matrix','raster'))
-  
+
   Soutfile = file.path(tempdir(), paste('finalSmooth', Slayers, '.grd', sep='')) 
   names(Soutfile) = Slayers
-  Dsmooth = NULL
-  foreachResult = foreach(
-          Dsmooth = Slayers, .packages='raster'
-      ) %dopar% { 
-        res = raster::focal(
-            toSmooth[[Dsmooth]],
-            w = xFocal[,,gsub("_.*$", "", Dsmooth)],
-            na.rm=TRUE, pad=TRUE,
-            filename = Soutfile[Dsmooth],
-            overwrite = file.exists(Soutfile[Dsmooth])
-        )
-        filename(res)
-      }
-  if(ncores>1) spatial.tools::sfQuickStop()
+  
+  endCluster = FALSE
+  theCluster = NULL
+  if(length(grep("cluster", class(ncores))) ) {
+    if(verbose) cat("using existing cluster\n")
+    theCluster = ncores
+  } else if(!is.null(ncores)) {
+    if(ncores > 1) {
+      if(verbose) cat("starting new cluster\n")
+      theCluster = parallel::makeCluster(spec=ncores, type='PSOCK', methods=TRUE)
+      parallel::setDefaultCluster(theCluster)
+      endCluster = TRUE
+    }
+  }
+  
+  
+  oneFinalFun = function(Dsmooth, toSmooth, xFocal, Soutfile) {
+    res = raster::focal(
+      toSmooth[[Dsmooth]],
+      w = xFocal[,,gsub("_.*$", "", Dsmooth)],
+      na.rm=TRUE, pad=TRUE,
+      filename = Soutfile[Dsmooth],
+      overwrite = file.exists(Soutfile[Dsmooth])
+    )
+    filename(res)
+  }
+
+  forMoreArgs = list(
+    toSmooth = toSmooth, xFocal = xFocal, Soutfile = Soutfile
+    )
+  
+  if(!is.null(theCluster)) {
+    foreachResult = parallel::clusterMap(
+      theCluster, 
+      oneFinalFun,
+      Dsmooth = Slayers,
+      MoreArgs = forMoreArgs,
+      SIMPLIFY=FALSE)
+  } else {
+    foreachResult = mapply(
+      oneFinalFun,
+      Dsmooth = Slayers,
+      MoreArgs = forMoreArgs,
+      SIMPLIFY=FALSE)
+  }
+
+    
+  
+#  foreachResult = foreach(
+#      Dsmooth = Slayers, .packages='raster'
+#    ) %dopar% { 
+#      res = raster::focal(
+#        toSmooth[[Dsmooth]],
+#        w = xFocal[,,gsub("_.*$", "", Dsmooth)],
+#        na.rm=TRUE, pad=TRUE,
+#        filename = Soutfile[Dsmooth],
+#        overwrite = file.exists(Soutfile[Dsmooth])
+#      )
+#      filename(res)
+#    }
+  
+  
+  if(endCluster) parallel::stopCluster(theCluster)
   
   smoothedStack = raster::stack(foreachResult)
   names(smoothedStack) = Scounts
   
   result = raster::brick(
-      smoothedStack, filename = filename, overwrite = file.exists(filename)
+    smoothedStack, filename = filename, overwrite = file.exists(filename)
   )
   names(result) = Scounts
   
   if(FALSE) {
-  suppressWarnings(
+    suppressWarnings(
       result <- spatial.tools::rasterEngine(
-          x=toSmooth, fun=focalFunction, 
-          args = list(fa=xFocal),
-          window_dims = dim(xFocal),
-          outbands=dim(xFocal)[3],
-          outfiles = 1,
-          processing_unit = 'single',
-          chunk_format = 'array',
-          filename = gsub("[.]gr(d|i)$", "", filename), overwrite=TRUE,
-          verbose=(verbose>2)
+        x=toSmooth, fun=focalFunction, 
+        args = list(fa=xFocal),
+        window_dims = dim(xFocal),
+        outbands=dim(xFocal)[3],
+        outfiles = 1,
+        processing_unit = 'single',
+        chunk_format = 'array',
+        filename = gsub("[.]gr(d|i)$", "", filename), overwrite=TRUE,
+        verbose=(verbose>2)
       ))
-}
+  }
   
-result
+  result
   
 }

@@ -213,7 +213,7 @@ if(!file.exists(fileHere)) {
       cellsFine = cellsFine,   
       bw = Sbw,
       xv = nxv, 
-      ncores = ncores,
+      ncores = 4,#ncores,
       path = path,
       verbose = TRUE)
   save(xvKentucky, file=fileHere)  

@@ -18,7 +18,8 @@ Imports:
     stats,
     mmap,
     parallel,
-    abind
+    abind,
+    foreach
 Suggests:
     spdep,
     spatial.tools,
