@@ -82,7 +82,7 @@ lemXv = function(
       verbose = verbose)
     
     if(ncores > 1)
-      parallel::stopCluster(theCluster) #spatial.tools::sfQuickStop()
+      parallel::stopCluster(theCluster)
     
     # save smoothing matrix, useful in case of failure later on
     saveRDS(xvSmoothMat, file = file.path(path, 'smoothingMatrix.rds'))
