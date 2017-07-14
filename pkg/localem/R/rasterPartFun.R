@@ -175,8 +175,15 @@ rasterPartition = function(
   if(is.null(focalSize))
     focalSize = 2.5*max(bw)
   
-  if(ncores>1) 
-    theCluster = spatial.tools::sfQuickInit(ncores, methods = TRUE)
+  endCluster = FALSE
+  theCluster = NULL
+  if(length(grep("cluster", class(ncores))) ) {
+    theCluster = ncores
+  } else if(ncores > 1) {
+    theCluster = parallel::makeCluster(spec=ncores, type='PSOCK', methods=TRUE)
+    parallel::setDefaultCluster(theCluster)
+    endCluster = TRUE
+  }
   
   # focal used for smoothing matrix
   theFocalResult = focalFromBw(
@@ -293,7 +300,8 @@ rasterPartition = function(
     cat("smoothing offsets done\n")
   }
   
-  if(ncores>1) spatial.tools::sfQuickStop()
+  if(endCluster) parallel::stopCluster(theCluster)
+  
   names(smoothedOffset) = dimnames(focalArray)[[3]]
   
   if(fact>1) {

@@ -16,13 +16,12 @@ Imports:
     Matrix,
     geostatsp (>= 1.4.4),
     stats,
-    spatial.tools,
     mmap,
-    foreach,
     parallel,
     abind
 Suggests:
     spdep,
+    spatial.tools,
     diseasemapping,
     rgeos,
     rgdal,

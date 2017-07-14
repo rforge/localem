@@ -34,29 +34,36 @@
 #'
 #' @export
 smoothingMatrix = function(
-    rasterObjects,
-    ncores = 1,
-    filename = file.path(tempdir(),'smoothingMatrix.grd'),
-    verbose = FALSE
+  rasterObjects,
+  ncores = 1,
+  filename = file.path(tempdir(),'smoothingMatrix.grd'),
+  verbose = FALSE
 ){
   
   if(verbose) {
     cat(date(), "\n")
     cat("diagonal blocks of smoothing matrix\n")
-    cat("if there are errors stop the cluster with spatial.tools::sfQuickStop()\n")
   }
   
-  if(ncores > 1) spatial.tools::sfQuickInit(ncores, methods = TRUE)
   
+  endCluster = FALSE
+  theCluster = NULL
+  if(length(grep("cluster", class(ncores))) ) {
+    theCluster = ncores
+  } else if(ncores > 1) {
+    theCluster = parallel::makeCluster(spec=ncores, type='PSOCK', methods=TRUE)
+    parallel::setDefaultCluster(theCluster)
+    endCluster = TRUE
+  }
   
   theMat = smoothingMatrixDiag(
-      rasterCoarse=rasterObjects$rasterCoarse,
-      rasterFine=rasterObjects$rasterFine,
-      focalList=rasterObjects$focal,
-      offsetRaster=rasterObjects$offset,
-      filename = filename,
-      verbose=verbose)
-  
+    rasterCoarse=rasterObjects$rasterCoarse,
+    rasterFine=rasterObjects$rasterFine,
+    focalList=rasterObjects$focal,
+    offsetRaster=rasterObjects$offset,
+    filename = filename,
+    cl = theCluster,
+    verbose=verbose)
   
   smoothingRaster = theMat$smoothingArray
   smoothingRasterFile = gsub("grd$", "gri", filename(smoothingRaster))
@@ -69,153 +76,49 @@ smoothingMatrix = function(
     cat(date(), "\n")
   }
   
-  # theType = mmap::real64();dput(theType, '')
-  theType = structure(numeric(0), bytes = 8L, signed = 1L, class = c("Ctype", 
-          "double"))
   
   
   # dimensions, from spatial.tools::binary_image_write
   image_dims = dim(smoothingRaster)
-  image_x=image_dims[1]
-  image_y=image_dims[2]
-  image_z=image_dims[3]
   
-  # define x for package check
-  x = NULL
-  offDiag = foreach::foreach(
-          x = as.vector(theMat$uniqueDist), .packages=c('Matrix','localEM'), .export = 'smoothingMatrixOneDist'
-      ) %dopar% {
-        
-        thisBlock = smoothingMatrixOneDist(
-            x=x,
-            allCells=theMat$cells,
-            focal=rasterObjects$focal,
-            coarse=rasterObjects$rasterCoarse,
-            fine=rasterObjects$rasterFine,
-            offsetRaster=rasterObjects$offset
-        )
-        if(class(thisBlock) != 'try-error') {
-          for(Dcell1 in 1:length(thisBlock)) {
-            for(Dcell2 in 1:length(thisBlock[[Dcell1]])) {
-              
-              partHere = thisBlock[[Dcell1]][[Dcell2]]
-              s1 = dimnames(thisBlock[[Dcell1]][[Dcell2]])[[1]]
-              s2 = dimnames(thisBlock[[Dcell1]][[Dcell2]])[[2]]
-              partHere = try(aperm(thisBlock[[Dcell1]][[Dcell2]][,,,'transpose', drop=FALSE], 
-                      c(2,1,3,4)))
-              matchPartHere = lapply(dimnames(partHere)[1:2], match, 
-                  table=Spartitions)
-              
-              theOrder = lapply(matchPartHere, order)
-              
-              
-             data_position = t(expand.grid(
-                            as.vector(matchPartHere[[1]][theOrder[[1]] ]), 
-                            as.vector(matchPartHere[[2]][theOrder[[2]] ]), 
-                            layerSeq)
-                            )
-                            
-                        cell_position=
-              ( (data_position[2,]-1)*image_x)+
-              (data_position[1,])+
-              ((data_position[3,]-1)*(image_x*image_y))
-                        
-              
-              haveWritten = FALSE
-              writeCounter1 = 0
-              
-              while(!haveWritten & (writeCounter1 < 20)) {
-              
-              
-             out = mmap::mmap(
-                smoothingRasterFile,
-                mode=theType
-            )	
-            
-            out[cell_position] = as.double(partHere[theOrder[[1]], theOrder[[2]],,] )      
-            
-            haveWrittenFirst = mmap::munmap(out)  
-              
-              
-#                haveWritten = tryCatch(spatial.tools::binary_image_write(
-#                        smoothingRasterFile,
-#                        mode = theType, 
-#                        image_dims = dim(smoothingRaster),
-#                        data=as.double(partHere[theOrder[[1]], theOrder[[2]],,] ),
-#                        data_position = list(
-#                            as.vector(matchPartHere[[1]][theOrder[[1]] ]), 
-#                            as.vector(matchPartHere[[2]][theOrder[[2]] ]), 
-#                            layerSeq)), 
-#                    error = function(err) {warning(err);-1} )
-            haveWritten = identical(haveWrittenFirst, 0L)
-                writeCounter1 = writeCounter1 + 1
-              }
-              if(writeCounter1 >= 20) warning(paste("dist", x, "cells", Dcell1, Dcell2))
-              
-              partHere = try(thisBlock[[Dcell1]][[Dcell2]][,,,'straightup', drop=FALSE])
-              matchPartHere = lapply(dimnames(partHere)[1:2], match, 
-                  table=Spartitions)
-              theOrder = lapply(matchPartHere, order)
-              
-              
-                    data_position = t(expand.grid(
-                            as.vector(matchPartHere[[1]][theOrder[[1]] ]), 
-                            as.vector(matchPartHere[[2]][theOrder[[2]] ]), 
-                            layerSeq)
-                            )
-                            
-                        cell_position=
-              ( (data_position[2,]-1)*image_x)+
-              (data_position[1,])+
-              ((data_position[3,]-1)*(image_x*image_y))
-       
-              
-              haveWritten = FALSE
-              writeCounter2 = 0
-              
-              
-              
-              while(!haveWritten & (writeCounter2 < 20)) {
-              
-              
-                      
-             out = mmap::mmap(
-                smoothingRasterFile,
-                mode=theType
-            )	
-            
-            out[cell_position] = as.double(partHere[theOrder[[1]], theOrder[[2]],,] )      
-            
-            haveWrittenFirst = mmap::munmap(out)  
+  
+  forMoreArgs = list(
+    theMat = theMat, 
+    rasterObjects = rasterObjects,
+    image_x=image_dims[1],
+    image_y=image_dims[2],
+    image_z=image_dims[3],
+    Spartitions = Spartitions,
+    # theType = mmap::real64();dput(theType, '')
+    theType = structure(numeric(0), bytes = 8L, signed = 1L, class = c("Ctype", 
+        "double")),
+    smoothingRasterFile = smoothingRasterFile,
+    layerSeq = layerSeq,
+    verbose=verbose
+  )
+  
+  if(!is.null(theCluster)) {
     
-              
-#                haveWritten = tryCatch(spatial.tools::binary_image_write(
-#                        smoothingRasterFile, 
-#                        mode = theType, 
-#                        image_dims = dim(smoothingRaster),
-#                        data=as.double(partHere[theOrder[[1]], theOrder[[2]],,] ),
-#                        data_position = list(
-#                            as.vector(matchPartHere[[1]][theOrder[[1]] ]), 
-#                            as.vector(matchPartHere[[2]][theOrder[[2]] ]), 
-#                            layerSeq)), 
-#                    error = function(err) {warning(err);-1} )
-#                haveWritten = (haveWritten != -1)
-            haveWritten = identical(haveWrittenFirst, 0L)
-                writeCounter2 = writeCounter2 + 1
-              }
-              if(writeCounter2 >= 20) warning(paste("dist", x, "cells", Dcell1, Dcell2))
-            } # end Dcell2  
-          } # end Dcell1
-          res = c(writeCounter1, writeCounter1)
-        }  else { # end try error
-          res =thisBlock
-        }
-        res
-      } # end foreach
+    offDiag = parallel::clusterMap(
+      theCluster,
+      oneBlockOffdiagFun,
+      x = as.vector(theMat$uniqueDist),
+      MoreArgs = forMoreArgs
+    )
+  } else {
+    offDiag = mapply(
+      oneBlockOffdiagFun,
+      x = as.vector(theMat$uniqueDist),
+      MoreArgs = forMoreArgs
+    )
+    
+  }  
   
   if(any(unlist(offDiag) >= 20)) warning("problem writing smoothing matrix to disk")
   
-  if(ncores > 1)  spatial.tools::sfQuickStop()
+  if(endCluster)  
+    parallel::stopCluster(theCluster)
+  
   
   
   if(verbose) {
@@ -232,7 +135,7 @@ smoothingMatrix = function(
   if(any(unlist(lapply(offDiag, class)) == 'try-error') ) {
     warning("errors in smoothing matrix construction")
     return(c(list(offDiag = offDiag), 
-            theMat, rasterObjects[setdiff(names(rasterObjects), names(theMat))]))
+        theMat, rasterObjects[setdiff(names(rasterObjects), names(theMat))]))
   }
   
   result = c(theMat, rasterObjects[setdiff(names(rasterObjects), names(theMat))])
@@ -246,3 +149,116 @@ smoothingMatrix = function(
 
 
 
+oneBlockOffdiagFun = function(
+  x,
+  theMat, 
+  rasterObjects,
+  image_x,
+  image_y,
+  image_z,
+  Spartitions,
+  theType,
+  smoothingRasterFile,
+  layerSeq,
+  verbose
+) {
+  
+  thisBlock = smoothingMatrixOneDist(
+    x=x,
+    allCells=theMat$cells,
+    focal=rasterObjects$focal,
+    coarse=rasterObjects$rasterCoarse,
+    fine=rasterObjects$rasterFine,
+    offsetRaster=rasterObjects$offset
+  )
+  if(class(thisBlock) != 'try-error') {
+    for(Dcell1 in 1:length(thisBlock)) {
+      for(Dcell2 in 1:length(thisBlock[[Dcell1]])) {
+        
+        partHere = thisBlock[[Dcell1]][[Dcell2]]
+        s1 = dimnames(thisBlock[[Dcell1]][[Dcell2]])[[1]]
+        s2 = dimnames(thisBlock[[Dcell1]][[Dcell2]])[[2]]
+        partHere = try(aperm(thisBlock[[Dcell1]][[Dcell2]][,,,'transpose', drop=FALSE], 
+            c(2,1,3,4)))
+        matchPartHere = lapply(dimnames(partHere)[1:2], match, 
+          table=Spartitions)
+        
+        theOrder = lapply(matchPartHere, order)
+        
+        
+        data_position = t(expand.grid(
+            as.vector(matchPartHere[[1]][theOrder[[1]] ]), 
+            as.vector(matchPartHere[[2]][theOrder[[2]] ]), 
+            layerSeq)
+        )
+        
+        cell_position=
+          ( (data_position[2,]-1)*image_x)+
+          (data_position[1,])+
+          ((data_position[3,]-1)*(image_x*image_y))
+        
+        
+        haveWritten = FALSE
+        writeCounter1 = 0
+        
+        while(!haveWritten & (writeCounter1 < 20)) {
+          
+          
+          out = mmap::mmap(
+            smoothingRasterFile,
+            mode=theType
+          )	
+          
+          out[cell_position] = as.double(partHere[theOrder[[1]], theOrder[[2]],,] )      
+          
+          haveWrittenFirst = mmap::munmap(out)  
+          
+          haveWritten = identical(haveWrittenFirst, 0L)
+          writeCounter1 = writeCounter1 + 1
+        }
+        if(writeCounter1 >= 20) warning(paste("dist", x, "cells", Dcell1, Dcell2))
+        
+        partHere = try(thisBlock[[Dcell1]][[Dcell2]][,,,'straightup', drop=FALSE])
+        matchPartHere = lapply(dimnames(partHere)[1:2], match, 
+          table=Spartitions)
+        theOrder = lapply(matchPartHere, order)
+        
+        
+        data_position = t(expand.grid(
+            as.vector(matchPartHere[[1]][theOrder[[1]] ]), 
+            as.vector(matchPartHere[[2]][theOrder[[2]] ]), 
+            layerSeq)
+        )
+        
+        cell_position=
+          ( (data_position[2,]-1)*image_x)+
+          (data_position[1,])+
+          ((data_position[3,]-1)*(image_x*image_y))
+        
+        
+        haveWritten = FALSE
+        writeCounter2 = 0
+        
+        while(!haveWritten & (writeCounter2 < 20)) {
+
+          out = mmap::mmap(
+            smoothingRasterFile,
+            mode=theType
+          )	
+          
+          out[cell_position] = as.double(partHere[theOrder[[1]], theOrder[[2]],,] )      
+          
+          haveWrittenFirst = mmap::munmap(out)  
+          
+          haveWritten = identical(haveWrittenFirst, 0L)
+          writeCounter2 = writeCounter2 + 1
+        }
+        if(writeCounter2 >= 20) warning(paste("dist", x, "cells", Dcell1, Dcell2))
+      } # end Dcell2  
+    } # end Dcell1
+    res = c(writeCounter1, writeCounter1)
+  }  else { # end try error
+    res =thisBlock
+  }
+  res
+} # oneBlockOffdiag

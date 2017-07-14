@@ -23,19 +23,19 @@
 #' @import foreach raster sp
 #' @export
 lemXv = function(
-    cases, 
-    population, 
-    cellsCoarse, 
-    cellsFine, 
-    bw,
-    xv = 4, 
-    lemObjects, 
-    ncores = 1, 
-    iterations = list(tol = 1e-5, maxIter = 1000, gpu=FALSE), 
-    fact = 1,
-    randomSeed = NULL, 
-    verbose = FALSE,
-    path = getwd()
+  cases, 
+  population, 
+  cellsCoarse, 
+  cellsFine, 
+  bw,
+  xv = 4, 
+  lemObjects, 
+  ncores = 1, 
+  iterations = list(tol = 1e-5, maxIter = 1000, gpu=FALSE), 
+  fact = 1,
+  randomSeed = NULL, 
+  verbose = FALSE,
+  path = getwd()
 ){
   
   dir.create(path, showWarnings=FALSE, recursive=TRUE)
@@ -53,36 +53,36 @@ lemXv = function(
     if(verbose) {
       cat("computing smoothing matrix\n")
     }
-
-
+    
+    
     if(ncores > 1) {
-  		theCluster = parallel::makeCluster(spec=ncores, type='PSOCK', methods=TRUE)
-		parallel::setDefaultCluster(theCluster)
-	}
+      theCluster = parallel::makeCluster(spec=ncores, type='PSOCK', methods=TRUE)
+      parallel::setDefaultCluster(theCluster)
+    }
     
     ##raster partition
     xvLemRaster = rasterPartition(
-        polyCoarse = cases, 
-        polyFine = population, 
-        cellsCoarse = cellsCoarse, 
-        cellsFine = cellsFine, 
-        xv = xv,
-        bw = bw,
-        fact = fact,
-        ncores = 0, 
-        path = path,
-        idFile = file.path(path,'idXv.grd'), 
-        offsetFile = file.path(path, 'offsetXv.grd'), 
-        verbose = verbose)
+      polyCoarse = cases, 
+      polyFine = population, 
+      cellsCoarse = cellsCoarse, 
+      cellsFine = cellsFine, 
+      xv = xv,
+      bw = bw,
+      fact = fact,
+      ncores = 0, 
+      path = path,
+      idFile = file.path(path,'idXv.grd'), 
+      offsetFile = file.path(path, 'offsetXv.grd'), 
+      verbose = verbose)
     
     xvSmoothMat =  smoothingMatrix(
-        rasterObjects = xvLemRaster, 
-        ncores = 0, 
-        filename = file.path(path, 'smoothingMatrix.grd'),
-        verbose = verbose)
+      rasterObjects = xvLemRaster, 
+      ncores = 0, 
+      filename = file.path(path, 'smoothingMatrix.grd'),
+      verbose = verbose)
     
     if(ncores > 1)
-      spatial.tools::sfQuickStop()   
+      parallel::stopCluster(theCluster) #spatial.tools::sfQuickStop()
     
     # save smoothing matrix, useful in case of failure later on
     saveRDS(xvSmoothMat, file = file.path(path, 'smoothingMatrix.rds'))
@@ -103,11 +103,11 @@ lemXv = function(
   }
   #names of interest for regions in the coarse shapefile
   countcol = grep('^(count|cases)[[:digit:]]+?$', 
-      names(cases), value=TRUE, ignore.case=TRUE)
+    names(cases), value=TRUE, ignore.case=TRUE)
   if(!length(countcol)){
     countcol = grep(
-        "^(id|name)", names(cases), 
-        invert=TRUE, value=TRUE
+      "^(id|name)", names(cases), 
+      invert=TRUE, value=TRUE
     )[1]
   }
   if(class(cases) == 'SpatialPolygonsDataFrame') {
@@ -123,41 +123,41 @@ lemXv = function(
   # estimate risk (by partition, not continuous) for each bw/cv combinantion
   
   if(ncores > 1 & !identical(iterations$gpu, TRUE)) {
-  	theCluster = parallel::makeCluster(spec=ncores, type='PSOCK', methods=TRUE)
-	parallel::setDefaultCluster(theCluster)
-	
-	estList = parallel::clusterMap(
-		theCluster,
-		riskEst,
-		bw = xvSmoothMat$bw,
-		MoreArgs = list(
-            x=cases[,countcol, drop=FALSE],
-            lemObjects = xvSmoothMat,
-            tol = iterations$tol, 
-            maxIter = iterations$maxIter,
-            gpu = iterations$gpu,
-            verbose=verbose)
-	)
-	
+    theCluster = parallel::makeCluster(spec=ncores, type='PSOCK', methods=TRUE)
+    parallel::setDefaultCluster(theCluster)
+    
+    estList = parallel::clusterMap(
+      theCluster,
+      riskEst,
+      bw = xvSmoothMat$bw,
+      MoreArgs = list(
+        x=cases[,countcol, drop=FALSE],
+        lemObjects = xvSmoothMat,
+        tol = iterations$tol, 
+        maxIter = iterations$maxIter,
+        gpu = iterations$gpu,
+        verbose=verbose)
+    )
+    
     parallel::stopCluster(theCluster) #spatial.tools::sfQuickStop()
   } else {
-  	estList = mapply(
-		riskEst,
-		bw = xvSmoothMat$bw,
-		MoreArgs = list(
-            x=cases[,countcol, drop=FALSE],
-            lemObjects = xvSmoothMat,
-            tol = iterations$tol, 
-            maxIter = iterations$maxIter,
-            gpu = iterations$gpu,
-            verbose=verbose)
-	)
+    estList = mapply(
+      riskEst,
+      bw = xvSmoothMat$bw,
+      MoreArgs = list(
+        x=cases[,countcol, drop=FALSE],
+        lemObjects = xvSmoothMat,
+        tol = iterations$tol, 
+        maxIter = iterations$maxIter,
+        gpu = iterations$gpu,
+        verbose=verbose)
+    )
   }
   #	spatial.tools::sfQuickInit(
   #    ncores, 
   #    methods = TRUE,
   #    .packages = c('Matrix','localEM', 'raster'))
-
+  
   
 #  estList = foreach::foreach(
 #          bw = xvSmoothMat$bw,
@@ -171,29 +171,29 @@ lemXv = function(
 #            verbose=verbose))
 #      }
 #  if(ncores > 1 & !identical(iterations$gpu, TRUE)) 
-
+  
   names(estList) = xvSmoothMat$bw
   
   if(any(unlist(lapply(estList, class)) == 'try-error') ) {
     warning("errors in local-em estimation")
     return(list(
-            estList = estList,
-            smoothingMatrix = xvSmoothMat,
-            expected = polyCoarse,
-            folds = xvMat
-        ))
+        estList = estList,
+        smoothingMatrix = xvSmoothMat,
+        expected = polyCoarse,
+        folds = xvMat
+      ))
   }
   
   estListExp = try(lapply(estList, function(x) x$expected))
   
   if(class(estListExp) == "try-error") {
     return(list(
-            xv = NULL,
-            xvFull = NULL,
-            smoothingMatrix = xvSmoothMat,
-            expected = polyCoarse,
-            folds = xvMat
-        ))
+        xv = NULL,
+        xvFull = NULL,
+        smoothingMatrix = xvSmoothMat,
+        expected = polyCoarse,
+        folds = xvMat
+      ))
   }
   
   estListRisk = lapply(estList, function(x) x$risk)
@@ -202,8 +202,8 @@ lemXv = function(
   riskDf = as.matrix(do.call(cbind, estListRisk))
   colnames(estDf) = colnames(riskDf) = paste(
     rep(names(estList), unlist(lapply(estListExp, function(xx) dim(xx)[2]))),
-          unlist(lapply(
-      estListExp, colnames
+    unlist(lapply(
+        estListExp, colnames
       )), sep='_')
   rownames(riskDf) = colnames(xvSmoothMat$regionMat)
   
@@ -227,27 +227,27 @@ lemXv = function(
   logProb = apply(logProbCoarse, 2, sum)
   
   logProbFull = data.frame(
-      bw = as.numeric(Sbw),
-      cases = Scount, 
-      fold = Sxv, 
-      minusLogProb = -logProb
+    bw = as.numeric(Sbw),
+    cases = Scount, 
+    fold = Sxv, 
+    minusLogProb = -logProb
   )
   
   xvRes = stats::aggregate(
-      logProbFull[,'minusLogProb'],
-      as.list(logProbFull[,c('bw','cases')]),
-      sum
+    logProbFull[,'minusLogProb'],
+    as.list(logProbFull[,c('bw','cases')]),
+    sum
   )
   xvRes = stats::reshape(
-      xvRes, direction = 'wide',
-      idvar = 'bw',
-      timevar = 'cases'
+    xvRes, direction = 'wide',
+    idvar = 'bw',
+    timevar = 'cases'
   )
   colnames(xvRes) = gsub("^x[.]", "", colnames(xvRes))    
   xvRes = xvRes[,c('bw',countcol)]
   minXvScore = apply(xvRes[,countcol, drop=FALSE],2,min)
   xvRes[,countcol] = xvRes[,countcol] - 
-      matrix(minXvScore, nrow=nrow(xvRes), ncol=length(minXvScore), byrow=TRUE)
+    matrix(minXvScore, nrow=nrow(xvRes), ncol=length(minXvScore), byrow=TRUE)
   if(verbose) {
     cat("putting estimated risk in raster\n")
   }
@@ -257,28 +257,28 @@ lemXv = function(
   
   riskRaster = xvSmoothMat$rasterFine
   levels(riskRaster)[[1]] =  as.data.frame(cbind(
-    ID = raster::levels(xvSmoothMat$rasterFine)[[1]]$ID,
-    newDf))
-    
-
+      ID = raster::levels(xvSmoothMat$rasterFine)[[1]]$ID,
+      newDf))
+  
+  
   
   result = list(
-      xv = xvRes,
-      xvFull = logProbFull,
-      riskAll = riskRaster,
-      smoothingMatrix = xvSmoothMat,
-      expected = polyCoarse,
-      folds = xvMat
+    xv = xvRes,
+    xvFull = logProbFull,
+    riskAll = riskRaster,
+    smoothingMatrix = xvSmoothMat,
+    expected = polyCoarse,
+    folds = xvMat
   )
   
   if(length(countcol) ==1) {
-  if(verbose) {
-    cat("final smoothing step\n")
-  }
-  
-  result$estimate = try(
-  	lemFinal(result), silent=TRUE
-  )
+    if(verbose) {
+      cat("final smoothing step\n")
+    }
+    
+    result$estimate = try(
+      lemFinal(result), silent=TRUE
+    )
   }
   
   return(result)

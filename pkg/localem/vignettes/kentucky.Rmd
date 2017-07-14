@@ -212,7 +212,6 @@ if(!file.exists(fileHere)) {
       population = kentuckyTract,   
       cellsCoarse = cellsCoarse,   
       cellsFine = cellsFine,   
-      #     lemObjects = readRDS(file.path(path, 'smoothingMatrix.rds')),
       bw = Sbw,
       xv = nxv, 
       ncores = ncores,
