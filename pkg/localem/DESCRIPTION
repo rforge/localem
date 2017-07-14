@@ -18,11 +18,9 @@ Imports:
     stats,
     mmap,
     parallel,
-    abind,
-    foreach
+    abind
 Suggests:
     spdep,
-    spatial.tools,
     diseasemapping,
     rgeos,
     rgdal,
@@ -31,6 +29,7 @@ Suggests:
   	knitr
 Enhances:
     RandomFields,
+    spatial.tools,
   	gpuR,
   	Pmisc
 RoxygenNote: 6.0.1
