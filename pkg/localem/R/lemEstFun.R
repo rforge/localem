@@ -76,6 +76,7 @@ riskEst = function(
     }
   }
   
+  
   regionMat = lemObjects$regionMat
   smoothingMat = lemObjects$smoothingArray[[bw]]
   
@@ -90,7 +91,7 @@ riskEst = function(
       ))
     if(verbose) cat("done.\n")
   }
-  
+    
   if(length(grep("xv[[:digit:]]+$", bwString))) {
     offsetMat = lemObjects$offsetMat[[
       paste('xvOffset', 
@@ -99,7 +100,7 @@ riskEst = function(
     offsetMat = lemObjects$offsetMat[['offset']]
   }
   
-  
+    
 # multiple observations
   if(is.data.frame(x)) x = as.matrix(x)
   if(is.matrix(x)) {
@@ -196,6 +197,10 @@ riskEst = function(
     obsCounts = as.matrix(x, ncol=1)
     colnames(obsCounts) = 'y'
   }
+  
+  
+
+  
   xvSet = gsub("^bw[[:digit:]]+(xv)?", "", bwString)
   if(nchar(xvSet)) {
     obsCounts = obsCounts * (!lemObjects$xv[,xvSet])
@@ -211,6 +216,7 @@ riskEst = function(
     names(lemObjects$partitionAreas)
   )
   
+ 
   # make sure everything's ordered correctly
   
   offsetMat = offsetMat[colnames(regionMat), colnames(regionMat)]
@@ -234,7 +240,7 @@ riskEst = function(
   
   crossprodFun = Matrix::crossprod
   
-  
+
 # a fix for zero counts zero offset give ratio of zero
   theZerosDenom = which(apply(regionOffset, 1, sum)<=0)
   zerosToAdd = matrix(0, nrow(obsCounts), ncol(obsCounts))		
@@ -267,13 +273,13 @@ riskEst = function(
   } else {
     smoothingMat = Matrix::Matrix(smoothingMat)
   }
-  
+
   Diter = 1
   absdiff = Inf
   
   if(verbose) cat("starting lem, bandwidth", bwString, '\n')
   
-  
+
   while((absdiff > tol) && (Diter < maxIter) ) {
     # to do: use gpuR's cpp_gpuMatrix_custom_igemm to reuse memory
     
@@ -304,14 +310,14 @@ riskEst = function(
   }
   if(verbose) cat("\ndone lem,", Diter, 'iterations\n')
   colnames(Lambda) = colnames(obsCounts)
-  
+
   littleLambda = solve(partitionAreasMat) %*% as.matrix(Lambda)
-  
+
   # expected count using full offsets, not xv offests
   expectedCoarseRegions = 
     (regionMat %*% lemObjects$offsetMat[['offset']]) %*% 
     littleLambda
-  
+
   return(list(
       expected = as.matrix(expectedCoarseRegions),
       risk = as.matrix(littleLambda)))

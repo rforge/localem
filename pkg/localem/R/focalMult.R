@@ -35,9 +35,9 @@ focalMultOneRowOuter = function(x, focalMat, focalDim, out, row, mmap = FALSE) {
     indexSeq = mapply(seq, 
       from=seq(
         from= raster::cellFromRowCol(out, row, 1), 
-        len=raster::nlayers(x), by=raster::ncell(x)),
+        len=raster::nlayers(out), by=raster::ncell(out)),
       MoreArgs = list(
-        by = 1, len = raster::ncol(x)
+        by = 1, len = raster::ncol(out)
       )
     )
     
@@ -87,9 +87,9 @@ focalMultOneRow = function(x, focalMat, focalDim, out, row, bw, uniqueBw=NULL, m
     indexSeq = mapply(seq, 
       from=seq(
         from= raster::cellFromRowCol(out, row, 1), 
-        len=raster::nlayers(x), by=raster::ncell(x)),
+        len=raster::nlayers(out), by=raster::ncell(out)),
       MoreArgs = list(
-        by = 1, len = raster::ncol(x)
+        by = 1, len = raster::ncol(out)
       )
     )
     
@@ -116,9 +116,10 @@ focalMult = function(
 ) {
   
   # check if bwXXXX is in names of x
-  bwExpr = "^bw([[:digit:]]|[.])+"
+  bwExpr = "^bw([[:digit:]]|[.])+_?"
   if( all(grepl(bwExpr, names(x))) ) {
     bw = regmatches(names(x), regexpr(bwExpr, names(x)))
+    bw = gsub("[[:punct:]]$", "", bw)
     names(x) = gsub(bwExpr, "", names(x))
   }
   

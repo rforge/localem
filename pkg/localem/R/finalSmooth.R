@@ -47,7 +47,7 @@ lemFinal = function(
     x=toSmooth, 
     w=x$smoothingMatrix$focal$focal, 
     edgeCorrect = TRUE,
-    filename = paste(tempfile(), '.grd',sep=''),
+    filename = filename,
     cl = theCluster
   )
   

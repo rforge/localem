@@ -82,10 +82,10 @@ lemXv = function(
       filename = file.path(path, 'smoothingMatrix.grd'),
       verbose = verbose)
     
-   
+    
     # save smoothing matrix, useful in case of failure later on
     saveRDS(xvSmoothMat, file = file.path(path, 'smoothingMatrix.rds'))
-    
+    # xvSmoothMat = readRDS(file.path(path, 'smoothingMatrix.rds'))
     xvMat = xvSmoothMat$xv
     
   } else {
@@ -115,22 +115,22 @@ lemXv = function(
   } else {
     polyCoarse = NULL
   }
-   
+  
   if(verbose) {
     cat("running local-EM for validation sets")
   }
   # estimate risk (by partition, not continuous) for each bw/cv combinantion
-
-forMoreArgs = list(
-  x=cases[,countcol, drop=FALSE],
-  lemObjects = xvSmoothMat,
-  tol = iterations$tol, 
-  maxIter = iterations$maxIter,
-  gpu = iterations$gpu,
-  verbose=verbose)
-
+  
+  forMoreArgs = list(
+    x=cases[,countcol, drop=FALSE],
+    lemObjects = xvSmoothMat,
+    tol = iterations$tol, 
+    maxIter = iterations$maxIter,
+    gpu = iterations$gpu,
+    verbose=verbose)
+  
   if(!is.null(theCluster)) {
-
+    
     estList = parallel::clusterMap(
       theCluster,
       riskEst,
@@ -138,7 +138,7 @@ forMoreArgs = list(
       MoreArgs = forMoreArgs,
       SIMPLIFY=FALSE
     )
-
+    
   } else {
     estList = mapply(
       riskEst,
@@ -234,16 +234,16 @@ forMoreArgs = list(
     folds = xvMat
   )
   
-    if(verbose) {
-      cat("final smoothing step\n")
-    }
-    
-    result$estimate = lemFinal(
-        x=result, 
-        filename = file.path(path, "final.grd"),
-        ncores = theCluster)
-
-   # done with the cluster
+  if(verbose) {
+    cat("final smoothing step\n")
+  }
+  
+  result$estimate = lemFinal(
+    x=result, 
+    filename = file.path(path, "final.grd"),
+    ncores = theCluster)
+  
+  # done with the cluster
   if(!is.null(theCluster))
     parallel::stopCluster(theCluster)
   
