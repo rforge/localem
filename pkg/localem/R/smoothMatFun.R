@@ -244,6 +244,7 @@ oneBlockOffdiagFun = function(
             smoothingRasterFile,
             mode=theType
           )	
+          dim(out)
           
           out[cell_position] = as.double(partHere[theOrder[[1]], theOrder[[2]],,] )      
           

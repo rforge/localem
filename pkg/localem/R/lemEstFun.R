@@ -41,13 +41,13 @@
 #'
 #' @export
 riskEst = function(
-    x, 
-    lemObjects, 
-    bw, 
-    tol = 1e-5,
-    maxIter = 1000,
-    gpu=FALSE, 
-    verbose=FALSE
+  x, 
+  lemObjects, 
+  bw, 
+  tol = 1e-5,
+  maxIter = 1000,
+  gpu=FALSE, 
+  verbose=FALSE
 ) {
   
   if(length(bw) > 1) {
@@ -78,23 +78,23 @@ riskEst = function(
   
   regionMat = lemObjects$regionMat
   smoothingMat = lemObjects$smoothingArray[[bw]]
-
+  
   if(class(smoothingMat) == 'RasterLayer') {
-  if(verbose) cat("loading smoothing matrix..")
-  smoothingMat = matrix(raster::values(lemObjects$smoothingArray[[bw]]),
+    if(verbose) cat("loading smoothing matrix..")
+    smoothingMat = matrix(raster::values(lemObjects$smoothingArray[[bw]]),
       nrow = nrow(lemObjects$smoothingArray),
       ncol = ncol(lemObjects$smoothingArray),
       byrow = FALSE,
       dimnames = list(
-          lemObjects$partitions, lemObjects$partitions
+        lemObjects$partitions, lemObjects$partitions
       ))
-  if(verbose) cat("done.\n")
+    if(verbose) cat("done.\n")
   }
   
   if(length(grep("xv[[:digit:]]+$", bwString))) {
     offsetMat = lemObjects$offsetMat[[
-        paste('xvOffset', 
-            gsub('^bw[[:digit:]]+xv', '', bwString), sep='')]]
+      paste('xvOffset', 
+        gsub('^bw[[:digit:]]+xv', '', bwString), sep='')]]
   } else {
     offsetMat = lemObjects$offsetMat[['offset']]
   }
@@ -165,7 +165,7 @@ riskEst = function(
         if(length(idNeighNotMatch) == 1) {
           
           obsCounts[idMatch == idNeighNotMatch,] =
-              obsCounts[idMatch == idNeighNotMatch,] + x[x[[idColX]] == inD,countcol]
+            obsCounts[idMatch == idNeighNotMatch,] + x[x[[idColX]] == inD,countcol]
           
         } else if(length(idNeighNotMatch) > 1) {
           
@@ -174,16 +174,16 @@ riskEst = function(
           coordsNeighNotMatch = sp::coordinates(rgeos::gCentroid(polyNeighNotMatch, byid = TRUE))
           
           coordsNotMatch = matrix(
-              rep(coordinates(rgeos::gCentroid(polyNotMatch, byid = TRUE)), each = length(polyNeighNotMatch)),
-              nrow = length(polyNeighNotMatch),
-              ncol = 2,
-              dimnames = list(1:length(polyNeighNotMatch), c("x","y"))
+            rep(coordinates(rgeos::gCentroid(polyNotMatch, byid = TRUE)), each = length(polyNeighNotMatch)),
+            nrow = length(polyNeighNotMatch),
+            ncol = 2,
+            dimnames = list(1:length(polyNeighNotMatch), c("x","y"))
           )
           
           distNeighNotMatch = apply((coordsNeighNotMatch - coordsNotMatch)^2, 1, sum)
           
           obsCounts[idMatch == idNeighNotMatch[which.min(distNeighNotMatch)],] =
-              obsCounts[idMatch == idNeighNotMatch[which.min(distNeighNotMatch)],] + x[x[[idColX]] == inD,countcol]
+            obsCounts[idMatch == idNeighNotMatch[which.min(distNeighNotMatch)],] + x[x[[idColX]] == inD,countcol]
         }
       }
     } else {
@@ -204,92 +204,92 @@ riskEst = function(
   # Lambda = \int_{Q_\ell} O(u) du, = O_{\ell} (Lambda in Biometrics paper)
   
   partitionAreasMat = Matrix::Diagonal(
-      length(lemObjects$partitionAreas),
-      lemObjects$partitionAreas)
+    length(lemObjects$partitionAreas),
+    lemObjects$partitionAreas)
   dimnames(partitionAreasMat) = list(
-      names(lemObjects$partitionAreas), 
-      names(lemObjects$partitionAreas)
+    names(lemObjects$partitionAreas), 
+    names(lemObjects$partitionAreas)
   )
   
   # make sure everything's ordered correctly
   
   offsetMat = offsetMat[colnames(regionMat), colnames(regionMat)]
   partitionAreasMat = partitionAreasMat[colnames(regionMat), colnames(regionMat)]
- 
+  
   if(!all(rownames(smoothingMat) == colnames(regionMat))) {
-	  smoothingMat = smoothingMat[colnames(regionMat), colnames(regionMat)]
+    smoothingMat = smoothingMat[colnames(regionMat), colnames(regionMat)]
   }
   
   #risk estimation for aggregated regions
   oldLambda = partitionAreasMat %*%
-      matrix(1,
-          nrow = dim(offsetMat)[1],
-          ncol = ncol(obsCounts),
-          dimnames = list(
-              dimnames(offsetMat)[[1]], 
-              colnames(obsCounts))
-      )
+    matrix(1,
+      nrow = dim(offsetMat)[1],
+      ncol = ncol(obsCounts),
+      dimnames = list(
+        dimnames(offsetMat)[[1]], 
+        colnames(obsCounts))
+    )
   
   regionOffset = regionMat %*% offsetMat
-
+  
   crossprodFun = Matrix::crossprod
-
-
+  
+  
 # a fix for zero counts zero offset give ratio of zero
   theZerosDenom = which(apply(regionOffset, 1, sum)<=0)
   zerosToAdd = matrix(0, nrow(obsCounts), ncol(obsCounts))		
   zerosToAdd[theZerosDenom,] = -1
- 
-  		
+  
+  
   theZerosCount = which(as.matrix(obsCounts) <=0 )
-    theZerosDenomX = sort(outer(
-    	theZerosDenom, 
-  		seq(from=0, by=nrow(obsCounts), len = ncol(obsCounts)), 
-  		'+'))
+  theZerosDenomX = sort(outer(
+      theZerosDenom, 
+      seq(from=0, by=nrow(obsCounts), len = ncol(obsCounts)), 
+      '+'))
   
   if(!all(theZerosDenomX %in% theZerosCount)) {
-  	warning("zero denominator but non-zero count")
-  	}
-
-
+    warning("zero denominator but non-zero count")
+  }
+  
+  
   if(requireNamespace("gpuR", quietly=TRUE) & gpu) {
-   	if(verbose) cat("using GPU, ")
+    if(verbose) cat("using GPU, ")
     smoothingMat = try(gpuR::vclMatrix(as.matrix(smoothingMat), type='double'), silent=TRUE)
     regionOffset = try(gpuR::vclMatrix(as.matrix(regionOffset), type='double'), silent=TRUE)
     oldLambda = try(gpuR::vclMatrix(as.matrix(oldLambda), type='double'), silent=TRUE)
-  	obsCounts = gpuR::vclMatrix(as.matrix(obsCounts), type='double')
-  	zerosToAdd = gpuR::vclMatrix(zerosToAdd, type='double')
-   	crossprodFun = gpuR::crossprod
-   	
+    obsCounts = gpuR::vclMatrix(as.matrix(obsCounts), type='double')
+    zerosToAdd = gpuR::vclMatrix(zerosToAdd, type='double')
+    crossprodFun = gpuR::crossprod
+    
     if(class(smoothingMat) == 'try-error'){
-        	warning('putting smoothing matrix in gpu failed, probably out of memory\n')
+      warning('putting smoothing matrix in gpu failed, probably out of memory\n')
     }
   } else {
-  	smoothingMat = Matrix::Matrix(smoothingMat)
+    smoothingMat = Matrix::Matrix(smoothingMat)
   }
   
   Diter = 1
   absdiff = Inf
-
+  
   if(verbose) cat("starting lem, bandwidth", bwString, '\n')
-
+  
   
   while((absdiff > tol) && (Diter < maxIter) ) {
     # to do: use gpuR's cpp_gpuMatrix_custom_igemm to reuse memory
-
-   	denom = regionOffset %*% oldLambda
-   	denom = denom + zerosToAdd
-   	
-	countsDivDenom = obsCounts/denom
-
-	roCprod = crossprodFun(regionOffset, countsDivDenom)
-	
-	em = roCprod * oldLambda
-	
-	Lambda = crossprodFun(smoothingMat, em)
-        
+    
+    denom = regionOffset %*% oldLambda
+    denom = denom + zerosToAdd
+    
+    countsDivDenom = obsCounts/denom
+    
+    roCprod = crossprodFun(regionOffset, countsDivDenom)
+    
+    em = roCprod * oldLambda
+    
+    Lambda = crossprodFun(smoothingMat, em)
+    
     lDiff = oldLambda - Lambda    
-        
+    
     absdiff = max(abs(c(max(lDiff), min(lDiff))))
     if(all(is.na(absdiff))) {
       warning("missing values in Lambda")
@@ -300,19 +300,19 @@ riskEst = function(
     oldLambda = Lambda
     Lambda = lDiff
     Diter = Diter + 1
-   	if(verbose) cat(".")
+    if(verbose) cat(".")
   }
   if(verbose) cat("\ndone lem,", Diter, 'iterations\n')
   colnames(Lambda) = colnames(obsCounts)
   
   littleLambda = solve(partitionAreasMat) %*% as.matrix(Lambda)
   
-    # expected count using full offsets, not xv offests
-    expectedCoarseRegions = 
-        (regionMat %*% lemObjects$offsetMat[['offset']]) %*% 
-        littleLambda
-    
-    return(list(
-            expected = as.matrix(expectedCoarseRegions),
-            risk = as.matrix(littleLambda)))
+  # expected count using full offsets, not xv offests
+  expectedCoarseRegions = 
+    (regionMat %*% lemObjects$offsetMat[['offset']]) %*% 
+    littleLambda
+  
+  return(list(
+      expected = as.matrix(expectedCoarseRegions),
+      risk = as.matrix(littleLambda)))
 }

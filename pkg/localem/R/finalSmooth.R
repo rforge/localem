@@ -25,31 +25,17 @@ lemFinal = function(
   
   Scounts = counts
   Slayers = paste("bw", finalBw, "_", Scounts, sep='')
-  
-  xFocal = x$smoothingMatrix$focal$focal[paste("bw", finalBw, sep='')]
-  xFocal = do.call(abind::abind, c(xFocal, list(along=3)))
-  
-  # smooth the risk and integrate kernel over non-NA area
-  focalFunction = function(x, fa)  {
-    apply(fa*x, 3, sum, na.rm=TRUE) / 
-      apply(fa*(!is.na(x)), 3, sum)
-  }
-  
+  Slayers = gsub("^bwbw", "bw", Slayers)
   toSmooth = x$riskAll
   levels(toSmooth)[[1]] = levels(toSmooth)[[1]][, c("ID", Slayers)]
   toSmooth = deratify(toSmooth)
-
-  Soutfile = file.path(tempdir(), paste('finalSmooth', Slayers, '.grd', sep='')) 
-  names(Soutfile) = Slayers
   
   endCluster = FALSE
   theCluster = NULL
   if(length(grep("cluster", class(ncores))) ) {
-    if(verbose) cat("using existing cluster\n")
     theCluster = ncores
   } else if(!is.null(ncores)) {
     if(ncores > 1) {
-      if(verbose) cat("starting new cluster\n")
       theCluster = parallel::makeCluster(spec=ncores, type='PSOCK', methods=TRUE)
       parallel::setDefaultCluster(theCluster)
       endCluster = TRUE
@@ -57,77 +43,17 @@ lemFinal = function(
   }
   
   
-  oneFinalFun = function(Dsmooth, toSmooth, xFocal, Soutfile) {
-    res = raster::focal(
-      toSmooth[[Dsmooth]],
-      w = xFocal[,,gsub("_.*$", "", Dsmooth)],
-      na.rm=TRUE, pad=TRUE,
-      filename = Soutfile[Dsmooth],
-      overwrite = file.exists(Soutfile[Dsmooth])
-    )
-    filename(res)
-  }
-
-  forMoreArgs = list(
-    toSmooth = toSmooth, xFocal = xFocal, Soutfile = Soutfile
-    )
-  
-  if(!is.null(theCluster)) {
-    foreachResult = parallel::clusterMap(
-      theCluster, 
-      oneFinalFun,
-      Dsmooth = Slayers,
-      MoreArgs = forMoreArgs,
-      SIMPLIFY=FALSE)
-  } else {
-    foreachResult = mapply(
-      oneFinalFun,
-      Dsmooth = Slayers,
-      MoreArgs = forMoreArgs,
-      SIMPLIFY=FALSE)
-  }
-
-    
-  
-#  foreachResult = foreach(
-#      Dsmooth = Slayers, .packages='raster'
-#    ) %dopar% { 
-#      res = raster::focal(
-#        toSmooth[[Dsmooth]],
-#        w = xFocal[,,gsub("_.*$", "", Dsmooth)],
-#        na.rm=TRUE, pad=TRUE,
-#        filename = Soutfile[Dsmooth],
-#        overwrite = file.exists(Soutfile[Dsmooth])
-#      )
-#      filename(res)
-#    }
-  
-  
-  if(endCluster) parallel::stopCluster(theCluster)
-  
-  smoothedStack = raster::stack(foreachResult)
-  names(smoothedStack) = Scounts
-  
-  result = raster::brick(
-    smoothedStack, filename = filename, overwrite = file.exists(filename)
+  result = focalMult(
+    x=toSmooth, 
+    w=x$smoothingMatrix$focal$focal, 
+    edgeCorrect = TRUE,
+    filename = paste(tempfile(), '.grd',sep=''),
+    cl = theCluster
   )
-  names(result) = Scounts
   
-  if(FALSE) {
-    suppressWarnings(
-      result <- spatial.tools::rasterEngine(
-        x=toSmooth, fun=focalFunction, 
-        args = list(fa=xFocal),
-        window_dims = dim(xFocal),
-        outbands=dim(xFocal)[3],
-        outfiles = 1,
-        processing_unit = 'single',
-        chunk_format = 'array',
-        filename = gsub("[.]gr(d|i)$", "", filename), overwrite=TRUE,
-        verbose=(verbose>2)
-      ))
-  }
-  
+  if(endCluster)  
+    parallel::stopCluster(theCluster)
+    
   result
   
 }

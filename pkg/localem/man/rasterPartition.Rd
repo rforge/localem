@@ -5,7 +5,7 @@
 \title{Generates the partitions by overlaying rasters of spatial polygons}
 \usage{
 rasterPartition(polyCoarse, polyFine, cellsCoarse, cellsFine, bw,
-  focalSize = NULL, fact = 1, xv = NULL, ncores = 1, path = getwd(),
+  focalSize = NULL, xv = NULL, ncores = 1, path = getwd(),
   idFile = paste(tempfile("lemId", path), ".grd", sep = ""),
   offsetFile = paste(tempfile("lemOffset", path), ".grd", sep = ""),
   verbose = FALSE)
@@ -22,8 +22,6 @@ rasterPartition(polyCoarse, polyFine, cellsCoarse, cellsFine, bw,
 \item{bw}{Vector of bandwidths}
 
 \item{focalSize}{Distance to truncate Gaussian kernel, default is 2.5 times largest bandwidth}
-
-\item{fact}{Aggregation factor for offsets prior to smoothing}
 
 \item{xv}{(Optional) Number of cross-validation sets, or matrix where rows are coarse polygons and columns are cross-validation sets}
 

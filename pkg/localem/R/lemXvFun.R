@@ -11,7 +11,6 @@
 #' @param lemObjects List of arrays for the smoothing matrix, and raster stacks for the partition and smoothed offsets
 #' @param ncores Number of cores/threads for parallel processing
 #' @param iterations convergence tolerance, number of iterations, and use of gpuR package for running local-EM recursions
-#' @param fact Aggregation factor for offsets prior to smoothing
 #' @param randomSeed Seed for random number generator
 #' @param verbose Verbose output
 #' @param path Folder for storing rasters
@@ -31,7 +30,6 @@ lemXv = function(
   lemObjects, 
   ncores = 1, 
   iterations = list(tol = 1e-5, maxIter = 1000, gpu=FALSE), 
-  fact = 1,
   randomSeed = NULL, 
   verbose = FALSE,
   path = getwd()
@@ -72,7 +70,6 @@ lemXv = function(
       cellsFine = cellsFine, 
       xv = xv,
       bw = bw,
-      fact = fact,
       ncores = theCluster, 
       path = path,
       idFile = file.path(path,'idXv.grd'), 
@@ -237,16 +234,16 @@ forMoreArgs = list(
     folds = xvMat
   )
   
-  if(length(countcol) ==1) {
     if(verbose) {
       cat("final smoothing step\n")
     }
     
-    result$estimate = try(
-      lemFinal(result), silent=TRUE
-    )
-  }
-  # done with the cluster
+    result$estimate = lemFinal(
+        x=result, 
+        filename = file.path(path, "final.grd"),
+        ncores = theCluster)
+
+   # done with the cluster
   if(!is.null(theCluster))
     parallel::stopCluster(theCluster)
   

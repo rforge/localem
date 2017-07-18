@@ -122,7 +122,7 @@ kentuckyCounty = merge(kentuckyCounty, countyCounts, by.x = 'id', by.y = 'row.na
 ```
 
 
-```{r plotOffset, echo = FALSE, fig.cap = 'Simulated Events', fig.subcap = c('Offset', 'Relative Intensity', 'Events', 'Counts')}
+```{r plotOffset, echo = FALSE, fig.cap = 'Simulated Events', fig.subcap = c('Offset', 'Relative Intensity', 'Events', 'Counts'), fig.ncol=2}
 
 # offset map
 oCol = colourScale(
@@ -221,6 +221,7 @@ if(!file.exists(fileHere)) {
   load(fileHere)  
 }
 
+  
 ```
 
 ```{r cvPlotNew, fig.cap = 'Cross Validation Scores', fig.height=4, fig.width=6, out.width = '80%', fig.ncol=NULL}
@@ -287,7 +288,7 @@ matplot(xvAll$xv[,'bw']/1000,
 ```{r finalStep, cache=(basename(getwd())=='www'), cache.path='cache'}
 kentuckyFinal = lemFinal(
     x=xvAll,
-    counts=paste("count", 2:3, sep=''),
+    counts=grep("^count[[:digit:]]", names(kentuckyCounty), value=TRUE),
     ncores = 2,
     filename = file.path('cache', 'lemFinal.grd'),
     verbose = TRUE)
@@ -308,7 +309,9 @@ for(Dsim in Ssim) {
   
   
   map.new(kentuckyCounty)
-  plot(kentuckyFinal[[grep(paste('[[:alpha:]]',Dsim,'$',sep=''), names(kentuckyFinal))[1]]], 
+  plot(kentuckyFinal[[
+      grep(paste('[[:alpha:]]',Dsim,'$',sep=''), 
+        names(kentuckyFinal))[1] ]], 
       col = iCol$col, breaks=iCol$breaks,
       legend=FALSE,
       add=TRUE)

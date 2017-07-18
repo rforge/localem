@@ -214,7 +214,7 @@ kernMat = function(
   } # for Dcol
   
   if(length(xv)) {
-    offsetBwNames = grep("^bw", xv, value=TRUE)
+    offsetBwNames = grep("^bw([[:digit:]]|[.])+(xv[[:digit:]]+)?$", xv, value=TRUE)
     Sbw = gsub("xv[[:digit:]]+", "", offsetBwNames)
     kernelArray = kernelArray[,,Sbw]
     dimnames(kernelArray)[[3]] = offsetBwNames

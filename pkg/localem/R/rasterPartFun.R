@@ -6,7 +6,6 @@
 #' @param polyFine Spatial polygons of population data
 #' @param bw Vector of bandwidths
 #' @param focalSize Distance to truncate Gaussian kernel, default is 2.5 times largest bandwidth
-#' @param fact Aggregation factor for offsets prior to smoothing
 #' @param cellsCoarse Minimum resolution for rasterization of case data for numerical accuracy of smoothing matrix
 #' @param cellsFine Minimum resolution for rasterization of population data for numerical integration of smoothing matrix
 #' @param xv (Optional) Number of cross-validation sets, or matrix where rows are coarse polygons and columns are cross-validation sets
@@ -44,7 +43,6 @@ rasterPartition = function(
   cellsFine, 
   bw,
   focalSize = NULL,
-  fact = 1,
   xv = NULL, 
   ncores = 1, 
   path = getwd(),
@@ -161,16 +159,6 @@ rasterPartition = function(
   
   rasterOffset = setMinMax(rasterOffset)
   
-  if(fact > 1) {
-    offsetTempFileAgg = file.path(path, 'offsetTempAgg.grd')
-    rasterOffsetAgg = raster::aggregate(rasterOffset, fact=fact, 
-      filename=offsetTempFileAgg, overwrite=file.exists(offsetTempFileAgg)
-    )
-  } else {
-    offsetTempFileAgg = filename(rasterOffset)
-    rasterOffsetAgg = rasterOffset
-  }
-  rasterOffsetAgg = setMinMax(rasterOffsetAgg)
   
   if(is.null(focalSize))
     focalSize = 2.5*max(bw)
@@ -192,24 +180,11 @@ rasterPartition = function(
   if(verbose) cat("creating arrays")
   
   # focal used for smoothing matrix
-  theFocalResult = focalFromBw(
+  theFocal = focalFromBw(
     bw = bw, 
     fine=rasterFine, 
     focalSize=focalSize,
     cl=theCluster)
-  
-#	focal used for offsets
-  if(fact != 1) {
-    theFocal = focalFromBw(
-      bw=bw,
-      fine = rasterOffsetAgg,
-      focalSize = focalSize,
-      cl=theCluster
-    )
-  } else {
-    theFocal = theFocalResult
-  }
-  if(verbose) cat(".\n")
   
   forSmooth = expand.grid(
     bw=names(theFocal$focal),
@@ -223,12 +198,13 @@ rasterPartition = function(
   focalArray = focalArray[,,forSmooth[,'bw'], drop=FALSE]
   dimnames(focalArray)[[3]] = paste(
     forSmooth[,'bw'], 
-    gsub("offset", "", forSmooth[,'layer'], ignore.case=TRUE),
+    gsub("offset", "", as.character(forSmooth[,'layer']), ignore.case=TRUE),
     sep=''
   )
   theFocal$array = focalArray   
   
-  Scvsets = match(forSmooth[,'layer'],names(rasterOffset))
+  if(verbose) cat(".\n")
+  
   
   if(verbose) {
     cat(date(), "\n")
@@ -236,110 +212,27 @@ rasterPartition = function(
   }
   
   
+  smoothedOffset = focalMult(
+    x= rasterOffset, 
+    w = theFocal$focal,
+    filename = paste(tempfile(), '.grd', sep=''), 
+    edgeCorrect=FALSE, 
+    cl = NULL
+  )
   
-  outfile = file.path(path, "smoothedOffsetBrick.grd")
-  
-  smoothedOffset <- tryCatch(
-    suppressWarnings(spatial.tools::rasterEngine(
-        x=rasterOffsetAgg, fun=focalFunction, 
-        args = list(Scvsets=Scvsets, focalArray=focalArray),
-        window_dims = dim(focalArray),
-        outbands=length(Scvsets),
-        outfiles = 1,
-        processing_unit = 'single',
-        datatype='FLT8S',
-        chunk_format = 'array',
-        filename = gsub("[.]gr[id]$", "", outfile), 
-        overwrite=TRUE,
-        verbose=(verbose>2),
-        blocksize=1,
-        minblocks = nrow(rasterOffsetAgg)
-      )), error = function(e) e)
-  if(any(class(smoothedOffset) == 'error') ) {
-    dir.create(file.path(path, 'smoothedOffsetList'), showWarnings=FALSE)
-    Soutfile = file.path(path, 'smoothedOffsetList', 
-      paste("smoothedOffsetList", 1:nrow(forSmooth), ".grd", sep=''))
-    if(verbose) {
-      cat("smoothing with spatial.tools failed, using raster\n")
-      cat("temporary files", Soutfile[1], " ",  Soutfile[length(Soutfile)], "\n")
-    }
-# parallel package, doesn't work for some reason    
-#    smoothedOffset = parallel::clusterMap(
-#    	cl = NULL,
-#    	fun = function(x, rasterOffsetAgg, forSmooth, focalArray, Soutfile) {
-#          raster::focal(
-#              rasterOffsetAgg[[ forSmooth[x,'layer'] ]],
-#              w = focalArray[,,forSmooth[x,'bw'] ],
-#              na.rm=TRUE, pad=TRUE,
-#              filename = Soutfile[x],
-#              overwrite = file.exists(Soutfile[x])
-#          )
-#        },
-#    	x = 1:nrow(forSmooth),
-#    	MoreArgs = list(rasterOffsetAgg=rasterOffsetAgg,
-#    	forSmooth=forSmooth, focalArray=focalArray, Soutfile=Soutfile)
-#        )
-# define x so package check is happy
-    
-    forMoreArgs = list(
-      offsetTempFileAgg=offsetTempFileAgg, 
-      focalArray=focalArray, 
-      forSmooth=forSmooth, Soutfile = Soutfile)
-    
-    if(!is.null(theCluster)) {
-      smoothedOffsetForeachResult = parallel::clusterMap(
-        theCluster, smoothedOffsetMapFun, 
-        x = 1:nrow(forSmooth),
-        MoreArgs = forMoreArgs)
-    } else {
-      smoothedOffsetForeachResult = mapply(
-        smoothedOffsetMapFun,
-        x = 1:nrow(forSmooth),
-        MoreArgs = forMoreArgs)
-    }
-    
-    
-#    smoothedOffsetForeachResult = foreach::foreach(
-#        x = 1:nrow(forSmooth), .packages='raster'
-#      ) %dopar% { 
-#        offsetHere = brick(offsetTempFileAgg)[[ forSmooth[x,'layer'] ]]
-#        res = raster::focal(
-#          offsetHere,
-#          w = focalArray[,,forSmooth[x,'bw'] ],
-#          na.rm=TRUE, pad=TRUE,
-#          filename = Soutfile[x],
-#          overwrite = file.exists(Soutfile[x])
-#        )
-#        filename(res)
-#      }
-    
-    smoothedOffsetStack = raster::stack(Soutfile)
-    names(smoothedOffsetStack) = dimnames(focalArray)[[3]]
-    
-    smoothedOffset = raster::brick(
-      smoothedOffsetStack, filename = outfile, overwrite = file.exists(outfile)
-    )
-  } else {
-    # no errors
-    smoothedOffset = raster::brick(outfile)
-  }  
   if(verbose) {
     cat(date(), "\n")
     cat("smoothing offsets done\n")
   }
   
-  if(endCluster) parallel::stopCluster(theCluster)
-  
-  names(smoothedOffset) = dimnames(focalArray)[[3]]
-  
-  if(fact>1) {
-    smoothedOffsetDisagg = raster::disaggregate(smoothedOffset, fact=fact)
-  } else {
-    smoothedOffsetDisagg = smoothedOffset
-  }
-  
-  offsetStack = writeRaster(addLayer(rasterOffset, smoothedOffsetDisagg),
+  names(smoothedOffset) = gsub("[oO]ffset", "", names(smoothedOffset)) 
+  offsetStack = writeRaster(
+    addLayer(rasterOffset, 
+      smoothedOffset[[grep('ones$', names(smoothedOffset), invert=TRUE)]]),
     filename = offsetFile, overwrite = file.exists(offsetFile))  
+  
+  
+  if(endCluster) parallel::stopCluster(theCluster)
   
 # create list of partitions
   partitions = as.data.frame(stats::na.omit(raster::unique(rasterFineId)))
@@ -397,7 +290,7 @@ rasterPartition = function(
     rasterCoarse=rasterCoarse,
     polyCoarse = polyCoarse,
     rasterFine=partitionRaster,
-    focal=theFocalResult,
+    focal=theFocal,
     offset=offsetStack,
     offsetMat = offsetMat,
     regionMat = regionMat,

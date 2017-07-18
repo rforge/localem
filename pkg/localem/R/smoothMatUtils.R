@@ -78,7 +78,7 @@ smoothingMatrixEntries = function(
   }
   
   
-  offsetBwNames = grep("^bw", names(offsetRaster), value=TRUE)
+  offsetBwNames = grep("^bw([[:digit:]]|[.])+(xv[[:digit:]]+)?$", names(offsetRaster), value=TRUE)
   # extract data for extent of coarse cells from fine rasters
   cellInfo1=getCellInfo(
     cell1, coarse,
@@ -225,7 +225,8 @@ oneBlockFun = function(Dcell1,
   theType,
   verbose
 ) {
-  thisBlock = try(smoothingMatrixEntries(cell1 = Dcell1,
+  thisBlock = try(
+    smoothingMatrixEntries(cell1 = Dcell1,
       focalList=kernelArrayD,
       coarse=rasterCoarse,
       fine=rasterFine,
@@ -315,11 +316,6 @@ smoothingMatrixDiag = function(
     nl = Nsmooths
   )
   names(smoothingRasterTemplate) = Sbw		
-  
-#  nTotalCells = as.integer(prod(dim(smoothingRasterTemplate)))
-#  if(is.na(nTotalCells)) {
-#  	warning("too many cells in smoothing array. Reduce number of bandwidths or xv sets")
-#  }
   
   firstFile = filename
   
