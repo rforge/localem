@@ -140,11 +140,11 @@ riskEst = function(
     }
     
     #fine raster did not include all regions in the coarse shapefile
-    if(length(idCoarse) != dim(regionMat)[2]) {
+    if(length(idCoarse) != dim(regionMat)[1]) {
       
       polyNeigh = spdep::poly2nb(lemObjects$polyCoarse, row.names = idCoarse)
       
-      idMatch = idCoarse[as.numeric(dimnames(regionMat)[[2]])]
+      idMatch = idCoarse[as.numeric(dimnames(regionMat)[[1]])]
       idNotMatch = idCoarse[!(idCoarse %in% idMatch)]
       
       obsCounts = as.matrix(x[match(idMatch, x[[idColX]]),countcol])

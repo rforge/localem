@@ -102,6 +102,7 @@ rasterPartition = function(
   } else {
     if(is.null(xv)) {
       xvMat = matrix()
+	  dimnames(xvMat) = list(1, 1)
     } else {
       xvMat = xv
     }
