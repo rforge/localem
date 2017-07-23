@@ -133,7 +133,7 @@ lemXv = function(
     
     estList = parallel::clusterMap(
       theCluster,
-      riskEst,
+      finalLemIter,
       bw = xvSmoothMat$bw,
       MoreArgs = forMoreArgs,
       SIMPLIFY=FALSE
@@ -141,7 +141,7 @@ lemXv = function(
     
   } else {
     estList = mapply(
-      riskEst,
+      finalLemIter,
       bw = xvSmoothMat$bw,
       MoreArgs = forMoreArgs,
       SIMPLIFY=FALSE
@@ -238,8 +238,10 @@ lemXv = function(
     cat("final smoothing step\n")
   }
   
-  result$estimate = lemFinal(
+  result$estimate = finalSmooth(
     x=result, 
+	counts = colnames(result$xv)[-1],
+	bw = result$xv[apply(result$xv[,counts],2,which.min),'bw'], 
     filename = file.path(path, "final.grd"),
     ncores = theCluster)
   

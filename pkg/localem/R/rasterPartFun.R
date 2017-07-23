@@ -308,28 +308,3 @@ rasterPartition = function(
   
 }
 
-
-
-focalFunction = function(x, focalArray, Scvsets)  {
-  apply(focalArray*x[,,Scvsets,drop=FALSE], 
-    3, sum, na.rm=TRUE)
-}
-
-
-smoothedOffsetMapFun = function(
-  x=x, offsetTempFileAgg, 
-  focalArray, 
-  forSmooth, Soutfile
-) {
-  offsetHere = raster::brick(offsetTempFileAgg)[[ forSmooth[x,'layer'] ]]
-  res = raster::focal(
-    offsetHere,
-    w = focalArray[,,forSmooth[x,'bw'] ],
-    na.rm=TRUE, pad=TRUE,
-    filename = Soutfile[x],
-    overwrite = file.exists(Soutfile[x])
-  )
-  filename(res)
-}
-
-

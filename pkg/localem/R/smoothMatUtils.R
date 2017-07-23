@@ -276,7 +276,7 @@ oneBlockFun = function(Dcell1,
       writeCounter1 = writeCounter1 + 1
     } # end while 
   } # end not null
-  dim(thisBlock)
+  return(thisBlock)
 } # end oneBlockFun
 
 # Computes all of the diagonal entries of the smoothing matrix for the partitions
