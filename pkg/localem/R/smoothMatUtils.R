@@ -276,7 +276,7 @@ oneBlockFun = function(Dcell1,
       writeCounter1 = writeCounter1 + 1
     } # end while 
   } # end not null
-  return(thisBlock)
+  dim(thisBlock)
 } # end oneBlockFun
 
 # Computes all of the diagonal entries of the smoothing matrix for the partitions
@@ -366,17 +366,23 @@ smoothingMatrixDiag = function(
     verbose=verbose
   )
   
-  if(!is.null(cl)) {
-    diagBlocks = parallel::clusterMap(
-      cl, oneBlockFun, 
-      Dcell1 = 1:ncell(rasterCoarse), 
-      MoreArgs = forMoreArgs)
-  } else {
+  # UNSURE OF ISSUE WITH CLUSTERMAP
+  # if(!is.null(cl)) {
+	# diagBlocks = parallel::clusterMap(
+      # cl, oneBlockFun, 
+      # Dcell1 = 1:ncell(rasterCoarse), 
+      # MoreArgs = forMoreArgs)
+  # } else {
+    # diagBlocks = mapply(
+      # oneBlockFun,
+      # Dcell1 = 1:ncell(rasterCoarse), 
+      # MoreArgs = forMoreArgs)
+  # }
+
     diagBlocks = mapply(
-      oneBlockFun,
-      Dcell1 = 1:ncell(rasterCoarse), 
-      MoreArgs = forMoreArgs)
-  }
+		oneBlockFun,
+		Dcell1 = 1:ncell(rasterCoarse), 
+		MoreArgs = forMoreArgs)
   
   cellsWithData = which(unlist(lapply(diagBlocks, length))>0)
   
