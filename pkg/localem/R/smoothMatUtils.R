@@ -366,18 +366,22 @@ smoothingMatrixDiag = function(
     verbose=verbose
   )
   
-  # UNSURE OF ISSUE WITH CLUSTERMAP
-  # if(!is.null(cl)) {
-	# diagBlocks = parallel::clusterMap(
-      # cl, oneBlockFun, 
-      # Dcell1 = 1:ncell(rasterCoarse), 
-      # MoreArgs = forMoreArgs)
-  # } else {
-    # diagBlocks = mapply(
-      # oneBlockFun,
-      # Dcell1 = 1:ncell(rasterCoarse), 
-      # MoreArgs = forMoreArgs)
-  # }
+  if(!is.null(cl)) {
+
+	parallel::clusterExport(cl, 
+		list('smoothingMatrixEntries','kernMat','getCellInfo')
+	)
+	
+	diagBlocks = parallel::clusterMap(
+      cl, oneBlockFun, 
+      Dcell1 = 1:ncell(rasterCoarse), 
+      MoreArgs = forMoreArgs)
+  } else {
+    diagBlocks = mapply(
+      oneBlockFun,
+      Dcell1 = 1:ncell(rasterCoarse), 
+      MoreArgs = forMoreArgs)
+  }
 
     diagBlocks = mapply(
 		oneBlockFun,
