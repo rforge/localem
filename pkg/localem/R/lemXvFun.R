@@ -239,9 +239,9 @@ lemXv = function(
   }
   
   result$estimate = finalSmooth(
-    x=result, 
+    x = result, 
 	counts = colnames(result$xv)[-1],
-	bw = result$xv[apply(result$xv[,counts],2,which.min),'bw'], 
+	bw = result$xv[apply(result$xv[,colnames(result$xv)[-1]],2,which.min),'bw'], 
     filename = file.path(path, "final.grd"),
     ncores = theCluster)
   

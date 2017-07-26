@@ -266,7 +266,7 @@ for(Dbw in xvKentucky$xv$bw) {
 # Multiple datasets
 
 
-```{r cvNewAll, cache=(basename(getwd())=='www'), cache.path='cache'}
+```{r cvNewAll, eval=FALSE, purl=FALSE, cache=(basename(getwd())=='www'), cache.path='cache'}
 library('localEM')
 xvAll = lemXv(
     cases = kentuckyCounty@data[,grep("^count[[:digit:]]", names(kentuckyCounty))],   
@@ -277,7 +277,7 @@ xvAll = lemXv(
 ```
 
 
-```{r cvPlotAll, fig.cap='cross validation scores', fig.height=4, fig.width=6, out.width = '80%', fig.ncol=NULL}
+```{r cvPlotAll, eval=FALSE, purl=FALSE, fig.cap='cross validation scores', fig.height=4, fig.width=6, out.width = '80%', fig.ncol=NULL}
 matplot(xvAll$xv[,'bw']/1000, 
     xvAll$xv[,-1], 
     xlab='km', ylab='-log p', 
@@ -285,7 +285,7 @@ matplot(xvAll$xv[,'bw']/1000,
     ylim = c(0,15) ) 
 ```
 
-```{r finalStep, cache=(basename(getwd())=='www'), cache.path='cache'}
+```{r finalStep, eval=FALSE, purl=FALSE, cache=(basename(getwd())=='www'), cache.path='cache'}
 kentuckyFinal = lemFinal(
     x=xvAll,
     counts=grep("^count[[:digit:]]", names(kentuckyCounty), value=TRUE),
@@ -294,7 +294,7 @@ kentuckyFinal = lemFinal(
     verbose = TRUE)
 ```
 
-```{r estPlotMult, fig.cap='Simulation 2,3', fig.subcap = c('2 true','2 est','3 true','3 est'), fig.ncol=2, out.width = '44%'}
+```{r estPlotMult, eval=FALSE, purl=FALSE, fig.cap='Simulation 2,3', fig.subcap = c('2 true','2 est','3 true','3 est'), fig.ncol=2, out.width = '44%'}
 
 Ssim = unique(gsub(" .*", "", knitr::opts_current$get()$fig.subcap))
 

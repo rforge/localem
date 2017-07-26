@@ -4,36 +4,36 @@ getCellInfo = function(
   fine, offsetRaster
 ) {
   
-  lims=drop(xyFromCell(coarse,cell1))
+  lims=drop(raster::xyFromCell(coarse,cell1))
   resHalf = raster::res(coarse)/2
   
-  theextent = extent(c(
+  theextent = raster::extent(c(
       lims['x']+c(-1,1)*resHalf[1],
       lims['y']+c(-1,1)*resHalf[2]
     ))
   
-  Scells = cellsFromExtent(fine,theextent)
+  Scells = raster::cellsFromExtent(fine,theextent)
   
   Scols = sort(unique(
-      colFromCell(fine, Scells)
+      raster::colFromCell(fine, Scells)
     ))
   Mcol = min(Scols)
   Ncols = length(Scols)
   Srows = sort(unique(
-      rowFromCell(fine, Scells)
+      raster::rowFromCell(fine, Scells)
     ))
   Mrow = min(Srows)
   Nrows = length(Srows)
   
-  id = getValuesBlock(fine,
+  id = raster::getValuesBlock(fine,
     row=Mrow, nrows=Nrows,
     col=Mcol,ncols=Ncols)
   id = cbind(
-    factorValues(fine, id), 
+    raster::factorValues(fine, id), 
     index = 1:length(id)
   )
   
-  theoffset = getValuesBlock(offsetRaster,
+  theoffset = raster::getValuesBlock(offsetRaster,
     row=Mrow, nrows=Nrows,col=Mcol,ncols=Ncols)
   
   
@@ -51,7 +51,7 @@ getCellInfo = function(
     id=id,offset=theoffset,
     idCoarse=sort(unique(id[,'idCoarse'])),
     partitions = partitionDf,
-    points = xyFromCell(fine, Scells)
+    points = raster::xyFromCell(fine, Scells)
   )
 }
 
@@ -93,7 +93,7 @@ smoothingMatrixEntries = function(
   
   res = list()
   
-  Scw2 = prod(res(fine))
+  Scw2 = prod(raster::res(fine))
   
 #  Spart1 = cellInfo1$idCoarse
 #  SNcells1 = tapply(cellInfo1$id[,"idCoarse"], list(cellInfo1$id[,"idCoarse"]), length)
@@ -112,8 +112,8 @@ smoothingMatrixEntries = function(
       
       # deal with the reordering stuff
       if(is.function(kernelArray)){
-        thisDist = xyFromCell(coarse, Dcell2) -
-          xyFromCell(coarse, cell1)
+        thisDist = raster::xyFromCell(coarse, Dcell2) -
+          raster::xyFromCell(coarse, cell1)
         xoryaxis = c('y','x')[1 +
             (abs(thisDist[1]) >= abs(thisDist[2]))
         ]
@@ -369,7 +369,10 @@ smoothingMatrixDiag = function(
   if(!is.null(cl)) {
 
 	parallel::clusterExport(cl, 
-		list('smoothingMatrixEntries','kernMat','getCellInfo')
+		list('smoothingMatrixEntries',
+				'kernMat',
+				'reorderCellsTranslate',
+				'getCellInfo')
 	)
 	
 	diagBlocks = parallel::clusterMap(

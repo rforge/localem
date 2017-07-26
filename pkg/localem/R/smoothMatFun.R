@@ -102,7 +102,11 @@ smoothingMatrix = function(
   if(!is.null(theCluster)) {
     
 	parallel::clusterExport(theCluster, 
-		list('smoothingMatrixOneDist','smoothingMatrixEntries','kernMat','getCellInfo')
+		list('smoothingMatrixOneDist',
+				'smoothingMatrixEntries',
+				'kernMat',
+				'reorderCellsTranslate',
+				'getCellInfo')
 	)
 
     offDiag = parallel::clusterMap(
