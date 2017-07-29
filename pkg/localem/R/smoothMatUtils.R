@@ -369,10 +369,11 @@ smoothingMatrixDiag = function(
   if(!is.null(cl)) {
 
 	parallel::clusterExport(cl, 
-		list('smoothingMatrixEntries',
-				'kernMat',
-				'reorderCellsTranslate',
-				'getCellInfo')
+		varlist = c('smoothingMatrixEntries',
+						'kernMat',
+						'reorderCellsTranslate',
+						'getCellInfo'), 
+		envir = environment()
 	)
 	
 	diagBlocks = parallel::clusterMap(
