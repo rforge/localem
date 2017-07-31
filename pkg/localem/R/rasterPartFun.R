@@ -31,7 +31,7 @@
 #'                            	cellsFine = 100, 
 #'                            	bw = c(10, 15) * 1000, 
 #'                            	ncores = 2, 
-#'                            	path = tempdir(), 
+#'                            	path = 'example', 
 #'                            	verbose = TRUE)
 #'}
 #'
@@ -51,6 +51,8 @@ rasterPartition = function(
   verbose = FALSE
 ){
   
+	dir.create(path, showWarnings=FALSE, recursive=TRUE)
+
   if(verbose) {
     cat(date(), "\n")
     cat("obtaining rasters\n")
@@ -178,7 +180,7 @@ rasterPartition = function(
     }
   }
   
-  if(verbose) cat("creating arrays")
+  if(verbose) cat("creating arrays\n")
   
   # focal used for smoothing matrix
   theFocal = focalFromBw(

@@ -10,7 +10,7 @@
 #' @param xv Number of cross-validation datasets
 #' @param lemObjects List of arrays for the smoothing matrix, and raster stacks for the partition and smoothed offsets
 #' @param ncores Number of cores/threads for parallel processing
-#' @param iterations convergence tolerance, number of iterations, and use of gpuR package for running local-EM recursions
+#' @param iterations Convergence tolerance, number of iterations, and use of gpuR package for running local-EM recursions
 #' @param randomSeed Seed for random number generator
 #' @param verbose Verbose output
 #' @param path Folder for storing rasters
@@ -117,7 +117,8 @@ lemXv = function(
   }
   
   if(verbose) {
-    cat("running local-EM for validation sets")
+    cat(date(), "\n")
+    cat("running local-EM for validation sets\n")
   }
   # estimate risk (by partition, not continuous) for each bw/cv combinantion
   
@@ -130,6 +131,8 @@ lemXv = function(
     verbose=verbose)
   
   if(!is.null(theCluster)) {
+
+	parallel::clusterEvalQ(theCluster, library('raster'))
     
     estList = parallel::clusterMap(
       theCluster,
@@ -147,10 +150,7 @@ lemXv = function(
       SIMPLIFY=FALSE
     )
   }
-  if(verbose) {
-    cat(" done\n")
-  }
-  
+
   
   
   if(any(unlist(lapply(estList, class)) == 'try-error') ) {
@@ -211,9 +211,7 @@ lemXv = function(
   minXvScore = apply(xvRes[,countcol, drop=FALSE],2,min)
   xvRes[,countcol] = xvRes[,countcol] - 
     matrix(minXvScore, nrow=nrow(xvRes), ncol=length(minXvScore), byrow=TRUE)
-  if(verbose) {
-    cat("putting estimated risk in raster\n")
-  }
+
 #  stuff <<- list(xvSmoothMat$rasterFine, riskDf) 
   newDf <- riskDf[
     as.character(raster::levels(xvSmoothMat$rasterFine)[[1]]$partition),]
@@ -235,20 +233,24 @@ lemXv = function(
   )
   
   if(verbose) {
-    cat("final smoothing step\n")
+    cat("computing risk estimation for bw with lowest CV score\n")
   }
   
   result$estimate = finalSmooth(
     x = result, 
 	counts = colnames(result$xv)[-1],
 	bw = result$xv[apply(result$xv[,colnames(result$xv)[-1]],2,which.min),'bw'], 
-    filename = file.path(path, "final.grd"),
+    filename = file.path(path, "risk.grd"),
     ncores = theCluster)
   
   # done with the cluster
   if(!is.null(theCluster))
     parallel::stopCluster(theCluster)
   
+  if(verbose) {
+    cat(date(), "\n")
+    cat("done\n")
+  }
   
   return(result)
   

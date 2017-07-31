@@ -279,6 +279,120 @@ oneBlockFun = function(Dcell1,
   dim(thisBlock)
 } # end oneBlockFun
 
+oneBlockOffdiagFun = function(
+  x,
+  theMat, 
+  rasterObjects,
+  image_x,
+  image_y,
+  image_z,
+  Spartitions,
+  theType,
+  smoothingRasterFile,
+  layerSeq,
+  verbose
+) {
+  
+  thisBlock = smoothingMatrixOneDist(
+    x=x,
+    allCells=theMat$cells,
+    focal=rasterObjects$focal,
+    coarse=rasterObjects$rasterCoarse,
+    fine=rasterObjects$rasterFine,
+    offsetRaster=rasterObjects$offset
+  )
+  if(class(thisBlock) != 'try-error') {
+    for(Dcell1 in 1:length(thisBlock)) {
+      for(Dcell2 in 1:length(thisBlock[[Dcell1]])) {
+        
+        partHere = thisBlock[[Dcell1]][[Dcell2]]
+        s1 = dimnames(thisBlock[[Dcell1]][[Dcell2]])[[1]]
+        s2 = dimnames(thisBlock[[Dcell1]][[Dcell2]])[[2]]
+        partHere = try(aperm(thisBlock[[Dcell1]][[Dcell2]][,,,'transpose', drop=FALSE], 
+            c(2,1,3,4)))
+        matchPartHere = lapply(dimnames(partHere)[1:2], match, 
+          table=Spartitions)
+        
+        theOrder = lapply(matchPartHere, order)
+        
+        
+        data_position = t(expand.grid(
+            as.vector(matchPartHere[[1]][theOrder[[1]] ]), 
+            as.vector(matchPartHere[[2]][theOrder[[2]] ]), 
+            layerSeq)
+        )
+        
+        cell_position=
+          ( (data_position[2,]-1)*image_x)+
+          (data_position[1,])+
+          ((data_position[3,]-1)*(image_x*image_y))
+        
+        
+        haveWritten = FALSE
+        writeCounter1 = 0
+        
+        while(!haveWritten & (writeCounter1 < 20)) {
+          out = mmap::mmap(
+            smoothingRasterFile,
+            mode=theType
+          )	
+          
+          out[cell_position] = as.double(partHere[theOrder[[1]], theOrder[[2]],,] )      
+          
+          haveWrittenFirst = mmap::munmap(out)  
+          
+          haveWritten = identical(haveWrittenFirst, 0L)
+          writeCounter1 = writeCounter1 + 1
+        }
+        if(writeCounter1 >= 20) warning(paste("dist", x, "cells", Dcell1, Dcell2))
+        
+        partHere = try(thisBlock[[Dcell1]][[Dcell2]][,,,'straightup', drop=FALSE])
+        matchPartHere = lapply(dimnames(partHere)[1:2], match, 
+          table=Spartitions)
+        theOrder = lapply(matchPartHere, order)
+        
+        data_position = t(expand.grid(
+            as.vector(matchPartHere[[1]][theOrder[[1]] ]), 
+            as.vector(matchPartHere[[2]][theOrder[[2]] ]), 
+            layerSeq)
+        )
+        
+        cell_position=
+          ( (data_position[2,]-1)*image_x)+
+          (data_position[1,])+
+          ((data_position[3,]-1)*(image_x*image_y))
+        
+        
+        haveWritten = FALSE
+        writeCounter2 = 0
+        
+        while(!haveWritten & (writeCounter2 < 20)) {
+          
+          out = mmap::mmap(
+            smoothingRasterFile,
+            mode=theType
+          )	
+          dim(out)
+          
+          out[cell_position] = as.double(partHere[theOrder[[1]], theOrder[[2]],,] )      
+          
+          haveWrittenFirst = mmap::munmap(out)  
+          
+          haveWritten = identical(haveWrittenFirst, 0L)
+          writeCounter2 = writeCounter2 + 1
+        }
+        if(writeCounter2 >= 20) warning(paste("dist", x, "cells", Dcell1, Dcell2))
+      } # end Dcell2  
+    } # end Dcell1
+    res = c(writeCounter1, writeCounter1)
+  }  else { # end try error
+    res =thisBlock
+  }
+  res
+} # oneBlockOffdiag
+
+
+
 # Computes all of the diagonal entries of the smoothing matrix for the partitions
 # Specifically, the computations are done for the same partitions
 # Generates also the matrix that matches the IDs of the coarse polygons with the partitions
@@ -523,3 +637,4 @@ smoothingMatrixOneDist = function(
   }
   res
 }
+
