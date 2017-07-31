@@ -34,7 +34,7 @@
 #'
 #' lemRisk = riskEst(cases = kentuckyCounty, 
 #'                    lemObjects = lemSmoothMat, 
-#'                    bw = c(10, 15) * 1000),  
+#'                    bw = c(10, 15) * 1000,  
 #'                    ncores = 2, 
 #'                    path = 'example', 
 #'                    verbose = TRUE)
@@ -162,8 +162,9 @@ riskEst = function(
       )), sep='_')
   rownames(riskDf) = colnames(lemObjects$regionMat)
   
-   newDf <- riskDf[
-    as.character(raster::levels(lemObjects$rasterFine)[[1]]$partition),]
+   newDf <- as.data.frame(riskDf[
+    as.character(raster::levels(lemObjects$rasterFine)[[1]]$partition),])
+	dimnames(newDf) = dimnames(riskDf)
   
   riskRaster = lemObjects$rasterFine
   levels(riskRaster)[[1]] =  as.data.frame(cbind(

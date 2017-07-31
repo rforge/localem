@@ -2,14 +2,14 @@
 #'
 #' @description The \code{excProb} function first bootstraps cases with the input risk thresholds and expected counts from the rasterization of the spatial polygons of population data, and then, computes the exceedance probablities with the same bandwidth as the risk estimation on the raster cells. 
 #' 
-#' @param x Estimated risk intensity surface
-#' @param bw Bandwidth (defaults to optimal for first dataset
+#' @param cases Spatial polygons, data frame or vector of case data
+#' @param lemObjects List of arrays for the smoothing matrix, and raster stacks for the partition and smoothed offsets
+#' @param bw Bandwidth specifying which smoothing matrix in \code{lemObjects} to use
 #' @param threshold Vector of risk thresholds
 #' @param Nboot Number of bootstraps
-#' @param ncores Number of cores/threads for parallel processing
-#' @param tol Tolerance for convergence
-#' @param maxIter Maximum number of iterations for convergence
-#' @param filename Passed to writeRaster
+#' @param iterations Convergence tolerance, number of iterations, and use of gpuR package for running local-EM recursions
+#' @param verbose Verbose output
+#' @param path Folder for storing rasters
 #' 
 #' 
 #' @details After using the \code{excProb} function, the exceedance probabilities are computed on the raster cells of the fine polygons. 
@@ -27,7 +27,7 @@
 #'                              cellsFine = 100, 
 #'                              bw = c(10, 15) * 1000, 
 #'                              ncores = 2, 
-#'                              path = tempdir(), 
+#'                            	path = 'example', 
 #'                              verbose = TRUE)
 #'
 #'
@@ -35,19 +35,19 @@
 #'                                 ncores = 2, 
 #'                                 verbose = TRUE)
 #'
-#' lemRisk = riskEst(x = kentuckyCounty, 
+#' lemExcProb = excProb(cases = kentuckyCounty, 
 #'                    lemObjects = lemSmoothMat, 
-#'                    bw = 15 * 1000) 
-#'
-#' lemExcProb = excProb(x = lemRisk, 
-#'                     threshold = c(1, 1.25, 1.5), 
-#'                     Nboot = 200, 
-#'                     ncores = ncores)
+#'                    bw = 10000, 
+#'					  threshold = c(1, 1.25, 1.5), 
+#'					  Nboot = 100, 
+#'                    ncores = 2, 
+#'                    path = 'example', 
+#'                    verbose = TRUE)
 #'
 #' pCol = mapmisc::colourScale(lemExcProb, 
 #'                            breaks = c(0, 0.2, 0.8, 0.95, 1), style = 'fixed', 
 #'                            col = c('green', 'yellow', 'orange', 'red'))								
-#' plot(lemExcProb[[1]], 
+#' plot(lemExcProb$excProb, 
 #'     main = 'Exceedance Probabilities, t = 1', 
 #'     col = pCol$col, breaks = pCol$breaks, 
 #'     legend = TRUE)
@@ -55,35 +55,40 @@
 #'
 #' @export
 excProb = function(
-  x, 
-  bw = NULL,
+  cases, 
+  lemObjects, 
+  bw, 
   threshold = 1, 
   Nboot = 100, 
   ncores = 1, 
-  tol = 1e-6, 
-  maxIter = 2000, 
-  filename = ''
+  iterations = list(tol = 1e-5, maxIter = 1000, gpu=FALSE), 
+  verbose=FALSE, 
+  path = getwd()
+
 ){
   
-  if(is.null(bw)) {
-    bw = x$xv[which.min(x$xv[,2]), 'bw']
+  dir.create(path, showWarnings=FALSE, recursive=TRUE)
+
+  # warning messages
+  if(missing(lemObjects)) {
+	stop("smoothing matrix not supplied")
   }
+  if(length(bw) > 1) {
+    stop("bw must be length 1")
+  }
+  bwString = paste('bw', bw, sep = '')
   
   # bootstrap cases
-	offset = stats::na.omit(as.data.frame(
-					stack(
-							lemObjects$offset$offset,
-							lemObjects$rasterFine$idCoarse
-					)
-			)
-	)
-	offset = drop(tapply(
-			offset[,'offset'], 
-			lemObjects$polyCoarse$id[offset[,'idCoarse']], 
-			sum
-			)
-	)
-	offset = offset * prod(res(lemObjects$offset))
+	offsetDf = aggregate(x = values(lemObjects$offset$offset) * prod(res(lemObjects$offset)), 
+					by = list(ID = values(lemObjects$rasterFine)), 
+					FUN = sum)
+	colnames(offsetDf) = c('ID','offset')
+	
+	rasterDf = levels(lemObjects$rasterFine)[[1]]
+	offsetDf = merge(offsetDf, rasterDf, by = 'ID')
+	
+	
+	offset = drop(tapply(offsetDf$offset, offsetDf$idCoarse, sum))
 	offset = outer(offset, threshold)
 
 	bootCounts = stats::rpois(
@@ -99,16 +104,21 @@ excProb = function(
 			)
 	)
 
-	 # bandwidth of the risk estimate
-  bw = as.numeric(
-    gsub("^risk.", "", names(lemEst))
-  )
+	# bandwidth of the risk estimate
+	estRisk = riskEst(cases = cases, 
+					lemObjects = lemObjects, 
+					bw = bw,  
+					ncores = 1, 
+					path = 'example', 
+					verbose = verbose)
 
 	#risk and exceedance probabilities
-	estRiskBoot = riskEst(
-			x=bootCounts, lemObjects=lemObjects,
-			bw=bw, tol=tol, maxIter=maxIter, ncores=ncores
-	)
+	estRiskBoot = riskEst(cases = bootCounts, 
+					lemObjects = lemObjects, 
+					bw = bw,  
+					ncores = ncores, 
+					path = 'example', 
+					verbose = verbose)
 	
 	values(estRiskBoot)  = values(estRiskBoot) < rep(values(lemEst), nlayers(estRiskBoot))		
 
