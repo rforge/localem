@@ -1,5 +1,4 @@
 export(excProb)
-export(lemFinal)
 export(lemXv)
 export(rasterPartition)
 export(riskEst)
