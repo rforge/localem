@@ -4,6 +4,7 @@
 #'
 #' @param rasterObjects Raster stacks for partitions and smoothed offsets
 #' @param ncores Number of cores/threads for parallel processing
+#' @param path Folder to store raster data
 #' @param filename Filename (must have .grd extension) of the entries of smoothing matrix
 #' @param verbose Verbose output
 #'
@@ -35,7 +36,8 @@
 smoothingMatrix = function(
   rasterObjects,
   ncores = 1,
-  filename = file.path(tempdir(),'smoothingMatrix.grd'),
+  path = getwd(), 
+  filename = paste(tempfile('lemSmoothMat', path), '.grd', sep=''), 
   verbose = FALSE
 ){
   

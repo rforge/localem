@@ -5,9 +5,11 @@
 #' @param cases Spatial polygons, data frame or vector of case data
 #' @param lemObjects List of arrays for the smoothing matrix, and raster stacks for the partition and smoothed offsets
 #' @param bw Vector of bandwidths specifying which smoothing matrix in \code{lemObjects} to use
+#' @param ncores Number of cores/threads for parallel processing
 #' @param iterations Convergence tolerance, number of iterations, and use of gpuR package for running local-EM recursions
 #' @param verbose Verbose output
 #' @param path Folder for storing rasters
+#' @param filename Filename (must have .grd extension) of the risk estimation
 #'
 #' @details After using the \code{riskEst} function, the risk estimations are computed on a fine resolution based on the rasterization of the spatial polygons of population data.
 #'
@@ -49,7 +51,8 @@ riskEst = function(
   ncores = 1, 
   iterations = list(tol = 1e-5, maxIter = 1000, gpu=FALSE), 
   verbose=FALSE, 
-  path = getwd()
+  path = getwd(), 
+  filename = file.path(path, "risk.grd")
 ) {
   
   dir.create(path, showWarnings=FALSE, recursive=TRUE)
@@ -98,6 +101,10 @@ riskEst = function(
    if(is.vector(cases)) {
     cases = data.frame(cases=cases)
   }
+   if(is.matrix(cases)) {
+    cases = as.data.frame(cases)
+  }
+
   #names of interest for regions in the coarse shapefile
   countcol = grep('^(count|cases)[[:digit:]]+?$', 
     names(cases), value=TRUE, ignore.case=TRUE)
@@ -181,9 +188,9 @@ riskEst = function(
     x = result, 
 	counts = rep(countcol, length(bwString)),
 	bw = bwString, 
-    filename = file.path(path, "risk.grd"),
+    filename = filename, 
     ncores = theCluster)
-   names(result$estimate) = bwString
+   names(result$estimate) = dimnames(newDf)[[2]]
  
    # done with the cluster
 	if(endCluster) parallel::stopCluster(theCluster)
