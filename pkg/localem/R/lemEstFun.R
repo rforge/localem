@@ -76,6 +76,31 @@ riskEst = function(
 		stop("cant match all bw to smoothing array")
 	  }
   }
+
+  # checking structure of case data
+   if(is.vector(cases)) {
+    cases = data.frame(cases=cases)
+  }
+   if(is.matrix(cases)) {
+    cases = as.data.frame(cases)
+  }
+  if(class(cases) == 'SpatialPolygonsDataFrame') {
+    polyCoarse = cases
+    cases = cases@data
+  } else {
+    polyCoarse = NULL
+  }
+  
+  #names of interest for regions in the coarse shapefile
+  countcol = grep('^(count|cases)', names(cases), value=TRUE, ignore.case=TRUE)
+  # if(!length(countcol)){
+    # countcol = grep("^(id|name)", names(cases), invert=TRUE, value=TRUE)[1]
+  # }
+
+  if(!length(countcol)) {
+	stop("column name of case data must start with 'count' or 'cases'")
+  }
+  
   
   # parameter specifications (if not supplied)
   if(!length(iterations$tol)) iterations$tol = 1e-6
@@ -97,35 +122,11 @@ riskEst = function(
     }
   }
   
-  # checking structure of case data
-   if(is.vector(cases)) {
-    cases = data.frame(cases=cases)
-  }
-   if(is.matrix(cases)) {
-    cases = as.data.frame(cases)
-  }
-
-  #names of interest for regions in the coarse shapefile
-  countcol = grep('^(count|cases)[[:digit:]]+?$', 
-    names(cases), value=TRUE, ignore.case=TRUE)
-  if(!length(countcol)){
-    countcol = grep(
-      "^(id|name)", names(cases), 
-      invert=TRUE, value=TRUE
-    )[1]
-  }
-  if(class(cases) == 'SpatialPolygonsDataFrame') {
-    polyCoarse = cases
-    cases = cases@data
-  } else {
-    polyCoarse = NULL
-  }
-  
   if(verbose) {
     cat("running local-EM estimation for input bandwidths\n")
   }
   
-  # estimate risk (by partition, not continuous) for each bw/cv combinantion
+  # estimate risk (by partition, not continuous) for each bw combination
   forMoreArgs = list(
     x=cases[,countcol, drop=FALSE],
     lemObjects = lemObjects,
@@ -185,12 +186,14 @@ riskEst = function(
   
   # final smoothing step
    result$estimate = finalSmooth(
-    x = result, 
-	counts = rep(countcol, length(bwString)),
-	bw = bwString, 
-    filename = filename, 
-    ncores = theCluster)
+						x = result, 
+						counts = countcol,
+						bw = bwString, 
+						filename = filename, 
+						ncores = theCluster)
    names(result$estimate) = dimnames(newDf)[[2]]
+   
+   result$bw = bwString
  
    # done with the cluster
 	if(endCluster) parallel::stopCluster(theCluster)

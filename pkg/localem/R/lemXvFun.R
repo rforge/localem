@@ -37,6 +37,24 @@ lemXv = function(
   
   dir.create(path, showWarnings=FALSE, recursive=TRUE)
   
+  # warning messages
+  if(missing(lemObjects)) { 
+	if(class(cases) != 'SpatialPolygonsDataFrame') {
+		stop("spatial polygons for case data must be provided if smoothing matrix not supplied")
+	} 
+	
+	if(class(cases) == 'SpatialPolygonsDataFrame') {
+	
+	  #names of interest for regions in the coarse shapefile
+	  countcol = grep('^(count|cases)', names(cases), value=TRUE, ignore.case=TRUE)
+	
+	  if(!length(countcol)) {
+		stop("column names of case data must start with 'count' or 'cases'")
+	  }
+	}
+  }
+  
+  # initializing parallel features (if specified)
   if(ncores > 1) {
     theCluster = parallel::makeCluster(spec=ncores, type='PSOCK', methods=TRUE)
     parallel::setDefaultCluster(theCluster)
@@ -44,13 +62,12 @@ lemXv = function(
     theCluster = NULL
   }
   
-  
-  
-  # forcross-validation scores
+  # for cross-validation scores
   if(!is.null(randomSeed)) {
     set.seed(randomSeed)
   }
   
+  # parameter specifications (if not supplied)
   if(!length(iterations$tol)) iterations$tol = 1e-6
   if(!length(iterations$maxIter)) iterations$maxIter = 2000
   if(!length(iterations$gpu)) iterations$gpu = FALSE
@@ -59,9 +76,7 @@ lemXv = function(
     if(verbose) {
       cat("computing smoothing matrix\n")
     }
-    
-    
-    
+       
     ##raster partition
     xvLemRaster = rasterPartition(
       polyCoarse = cases, 
@@ -76,6 +91,7 @@ lemXv = function(
       offsetFile = file.path(path, 'offsetXv.grd'), 
       verbose = verbose)
     
+	# smoothing matrix
     xvSmoothMat =  smoothingMatrix(
       rasterObjects = xvLemRaster, 
       ncores = theCluster, 
@@ -97,17 +113,13 @@ lemXv = function(
     xvMat = lemObjects$xv
   }
   
-  if(is.vector(cases)) {
+  
+  # checking structure of case data
+   if(is.vector(cases)) {
     cases = data.frame(cases=cases)
   }
-  #names of interest for regions in the coarse shapefile
-  countcol = grep('^(count|cases)[[:digit:]]+?$', 
-    names(cases), value=TRUE, ignore.case=TRUE)
-  if(!length(countcol)){
-    countcol = grep(
-      "^(id|name)", names(cases), 
-      invert=TRUE, value=TRUE
-    )[1]
+   if(is.matrix(cases)) {
+    cases = as.data.frame(cases)
   }
   if(class(cases) == 'SpatialPolygonsDataFrame') {
     polyCoarse = cases
@@ -115,6 +127,12 @@ lemXv = function(
   } else {
     polyCoarse = NULL
   }
+  
+  #names of interest for regions in the coarse shapefile
+  countcol = grep('^(count|cases)', names(cases), value=TRUE, ignore.case=TRUE)
+  # if(!length(countcol)){
+    # countcol = grep("^(id|name)", names(cases), invert=TRUE, value=TRUE)[1]
+  # }
   
   if(verbose) {
     cat(date(), "\n")
