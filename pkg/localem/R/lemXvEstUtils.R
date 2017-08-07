@@ -417,17 +417,10 @@ finalLemIter = function(
 # Computes the risk estimation to the fine raster by smoothing the risk of the partitions at the final iteration
 finalSmooth = function(
   x, 
-  counts,
-  bw, 
-  ncores=1, 
-  filename = paste(tempfile(), '.grd', sep=''), 
-  verbose=FALSE) {
+  Slayers, 
+  ncores = 1, 
+  filename) {
   
-  finalBw = rep_len(bw, length(counts))
-  
-  Scounts = counts
-  Slayers = paste("bw", finalBw, "_", Scounts, sep='')
-  Slayers = gsub("^bwbw", "bw", Slayers)
   toSmooth = x$riskAll
   levels(toSmooth)[[1]] = levels(toSmooth)[[1]][, c("ID", Slayers)]
   toSmooth = deratify(toSmooth)

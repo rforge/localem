@@ -184,16 +184,15 @@ riskEst = function(
     smoothingMatrix = lemObjects
   )
   
-  # final smoothing step
-   result$estimate = finalSmooth(
+	# final smoothing step
+	result$riskEst = finalSmooth(
 						x = result, 
-						counts = countcol,
-						bw = bwString, 
+						Slayers = dimnames(newDf)[[2]], 
 						filename = filename, 
 						ncores = theCluster)
-   names(result$estimate) = dimnames(newDf)[[2]]
+	names(result$riskEst) = dimnames(newDf)[[2]]
    
-   result$bw = bwString
+	result$bw = bwString
  
    # done with the cluster
 	if(endCluster) parallel::stopCluster(theCluster)

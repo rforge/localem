@@ -73,7 +73,7 @@ excProb = function(
 	bw = as.numeric(gsub('^bw', '', lemObjects$bw))
 	
 	# risk estimate of interest
-	theEstRisk = lemObjects$estimate
+	theEstRisk = lemObjects$riskEst
 
 	if(verbose) {
 		cat("generating bootstrap cases for input thresholds\n")
@@ -133,11 +133,11 @@ excProb = function(
 								indices = indexT, 
 								fun = mean, 
 								filename = filename, 
-								overwrite = TRUE)
+								overwrite = file.exists(filename))
 	names(theExcProb) = gsub('index', paste('bw', bw, sep = ''), names(theExcProb))
 	
 	result = list(
-				estimate = theEstRisk, 
+				riskEst = theEstRisk, 
 				excProb = theExcProb
 			)
 	

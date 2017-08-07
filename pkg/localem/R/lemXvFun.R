@@ -254,12 +254,15 @@ lemXv = function(
     cat("computing risk estimation for bw with lowest CV score\n")
   }
   
-  result$estimate = finalSmooth(
+  bwMin = result$xv[apply(result$xv[,colnames(result$xv)[-1]],2,which.min),'bw']
+  Slayers = paste('bw', bwMin, '_', countcol, sep = '')
+  
+  result$riskEst = finalSmooth(
     x = result, 
-	counts = colnames(result$xv)[-1],
-	bw = result$xv[apply(result$xv[,colnames(result$xv)[-1]],2,which.min),'bw'], 
+	Slayers = Slayers, 
     filename = file.path(path, "risk.grd"),
     ncores = theCluster)
+  names(result$riskEst) = Slayers
   
   # done with the cluster
   if(!is.null(theCluster))
