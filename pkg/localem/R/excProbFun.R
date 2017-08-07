@@ -68,14 +68,19 @@ excProb = function(
 	if(missing(lemObjects)) {
 		stop("smoothing matrix and rasters not supplied")
 	}
+
+	# bandwidth of interest
+	bw = as.numeric(gsub('^bw', '', lemObjects$bw))
 	
-	# risk estimate
-	estRisk = lemObjects$estimate
-	
-	bw = as.numeric(gsub('_|bw|case|count|xv[[:digit:]]', '', names(estRisk)))
+	# risk estimate of interest
+	theEstRisk = lemObjects$estimate
+
+	if(verbose) {
+		cat("generating bootstrap cases for input thresholds\n")
+	}
 	
 	# offsets of spatial polygons of case data based on population data
-	idCoarse = 1:length(lemObjects$smoothingMatrix$polyCoarse)
+ 	idCoarse = 1:length(lemObjects$smoothingMatrix$polyCoarse)
 		  
 	offsetRaster = raster::stack(lemObjects$smoothingMatrix$offset$offset, 
 									raster::deratify(lemObjects$smoothingMatrix$rasterFine))
@@ -86,50 +91,59 @@ excProb = function(
 	offsetDf = merge(data.frame(idCoarse = idCoarse), offsetDf, by = 'idCoarse', all = TRUE)
 	offsetDf$offset[is.na(offsetDf$offset)] = 0
 	
-	# bootstrap cases, and estimate risk and exceedance probabilities from bootstraps
-	for(inT in 1:length(threshold)) {
-	
-		# bootstraps
-		bootCountsDf = matrix(
-							stats::rpois(nrow(offsetDf) * Nboot, rep(offsetDf$offset * threshold[inT], Nboot)), 
+	# bootstrap cases
+	offsetT = outer(offsetDf$offset, threshold)
+
+	bootCountsDf = matrix(data = stats::rpois(length(offsetT) * Nboot, rep(offsetT, Nboot)), 
 							nrow = nrow(offsetDf), 
-							ncol = Nboot, 
-							dimnames = list(rownames(offsetDf), paste('count', 1:Nboot, sep = ''))
-						)
+							ncol = length(threshold) * Nboot)
+	dimnames(bootCountsDf) = list(rownames(offsetDf), 
+									paste('count', rep(1:Nboot, rep(length(threshold), Nboot)), 
+											'_threshold', rep(threshold, Nboot), 
+											sep = ''))
 
+	# estimate risk from bootstrap cases
+	if(verbose) {
+		cat("running local-EM estimation for bootstrap cases with original bw\n")
+	}
 
-		#risk and exceedance probabilities
-		lemRiskBoot = riskEst(cases = bootCountsDf, 
+	bootLemRisk = riskEst(cases = bootCountsDf, 
 						lemObjects = lemObjects$smoothingMatrix, 
 						bw = bw,  
 						ncores = ncores, 
+						iterations = iterations, 
 						path = path, 
 						filename = file.path(path, "riskBoot.grd"), 
 						verbose = FALSE)
-		estRiskBoot = lemRiskBoot$estimate
+	bootEstRisk = bootLemRisk$estimate
 	
-		values(estRiskBoot)  = values(estRiskBoot) < rep(values(estRisk), nlayers(estRiskBoot))		
-
-		if(inT == 1) {
-			lemExcProb = raster::calc(estRiskBoot, 
-										fun = mean, 
-										filename = file.path(path, 'excProb.grd'), 
-										overwrite = TRUE)
-		} else {
-			lemExcProb = stack(lemExcProb, 
-							raster::calc(estRiskBoot, 
-										fun = mean, 
-										filename = paste(tempfile('excProb', path), '.grd', sep=''), 
-										overwrite = TRUE)
-						)
-		}
+	# exceedance probabilities
+	if(verbose) {
+		cat("computing exceedance probabilities with input thresholds\n")
 	}
-	names(lemExcProb) = paste('bw', bw, '_t', threshold, sep = '')	
+	
+	indexT = gsub('^bw[[:digit:]]+_count[[:digit:]]+_', '', names(bootEstRisk))
+	
+	bootEstRisk = raster::overlay(x = bootEstRisk, y = theEstRisk, 
+								fun = function(x,y) return(x < y), 
+								filename = file.path(path, "probBoot.grd"), 
+								overwrite = TRUE)
+
+	theExcProb = raster::stackApply(bootEstRisk, 
+								indices = indexT, 
+								fun = mean, 
+								filename = filename, 
+								overwrite = TRUE)
+	names(theExcProb) = gsub('index', paste('bw', bw, sep = ''), names(theExcProb))
 	
 	result = list(
-				estimate = estRisk, 
-				excProb = lemExcProb
+				estimate = theEstRisk, 
+				excProb = theExcProb
 			)
 	
+	if(verbose) {
+		cat("done\n")
+	}	
+
 	return(result)
 }
