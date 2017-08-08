@@ -115,7 +115,7 @@ excProb = function(
 						path = path, 
 						filename = file.path(path, "riskBoot.grd"), 
 						verbose = FALSE)
-	bootEstRisk = bootLemRisk$estimate
+	bootEstRisk = bootLemRisk$riskEst
 	
 	# exceedance probabilities
 	if(verbose) {

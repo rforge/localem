@@ -264,6 +264,8 @@ lemXv = function(
     ncores = theCluster)
   names(result$riskEst) = Slayers
   
+  result$bw = paste('bw', bwMin, sep = '')
+  
   # done with the cluster
   if(!is.null(theCluster))
     parallel::stopCluster(theCluster)
