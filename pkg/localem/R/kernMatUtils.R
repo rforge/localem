@@ -26,6 +26,7 @@ bigListFun = function(Dbw, focalList, bigCentreCell, bigMat) {
   Matrix::Matrix(res)
 }
 
+
 # Computes focal weight matrix for a Gaussian density kernel with specified bandwidth and size of sigma
 focalFromBw = function(
   bw, fine, minDim = Inf, focalSize = NULL, cl=NULL

@@ -10,7 +10,7 @@
 #' @param xv Number of cross-validation datasets
 #' @param lemObjects List of arrays for the smoothing matrix, and raster stacks for the partition and smoothed offsets
 #' @param ncores Number of cores/threads for parallel processing
-#' @param iterations Convergence tolerance, number of iterations, and use of gpuR package for running local-EM recursions
+#' @param iterations List of convergence tolerance, number of iterations, and use of gpuR package for running local-EM recursions
 #' @param randomSeed Seed for random number generator
 #' @param verbose Verbose output
 #' @param path Folder for storing rasters
@@ -29,13 +29,13 @@ lemXv = function(
   xv = 4, 
   lemObjects, 
   ncores = 1, 
-  iterations = list(tol = 1e-5, maxIter = 1000, gpu=FALSE), 
+  iterations = list(tol = 1e-5, maxIter = 1000, gpu = FALSE), 
   randomSeed = NULL, 
-  verbose = FALSE,
-  path = getwd()
+  path = getwd(), 
+  verbose = FALSE
 ){
   
-  dir.create(path, showWarnings=FALSE, recursive=TRUE)
+  dir.create(path, showWarnings = FALSE, recursive = TRUE)
   
   # warning messages
   if(missing(lemObjects)) { 
@@ -74,6 +74,7 @@ lemXv = function(
   
   if(missing(lemObjects)) {  
     if(verbose) {
+	  cat(date(), "\n")
       cat("computing smoothing matrix\n")
     }
        
@@ -83,19 +84,20 @@ lemXv = function(
       polyFine = population, 
       cellsCoarse = cellsCoarse, 
       cellsFine = cellsFine, 
-      xv = xv,
-      bw = bw,
+      xv = xv, 
+      bw = bw, 
       ncores = theCluster, 
-      path = path,
-      idFile = file.path(path,'idXv.grd'), 
-      offsetFile = file.path(path, 'offsetXv.grd'), 
+      path = path, 
+      idFile = 'idXv.grd', 
+      offsetFile = 'offsetXv.grd', 
       verbose = verbose)
     
 	# smoothing matrix
     xvSmoothMat =  smoothingMatrix(
       rasterObjects = xvLemRaster, 
       ncores = theCluster, 
-      filename = file.path(path, 'smoothingMatrix.grd'),
+	  path = path, 
+      filename = 'smoothMatXv.grd', 
       verbose = verbose)
     
     
@@ -106,6 +108,7 @@ lemXv = function(
     
   } else {
     if(verbose) {
+	  cat(date(), "\n")
       cat("using supplied smoothing matrix\n")
     }
     
@@ -168,8 +171,6 @@ lemXv = function(
       SIMPLIFY=FALSE
     )
   }
-
-  
   
   if(any(unlist(lapply(estList, class)) == 'try-error') ) {
     warning("errors in local-em estimation")
@@ -185,7 +186,7 @@ lemXv = function(
     rep(names(estList), unlist(lapply(estListExp, function(xx) dim(xx)[2]))),
     unlist(lapply(
         estListExp, colnames
-      )), sep='_')
+      )), sep = '_')
   rownames(riskDf) = colnames(xvSmoothMat$regionMat)
   
   if(verbose) {
@@ -251,6 +252,7 @@ lemXv = function(
   )
   
   if(verbose) {
+    cat(date(), "\n")
     cat("computing risk estimation for bw with lowest CV score\n")
   }
   
@@ -260,7 +262,7 @@ lemXv = function(
   result$riskEst = finalSmooth(
     x = result, 
 	Slayers = Slayers, 
-    filename = file.path(path, "risk.grd"),
+    filename = file.path(path, 'riskXv.grd'),
     ncores = theCluster)
   names(result$riskEst) = Slayers
   
@@ -276,9 +278,4 @@ lemXv = function(
   }
   
   return(result)
-  
-  
 }
-
-
-

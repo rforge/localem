@@ -55,6 +55,7 @@ getCellInfo = function(
   )
 }
 
+
 # Computes the entries of the smoothing matrix for the partitions
 smoothingMatrixEntries = function(
   cell1,
@@ -210,6 +211,7 @@ smoothingMatrixEntries = function(
   res
 }
 
+
 # function for clusterMap
 oneBlockFun = function(Dcell1,     
   kernelArrayD, 
@@ -278,6 +280,7 @@ oneBlockFun = function(Dcell1,
   } # end not null
   dim(thisBlock)
 } # end oneBlockFun
+
 
 oneBlockOffdiagFun = function(
   x,
@@ -392,7 +395,6 @@ oneBlockOffdiagFun = function(
 } # oneBlockOffdiag
 
 
-
 # Computes all of the diagonal entries of the smoothing matrix for the partitions
 # Specifically, the computations are done for the same partitions
 # Generates also the matrix that matches the IDs of the coarse polygons with the partitions
@@ -459,7 +461,7 @@ smoothingMatrixDiag = function(
   
   if(verbose) cat("looping through diagonal cells\n")
   
-# dimensions, from spatial.tools::binary_image_write
+	# dimensions, from spatial.tools::binary_image_write
   image_dims = dim(smoothingRasterTemplate)
   image_x=image_dims[1]
   image_y=image_dims[2]

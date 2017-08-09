@@ -14,22 +14,35 @@
 #'  
 #' @examples 
 #' \dontrun{ 
+#' # case and population data
 #' data('kentuckyCounty')
 #' data('kentuckyTract')
+#'
+#' # parameters
+#' ncores = 2
+#' cellsCoarse = 8
+#' cellsFine = 100
+#' bw = c(10, 15, 17.5, 20) * 1000
+#' path = 'example'
 #' 
+#' # rasters of case and population data
 #' lemRaster = rasterPartition(polyCoarse = kentuckyCounty, 
-#'								polyFine = kentuckyTract, 
-#'  	                        cellsCoarse = 6, 
-#'                              cellsFine = 100, 
-#'                              bw = c(10, 15) * 1000, 
-#'                              ncores = 2, 
-#'                              verbose = TRUE)
+#' 								polyFine = kentuckyTract, 
+#'                            	cellsCoarse = cellsCoarse, 
+#'                            	cellsFine = cellsFine, 
+#'                            	bw = bw, 
+#'                            	ncores = ncores, 
+#'                            	path = path, 
+#'								idFile = 'lemId.grd', 
+#'								offsetFile = 'lemOffsets.grd', 
+#'                            	verbose = TRUE)
 #'
-#'
+#' # smoothing matrix
 #' lemSmoothMat = smoothingMatrix(rasterObjects = lemRaster, 
-#'                                 ncores = 2, 
+#'                                 ncores = ncores, 
+#'								   path = path, 
+#'								   filename = 'lemSmoothMat.grd', 
 #'                                 verbose = TRUE)
-#'
 #'}
 #'
 #' @export
@@ -37,10 +50,22 @@ smoothingMatrix = function(
   rasterObjects,
   ncores = 1,
   path = getwd(), 
-  filename = paste(tempfile('lemSmoothMat', path), '.grd', sep=''), 
+  filename, 
   verbose = FALSE
 ){
   
+	dir.create(path, showWarnings = FALSE, recursive = TRUE)
+
+  	if(missing(filename)) {
+		filename = paste(tempfile('lemSmoothMat', path), '.grd', sep = '')
+	}
+	if(!length(grep('/', filename)) {
+		filename = file.path(path, filename)
+	}
+	if(!(length(grep("\\.gr[id]$", filename)))){
+		warning("filename should have .grd extension")
+	}
+   
   if(verbose) {
     cat(date(), "\n")
     cat("diagonal blocks of smoothing matrix\n")
@@ -75,8 +100,8 @@ smoothingMatrix = function(
   Spartitions = theMat$partitions
   
   if(verbose) {
+      cat(date(), "\n")
     cat('off-diagonals of smoothing matrix', "\n")
-    cat(date(), "\n")
   }
   
   
@@ -131,19 +156,7 @@ smoothingMatrix = function(
   if(endCluster)  
     parallel::stopCluster(theCluster)
   
-  
-  
-  if(verbose) {
-    cat(date(), "\n")
-    cat("replacing NA's with zeros\n")
-  }
-  
-  
-  if(verbose) {
-    cat(date(), "\n")
-    cat("done\n")
-  }
-  
+ 
   if(any(unlist(lapply(offDiag, class)) == 'try-error') ) {
     warning("errors in smoothing matrix construction")
     return(c(list(offDiag = offDiag), 
@@ -151,6 +164,7 @@ smoothingMatrix = function(
   }
   
   result = c(theMat, rasterObjects[setdiff(names(rasterObjects), names(theMat))])
+
   if(verbose) {
     cat(date(), "\n")
     cat("done\n")

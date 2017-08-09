@@ -4,10 +4,10 @@
 #' 
 #' @param polyCoarse Spatial polygons of case data
 #' @param polyFine Spatial polygons of population data
-#' @param bw Vector of bandwidths
-#' @param focalSize Distance to truncate Gaussian kernel, default is 2.5 times largest bandwidth
 #' @param cellsCoarse Minimum resolution for rasterization of case data for numerical accuracy of smoothing matrix
 #' @param cellsFine Minimum resolution for rasterization of population data for numerical integration of smoothing matrix
+#' @param bw Vector of bandwidths
+#' @param focalSize Distance to truncate Gaussian kernel, default is 2.5 times largest bandwidth
 #' @param xv (Optional) Number of cross-validation sets, or matrix where rows are coarse polygons and columns are cross-validation sets
 #' @param ncores Number of cores/threads for parallel processing
 #' @param path Folder to store raster data
@@ -22,16 +22,28 @@
 #'  
 #' @examples 
 #' \dontrun{ 
+#' # case and population data
 #' data('kentuckyCounty')
 #' data('kentuckyTract')
+#'
+#' # parameters
+#' ncores = 2
+#' cellsCoarse = 8
+#' cellsFine = 100
+#' bw = c(10, 15, 17.5, 20) * 1000
+#' path = 'example'
 #' 
+#' # rasters of case and population data
 #' lemRaster = rasterPartition(polyCoarse = kentuckyCounty, 
 #' 								polyFine = kentuckyTract, 
-#'                            	cellsCoarse = 6, 
-#'                            	cellsFine = 100, 
-#'                            	bw = c(10, 15) * 1000, 
-#'                            	ncores = 2, 
-#'                            	path = 'example', 
+#'                            	cellsCoarse = cellsCoarse, 
+#'                            	cellsFine = cellsFine, 
+#'                            	bw = bw, 
+#'                            	ncores = ncores, 
+#'                            	path = path, 
+#'                            	path = path, 
+#'								idFile = 'lemId.grd', 
+#'								offsetFile = 'lemOffsets.grd', 
 #'                            	verbose = TRUE)
 #'}
 #'
@@ -46,13 +58,30 @@ rasterPartition = function(
   xv = NULL, 
   ncores = 1, 
   path = getwd(),
-  idFile = paste(tempfile('lemId', path), '.grd', sep=''), 
-  offsetFile = paste(tempfile('lemOffset', path), '.grd', sep=''),
+  idFile, 
+  offsetFile,
   verbose = FALSE
 ){
   
-	dir.create(path, showWarnings=FALSE, recursive=TRUE)
+	dir.create(path, showWarnings = FALSE, recursive = TRUE)
 
+	
+	if(missing(idFile)) {
+		idFile = paste(tempfile('lemId', path), '.grd', sep = '')
+	}
+	if(!length(grep('/', idFile)) {
+		idFile = file.path(path, idFile)
+	}
+	
+	if(missing(offsetFile) {
+		offsetFile = paste(tempfile('lemOffset', path), '.grd', sep = '')
+	}
+	if(!length(grep('/', offsetFile)) {
+		offsetFile = file.path(path, offsetFile)
+	}
+
+
+	
   if(verbose) {
     cat(date(), "\n")
     cat("obtaining rasters\n")
@@ -141,7 +170,7 @@ rasterPartition = function(
     )
   }
   names(rasterOffset) = c("offset", 
-    paste('xvOffset', colnames(xvMat), sep=''))
+    paste('xvOffset', colnames(xvMat), sep = ''))
   
   offsetTempFile = file.path(path, 'offsetTemp.grd')
   
@@ -202,7 +231,7 @@ rasterPartition = function(
   dimnames(focalArray)[[3]] = paste(
     forSmooth[,'bw'], 
     gsub("offset", "", as.character(forSmooth[,'layer']), ignore.case=TRUE),
-    sep=''
+    sep = ''
   )
   theFocal$array = focalArray   
   
@@ -218,7 +247,7 @@ rasterPartition = function(
   smoothedOffset = focalMult(
     x= rasterOffset, 
     w = theFocal$focal,
-    filename = paste(tempfile(), '.grd', sep=''), 
+    filename = paste(tempfile(), '.grd', sep = ''), 
     edgeCorrect=FALSE, 
     cl = NULL
   )
@@ -240,7 +269,7 @@ rasterPartition = function(
 # create list of partitions
   partitions = as.data.frame(stats::na.omit(raster::unique(rasterFineId)))
   partitions$partition = paste('c', partitions$cellCoarse, 'p', partitions$idCoarse,
-    '.', partitions$idFine, sep='')
+    '.', partitions$idFine, sep = '')
   partitions = cbind(ID = 1:nrow(partitions), partitions)
 # raster with partition ID's
   

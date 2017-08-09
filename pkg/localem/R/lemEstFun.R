@@ -1,46 +1,70 @@
 #' @title Computes the relative risk estimation
 #'
-#' @description The \code{riskEst} function computes the estimations of the relative risk with fine raster resolution. 
+#' @description The \code{riskEst} function computes the estimations of the relative risk with high raster resolution. 
 #'
 #' @param cases Spatial polygons, data frame or vector of case data
 #' @param lemObjects List of arrays for the smoothing matrix, and raster stacks for the partition and smoothed offsets
 #' @param bw Vector of bandwidths specifying which smoothing matrix in \code{lemObjects} to use
 #' @param ncores Number of cores/threads for parallel processing
-#' @param iterations Convergence tolerance, number of iterations, and use of gpuR package for running local-EM recursions
-#' @param verbose Verbose output
+#' @param iterations List of convergence tolerance, number of iterations, and use of gpuR package for running local-EM recursions
 #' @param path Folder for storing rasters
 #' @param filename Filename (must have .grd extension) of the risk estimation
+#' @param verbose Verbose output
 #'
 #' @details After using the \code{riskEst} function, the risk estimations are computed on a fine resolution based on the rasterization of the spatial polygons of population data.
 #'
-#' @return The \code{riskEst} function returns a raster of risk estimations for the input bandwidths.
+#' @return The \code{riskEst} function returns a raster brick of risk estimations for the input bandwidths.
 #'
 #' @examples 
 #' \dontrun{ 
+#' # case and population data
 #' data('kentuckyCounty')
 #' data('kentuckyTract')
+#'
+#' # parameters
+#' ncores = 2
+#' cellsCoarse = 8
+#' cellsFine = 100
+#' bw = c(10, 15, 17.5, 20) * 1000
+#' path = 'example'
 #' 
+#' # rasters of case and population data
 #' lemRaster = rasterPartition(polyCoarse = kentuckyCounty, 
-#'								polyFine = kentuckyTract, 
-#'  	                        cellsCoarse = 6, 
-#'                              cellsFine = 100, 
-#'                              bw = c(10, 15) * 1000, 
-#'                              ncores = 2, 
-#'                            	path = 'example', 
-#'                              verbose = TRUE)
+#' 								polyFine = kentuckyTract, 
+#'                            	cellsCoarse = cellsCoarse, 
+#'                            	cellsFine = cellsFine, 
+#'                            	bw = bw, 
+#'                            	ncores = ncores, 
+#'                            	path = path, 
+#'								idFile = 'lemId.grd', 
+#'								offsetFile = 'lemOffsets.grd', 
+#'                            	verbose = TRUE)
 #'
-#'
+#' # smoothing matrix
 #' lemSmoothMat = smoothingMatrix(rasterObjects = lemRaster, 
-#'                                 ncores = 2, 
+#'                                 ncores = ncores, 
+#'								   path = path, 
+#'								   filename = 'lemSmoothMat.grd', 
 #'                                 verbose = TRUE)
 #'
-#' lemRisk = riskEst(cases = kentuckyCounty, 
+#' # risk estimation
+#' lemRisk = riskEst(cases = kentuckyCounty[,c('id','count')], 
 #'                    lemObjects = lemSmoothMat, 
-#'                    bw = c(10, 15) * 1000,  
-#'                    ncores = 2, 
-#'                    path = 'example', 
+#'                    bw = bw,  
+#'                    ncores = ncores, 
+#'                    path = path, 
+#'					  filename = 'lemRisk.grd', 
 #'                    verbose = TRUE)
 #'
+#' # plot risk
+#' rCol = mapmisc::colourScale(lemRisk$riskest, 
+#'								breaks = 5, style = 'quantile', dec = 2)
+#' mapmisc::map.new(kentuckyTract)
+#' plot(lemRisk$riskest, 
+#' 		col = rCol$col, breaks = rCol$breaks, 
+#'    	legend = FALSE, 
+#'    	add = TRUE)
+#' mapmisc::legendBreaks('topright', rCol)
 #'}
 #'
 #' @export
@@ -49,14 +73,24 @@ riskEst = function(
   lemObjects, 
   bw, 
   ncores = 1, 
-  iterations = list(tol = 1e-5, maxIter = 1000, gpu=FALSE), 
-  verbose=FALSE, 
+  iterations = list(tol = 1e-5, maxIter = 1000, gpu = FALSE), 
   path = getwd(), 
-  filename = file.path(path, "risk.grd")
+  filename,
+  verbose = FALSE 
 ) {
   
-  dir.create(path, showWarnings=FALSE, recursive=TRUE)
+  dir.create(path, showWarnings = FALSE, recursive = TRUE)
 
+ 	if(missing(filename)) {
+		filename = paste(tempfile('lemRisk', path), '.grd', sep = '')
+	}
+	if(!length(grep('/', filename)) {
+		filename = file.path(path, filename)
+	}
+	if(!(length(grep("\\.gr[id]$", filename)))){
+		warning("filename should have .grd extension")
+	}
+     
   # warning messages
   if(missing(lemObjects)) {
 	stop("smoothing matrix not supplied")
@@ -67,7 +101,7 @@ riskEst = function(
 	
 	bwString = sort(unique(gsub("xv[[:digit:]]+$", "", lemObjects$bw)))
   } else { 
-	  bwString = paste('bw', bw, sep='')
+	  bwString = paste('bw', bw, sep = '')
 	  bwMatch = match(bwString, lemObjects$bw)
 	  
 	  if(any(is.na(bwMatch))) {
@@ -123,7 +157,8 @@ riskEst = function(
   }
   
   if(verbose) {
-    cat("running local-EM estimation for input bandwidths\n")
+	cat(date(), "\n")
+    cat("running local-EM estimation for input bw\n")
   }
   
   # estimate risk (by partition, not continuous) for each bw combination
@@ -167,7 +202,7 @@ riskEst = function(
     rep(names(estList), unlist(lapply(estListRisk, function(xx) dim(xx)[2]))),
     unlist(lapply(
         estListRisk, colnames
-      )), sep='_')
+      )), sep = '_')
   rownames(riskDf) = colnames(lemObjects$regionMat)
   
    newDf <- as.data.frame(riskDf[
@@ -198,6 +233,7 @@ riskEst = function(
 	if(endCluster) parallel::stopCluster(theCluster)
 
   if(verbose) {
+	cat(date(), "\n")
     cat("done\n")
   }	
     

@@ -1,3 +1,4 @@
+# Generates the matrix of cross-validation sets
 getXvMat = function(coarse, Nxv) {
   if(length(coarse)>1) {
     Ncoarse = length(coarse)
@@ -73,6 +74,7 @@ xvLemEstOneBw = function(
 	as.matrix(regionXvOffset %*% xvLambda)
 	
 }
+
 
 # Computes the aggregated risk estimation of the training set
 xvLemEst = function(
@@ -288,9 +290,6 @@ finalLemIter = function(
     colnames(obsCounts) = 'y'
   }
   
-  
-
-  
   xvSet = gsub("^bw[[:digit:]]+(xv)?", "", bwString)
   if(nchar(xvSet)) {
     obsCounts = obsCounts * (!lemObjects$xv[,xvSet])
@@ -308,7 +307,6 @@ finalLemIter = function(
   
  
   # make sure everything's ordered correctly
-  
   offsetMat = offsetMat[colnames(regionMat), colnames(regionMat)]
   partitionAreasMat = partitionAreasMat[colnames(regionMat), colnames(regionMat)]
   
@@ -436,7 +434,6 @@ finalSmooth = function(
       endCluster = TRUE
     }
   }
-  
   
   result = focalMult(
     x=toSmooth, 
