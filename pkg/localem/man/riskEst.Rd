@@ -4,56 +4,85 @@
 \alias{riskEst}
 \title{Computes the relative risk estimation}
 \usage{
-riskEst(x, lemObjects, bw, tol = 1e-05, maxIter = 1000, gpu = FALSE,
-  verbose = FALSE)
+riskEst(cases, lemObjects, bw, ncores = 1, iterations = list(tol = 1e-05,
+  maxIter = 1000, gpu = FALSE), path = getwd(), filename, verbose = FALSE)
 }
 \arguments{
-\item{x}{Spatial polygons of case data}
+\item{cases}{Spatial polygons, data frame or vector of case data}
 
 \item{lemObjects}{List of arrays for the smoothing matrix, and raster stacks for the partition and smoothed offsets}
 
-\item{bw}{Bandwidth specifying which smoothing matrix in \code{lemObjects} to use}
+\item{bw}{Vector of bandwidths specifying which smoothing matrix in \code{lemObjects} to use}
 
-\item{tol}{Tolerance for convergence}
+\item{ncores}{Number of cores/threads for parallel processing}
 
-\item{maxIter}{Maximum number of iterations for convergence}
+\item{iterations}{List of convergence tolerance, number of iterations, and use of gpuR package for running local-EM recursions}
 
-\item{gpu}{use the gpuR package for matrix multiplication?}
+\item{path}{Folder for storing rasters}
+
+\item{filename}{Filename (must have .grd extension) of the risk estimation}
 
 \item{verbose}{Verbose output}
 }
 \value{
-The \code{riskEst} function returns a raster of risk estimations for the input bandwidth.
+The \code{riskEst} function returns a raster brick of risk estimations for the input bandwidths.
 }
 \description{
-The \code{riskEst} function computes the estimations of the relative risk with fine raster resolution.
+The \code{riskEst} function computes the estimations of the relative risk with high raster resolution.
 }
 \details{
 After using the \code{riskEst} function, the risk estimations are computed on a fine resolution based on the rasterization of the spatial polygons of population data.
 }
 \examples{
 \dontrun{ 
+# case and population data
 data('kentuckyCounty')
 data('kentuckyTract')
 
+# parameters
+ncores = 2
+cellsCoarse = 8
+cellsFine = 100
+bw = c(10, 15, 17.5, 20) * 1000
+path = 'example'
+
+# rasters of case and population data
 lemRaster = rasterPartition(polyCoarse = kentuckyCounty, 
-							polyFine = kentuckyTract, 
- 	                        cellsCoarse = 6, 
-                             cellsFine = 100, 
-                             bw = c(10, 15) * 1000, 
-                             ncores = 2, 
-                             path = tempdir(), 
-                             verbose = TRUE)
+								polyFine = kentuckyTract, 
+                           	cellsCoarse = cellsCoarse, 
+                           	cellsFine = cellsFine, 
+                           	bw = bw, 
+                           	ncores = ncores, 
+                           	path = path, 
+							idFile = 'lemId.grd', 
+							offsetFile = 'lemOffsets.grd', 
+                           	verbose = TRUE)
 
-
+# smoothing matrix
 lemSmoothMat = smoothingMatrix(rasterObjects = lemRaster, 
-                                ncores = 2, 
+                                ncores = ncores, 
+							   path = path, 
+							   filename = 'lemSmoothMat.grd', 
                                 verbose = TRUE)
 
-lemRisk = riskEst(x = kentuckyCounty, 
+# risk estimation
+lemRisk = riskEst(cases = kentuckyCounty[,c('id','count')], 
                    lemObjects = lemSmoothMat, 
-                   bw = 15 * 1000) 
+                   bw = bw,  
+                   ncores = ncores, 
+                   path = path, 
+				  filename = 'lemRisk.grd', 
+                   verbose = TRUE)
 
+# plot risk
+rCol = mapmisc::colourScale(lemRisk$riskest, 
+							breaks = 5, style = 'quantile', dec = 2)
+mapmisc::map.new(kentuckyTract)
+plot(lemRisk$riskest, 
+		col = rCol$col, breaks = rCol$breaks, 
+   	legend = FALSE, 
+   	add = TRUE)
+mapmisc::legendBreaks('topright', rCol)
 }
 
 }

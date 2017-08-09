@@ -69,14 +69,14 @@ rasterPartition = function(
 	if(missing(idFile)) {
 		idFile = paste(tempfile('lemId', path), '.grd', sep = '')
 	}
-	if(!length(grep('/', idFile)) {
+	if(!length(grep('/', idFile))) {
 		idFile = file.path(path, idFile)
 	}
 	
-	if(missing(offsetFile) {
+	if(missing(offsetFile)) {
 		offsetFile = paste(tempfile('lemOffset', path), '.grd', sep = '')
 	}
-	if(!length(grep('/', offsetFile)) {
+	if(!length(grep('/', offsetFile))) {
 		offsetFile = file.path(path, offsetFile)
 	}
 

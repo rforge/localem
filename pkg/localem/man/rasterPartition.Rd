@@ -5,10 +5,8 @@
 \title{Generates the partitions by overlaying rasters of spatial polygons}
 \usage{
 rasterPartition(polyCoarse, polyFine, cellsCoarse, cellsFine, bw,
-  focalSize = NULL, xv = NULL, ncores = 1, path = getwd(),
-  idFile = paste(tempfile("lemId", path), ".grd", sep = ""),
-  offsetFile = paste(tempfile("lemOffset", path), ".grd", sep = ""),
-  verbose = FALSE)
+  focalSize = NULL, xv = NULL, ncores = 1, path = getwd(), idFile,
+  offsetFile, verbose = FALSE)
 }
 \arguments{
 \item{polyCoarse}{Spatial polygons of case data}
@@ -46,16 +44,28 @@ After using the \code{rasterPartition} function, the partition raster is a raste
 }
 \examples{
 \dontrun{ 
+# case and population data
 data('kentuckyCounty')
 data('kentuckyTract')
 
+# parameters
+ncores = 2
+cellsCoarse = 8
+cellsFine = 100
+bw = c(10, 15, 17.5, 20) * 1000
+path = 'example'
+
+# rasters of case and population data
 lemRaster = rasterPartition(polyCoarse = kentuckyCounty, 
 								polyFine = kentuckyTract, 
-                           	cellsCoarse = 6, 
-                           	cellsFine = 100, 
-                           	bw = c(10, 15) * 1000, 
-                           	ncores = 2, 
-                           	path = tempdir(), 
+                           	cellsCoarse = cellsCoarse, 
+                           	cellsFine = cellsFine, 
+                           	bw = bw, 
+                           	ncores = ncores, 
+                           	path = path, 
+                           	path = path, 
+							idFile = 'lemId.grd', 
+							offsetFile = 'lemOffsets.grd', 
                            	verbose = TRUE)
 }
 

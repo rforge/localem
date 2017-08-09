@@ -59,7 +59,7 @@ smoothingMatrix = function(
   	if(missing(filename)) {
 		filename = paste(tempfile('lemSmoothMat', path), '.grd', sep = '')
 	}
-	if(!length(grep('/', filename)) {
+	if(!length(grep('/', filename))) {
 		filename = file.path(path, filename)
 	}
 	if(!(length(grep("\\.gr[id]$", filename)))){

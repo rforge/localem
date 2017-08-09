@@ -6,7 +6,7 @@
 \usage{
 lemXv(cases, population, cellsCoarse, cellsFine, bw, xv = 4, lemObjects,
   ncores = 1, iterations = list(tol = 1e-05, maxIter = 1000, gpu = FALSE),
-  randomSeed = NULL, verbose = FALSE, path = getwd())
+  randomSeed = NULL, path = getwd(), verbose = FALSE)
 }
 \arguments{
 \item{cases}{Spatial polygons with case data}
@@ -25,13 +25,13 @@ lemXv(cases, population, cellsCoarse, cellsFine, bw, xv = 4, lemObjects,
 
 \item{ncores}{Number of cores/threads for parallel processing}
 
-\item{iterations}{convergence tolerance, number of iterations, and use of gpuR package for running local-EM recursions}
+\item{iterations}{List of convergence tolerance, number of iterations, and use of gpuR package for running local-EM recursions}
 
 \item{randomSeed}{Seed for random number generator}
 
-\item{verbose}{Verbose output}
-
 \item{path}{Folder for storing rasters}
+
+\item{verbose}{Verbose output}
 }
 \value{
 The \code{lemXv} function returns a data frame of specified bandwidths and their cross-validation scores, and a raster of the risk estimation of the bandwidth with the lowest cross-validiation score.

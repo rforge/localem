@@ -4,13 +4,15 @@
 \alias{smoothingMatrix}
 \title{Generates the smoothing matrix for the partitions and bandwidths}
 \usage{
-smoothingMatrix(rasterObjects, ncores = 1, filename = file.path(tempdir(),
-  "smoothingMatrix.grd"), verbose = FALSE)
+smoothingMatrix(rasterObjects, ncores = 1, path = getwd(), filename,
+  verbose = FALSE)
 }
 \arguments{
 \item{rasterObjects}{Raster stacks for partitions and smoothed offsets}
 
 \item{ncores}{Number of cores/threads for parallel processing}
+
+\item{path}{Folder to store raster data}
 
 \item{filename}{Filename (must have .grd extension) of the entries of smoothing matrix}
 
@@ -27,23 +29,35 @@ After using the \code{smoothingMatrix} function, the smoothing matrix is an arra
 }
 \examples{
 \dontrun{ 
+# case and population data
 data('kentuckyCounty')
 data('kentuckyTract')
 
+# parameters
+ncores = 2
+cellsCoarse = 8
+cellsFine = 100
+bw = c(10, 15, 17.5, 20) * 1000
+path = 'example'
+
+# rasters of case and population data
 lemRaster = rasterPartition(polyCoarse = kentuckyCounty, 
-							polyFine = kentuckyTract, 
- 	                        cellsCoarse = 6, 
-                             cellsFine = 100, 
-                             bw = c(10, 15) * 1000, 
-                             ncores = 2, 
-                             path = tempdir(), 
-                             verbose = TRUE)
+								polyFine = kentuckyTract, 
+                           	cellsCoarse = cellsCoarse, 
+                           	cellsFine = cellsFine, 
+                           	bw = bw, 
+                           	ncores = ncores, 
+                           	path = path, 
+							idFile = 'lemId.grd', 
+							offsetFile = 'lemOffsets.grd', 
+                           	verbose = TRUE)
 
-
+# smoothing matrix
 lemSmoothMat = smoothingMatrix(rasterObjects = lemRaster, 
-                                ncores = 2, 
+                                ncores = ncores, 
+							   path = path, 
+							   filename = 'lemSmoothMat.grd', 
                                 verbose = TRUE)
-
 }
 
 }
