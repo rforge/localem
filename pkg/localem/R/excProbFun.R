@@ -32,31 +32,31 @@
 #' 
 #' # rasters of case and population data
 #' lemRaster = rasterPartition(polyCoarse = kentuckyCounty, 
-#' 								polyFine = kentuckyTract, 
-#'                            	cellsCoarse = cellsCoarse, 
-#'                            	cellsFine = cellsFine, 
-#'                            	bw = bw, 
-#'                            	ncores = ncores, 
-#'                            	path = path, 
+#'								polyFine = kentuckyTract, 
+#'								cellsCoarse = cellsCoarse, 
+#'								cellsFine = cellsFine, 
+#'								bw = bw, 
+#'								ncores = ncores, 
+#'								path = path, 
 #'								idFile = 'lemId.grd', 
 #'								offsetFile = 'lemOffsets.grd', 
-#'                            	verbose = TRUE)
+#'								verbose = TRUE)
 #'
 #' # smoothing matrix
 #' lemSmoothMat = smoothingMatrix(rasterObjects = lemRaster, 
-#'                                 ncores = ncores, 
-#'								   path = path, 
-#'								   filename = 'lemSmoothMat.grd', 
-#'                                 verbose = TRUE)
+#'									ncores = ncores, 
+#'									path = path, 
+#'									filename = 'lemSmoothMat.grd', 
+#'									verbose = TRUE)
 #'
 #' # risk estimation
 #' lemRisk = riskEst(cases = kentuckyCounty[,c('id','count')], 
-#'                    lemObjects = lemSmoothMat, 
-#'                    bw = bw,  
-#'                    ncores = ncores, 
-#'                    path = path, 
-#'					  filename = 'lemRisk.grd', 
-#'                    verbose = TRUE)
+#'						lemObjects = lemSmoothMat, 
+#'						bw = bw[1],  
+#'						ncores = ncores, 
+#'						path = path, 
+#'						filename = 'lemRisk.grd', 
+#'						verbose = TRUE)
 #' 
 #' # exceedance probabilities
 #' lemExcProb = excProb(lemObjects = lemRisk, 
@@ -68,17 +68,17 @@
 #'                    	verbose = TRUE)
 #' 
 #' # plot exceedance probabilities
-#' pCol = mapmisc::colourScale(lemExcProb$excProb[[1]], 
-#'                            breaks = c(0,0.2,0.8,0.95,1), style = 'fixed', dec = 2, 
-#'                            col = c('green','yellow','orange','red'))						
+#' pCol = mapmisc::colourScale(lemExcProb$excProb, 
+#' 						breaks = c(0,0.2,0.8,0.95,1), style = 'fixed', dec = 2, 
+#' 						col = c('green','yellow','orange','red'))
 #'
 #' par(mfrow = c(2,2))
 #' for(inT in 1:length(threshold)) {
-#' 		plot(lemExcProb$excProb[[inT]], 
-#'  		main = paste('Exc Prob, t=', threshold[inT], sep = ''), 
-#'    	 	col = pCol$col, breaks = pCol$breaks, 
-#'     	 	legend = FALSE, 
-#'		 	add = FALSE)
+#'		plot(lemExcProb$excProb[[inT]], 
+#' 			main = paste('Exc Prob, t=', threshold[inT], sep = ''), 
+#' 			col = pCol$col, breaks = pCol$breaks, 
+#' 			legend = FALSE, 
+#'			add = FALSE)
 #' }
 #' mapmisc::legendBreaks('topright', pCol)
 #' }
@@ -158,7 +158,7 @@ excProb = function(
 						ncores = ncores, 
 						iterations = iterations, 
 						path = path, 
-						filename = paste(tempfile('lemRiskBoot', path), '.grd', sep = ''), 
+						filename = paste(tempfile('riskBootTemp', path), '.grd', sep = ''), 
 						verbose = FALSE)
 	bootEstRisk = bootLemRisk$riskEst
 	
@@ -168,11 +168,11 @@ excProb = function(
 		cat("computing exceedance probabilities with input thresholds\n")
 	}
 	
-	indexT = gsub('^bw[[:digit:]]+_count[[:digit:]]+_', '', names(bootEstRisk))
+	indexT = gsub('count[[:digit:]]+_', '', names(bootEstRisk))
 	
 	bootEstRisk = raster::overlay(x = bootEstRisk, y = theEstRisk, 
 								fun = function(x,y) return(x < y), 
-								filename = paste(tempfile('lemProbBoot', path), '.grd', sep = ''), 
+								filename = paste(tempfile('probBootTemp', path), '.grd', sep = ''), 
 								overwrite = TRUE)
 
 	theExcProb = raster::stackApply(bootEstRisk, 
@@ -180,7 +180,7 @@ excProb = function(
 								fun = mean, 
 								filename = filename, 
 								overwrite = file.exists(filename))
-	names(theExcProb) = gsub('index', paste('bw', bw, sep = ''), names(theExcProb))
+	names(theExcProb) = gsub('^index_', '', names(theExcProb))
 	
 	result = list(
 				riskEst = theEstRisk, 
