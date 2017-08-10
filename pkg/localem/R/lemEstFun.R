@@ -30,41 +30,45 @@
 #' 
 #' # rasters of case and population data
 #' lemRaster = rasterPartition(polyCoarse = kentuckyCounty, 
-#' 								polyFine = kentuckyTract, 
-#'                            	cellsCoarse = cellsCoarse, 
-#'                            	cellsFine = cellsFine, 
-#'                            	bw = bw, 
-#'                            	ncores = ncores, 
-#'                            	path = path, 
+#'								polyFine = kentuckyTract, 
+#'								cellsCoarse = cellsCoarse, 
+#'								cellsFine = cellsFine, 
+#'								bw = bw, 
+#'								ncores = ncores, 
+#'								path = path, 
 #'								idFile = 'lemId.grd', 
 #'								offsetFile = 'lemOffsets.grd', 
-#'                            	verbose = TRUE)
+#'								verbose = TRUE)
 #'
 #' # smoothing matrix
 #' lemSmoothMat = smoothingMatrix(rasterObjects = lemRaster, 
-#'                                 ncores = ncores, 
-#'								   path = path, 
-#'								   filename = 'lemSmoothMat.grd', 
-#'                                 verbose = TRUE)
+#'									ncores = ncores, 
+#'									path = path, 
+#'									filename = 'lemSmoothMat.grd', 
+#'									verbose = TRUE)
 #'
 #' # risk estimation
 #' lemRisk = riskEst(cases = kentuckyCounty[,c('id','count')], 
-#'                    lemObjects = lemSmoothMat, 
-#'                    bw = bw,  
-#'                    ncores = ncores, 
-#'                    path = path, 
-#'					  filename = 'lemRisk.grd', 
-#'                    verbose = TRUE)
+#'						lemObjects = lemSmoothMat, 
+#'						bw = bw,  
+#'						ncores = ncores, 
+#'						path = path, 
+#'						filename = 'lemRisk.grd', 
+#'						verbose = TRUE)
 #'
 #' # plot risk
-#' rCol = mapmisc::colourScale(lemRisk$riskest, 
-#'								breaks = 5, style = 'quantile', dec = 2)
-#' mapmisc::map.new(kentuckyTract)
-#' plot(lemRisk$riskest, 
-#' 		col = rCol$col, breaks = rCol$breaks, 
-#'    	legend = FALSE, 
-#'    	add = TRUE)
-#' mapmisc::legendBreaks('topright', rCol)
+#' rCol = mapmisc::colourScale(lemRisk$riskEst, 
+#'							breaks = 5, style = 'quantile', dec = 2)
+#'
+#' par(mfrow = c(2,2), mar = c(0.5,0.5,3,0.5))
+#' for(inBw in 1:length(bw)) {
+#'		plot(lemRisk$riskEst[[inBw]], 
+#'			main = paste('Risk, bw=', bw[inBw], 'km', sep = ''), 
+#'			col = rCol$col, breaks = rCol$breaks, 
+#'			axes = FALSE, box = FALSE, legend = FALSE, 
+#'			add = FALSE)
+#' }
+#' mapmisc::legendBreaks('right', rCol)
 #'}
 #'
 #' @export

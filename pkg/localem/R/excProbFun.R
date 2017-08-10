@@ -49,7 +49,7 @@
 #'									filename = 'lemSmoothMat.grd', 
 #'									verbose = TRUE)
 #'
-#' # risk estimation
+#' # risk estimation for bandwidth of 10km
 #' lemRisk = riskEst(cases = kentuckyCounty[,c('id','count')], 
 #'						lemObjects = lemSmoothMat, 
 #'						bw = bw[1],  
@@ -58,7 +58,7 @@
 #'						filename = 'lemRisk.grd', 
 #'						verbose = TRUE)
 #' 
-#' # exceedance probabilities
+#' # exceedance probabilities for bandwidth of 10km
 #' lemExcProb = excProb(lemObjects = lemRisk, 
 #'					  	threshold = threshold, 
 #'					  	Nboot = Nboot, 
@@ -72,12 +72,12 @@
 #' 						breaks = c(0,0.2,0.8,0.95,1), style = 'fixed', dec = 2, 
 #' 						col = c('green','yellow','orange','red'))
 #'
-#' par(mfrow = c(2,2))
+#' par(mfrow = c(2,2), mar = c(0.5,0.5,3,0.5))
 #' for(inT in 1:length(threshold)) {
 #'		plot(lemExcProb$excProb[[inT]], 
-#' 			main = paste('Exc Prob, t=', threshold[inT], sep = ''), 
-#' 			col = pCol$col, breaks = pCol$breaks, 
-#' 			legend = FALSE, 
+#'			main = paste('Exc Prob, t=', threshold[inT], ' (bw=10km)', sep = ''), 
+#'			col = pCol$col, breaks = pCol$breaks, 
+#'			axes = FALSE, box = FALSE, legend = FALSE, 
 #'			add = FALSE)
 #' }
 #' mapmisc::legendBreaks('topright', pCol)

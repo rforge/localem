@@ -42,22 +42,22 @@ path = 'example'
 
 # rasters of case and population data
 lemRaster = rasterPartition(polyCoarse = kentuckyCounty, 
-								polyFine = kentuckyTract, 
-                           	cellsCoarse = cellsCoarse, 
-                           	cellsFine = cellsFine, 
-                           	bw = bw, 
-                           	ncores = ncores, 
-                           	path = path, 
+							polyFine = kentuckyTract, 
+							cellsCoarse = cellsCoarse, 
+							cellsFine = cellsFine, 
+							bw = bw, 
+							ncores = ncores, 
+							path = path, 
 							idFile = 'lemId.grd', 
 							offsetFile = 'lemOffsets.grd', 
-                           	verbose = TRUE)
+							verbose = TRUE)
 
 # smoothing matrix
 lemSmoothMat = smoothingMatrix(rasterObjects = lemRaster, 
-                                ncores = ncores, 
-							   path = path, 
-							   filename = 'lemSmoothMat.grd', 
-                                verbose = TRUE)
+								ncores = ncores, 
+								path = path, 
+								filename = 'lemSmoothMat.grd', 
+								verbose = TRUE)
 }
 
 }

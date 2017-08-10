@@ -21,33 +21,26 @@ Lung cancer case counts, population, and map of Kentucky.
 data('kentuckyCounty')
 data('kMap')
 
-countyCol = mapmisc::colourScale(
-	kentuckyCounty$count, 
-	breaks = 7, style = 'quantile', dec = -1
-) 
+countyCol = mapmisc::colourScale(kentuckyCounty$count, 
+							breaks = 7, style = 'quantile', dec = -1)
 
 mapmisc::map.new(kentuckyCounty)
 plot(kentuckyCounty, 
-		col = countyCol$plot, 
-		add = TRUE
-)
+	col = countyCol$plot, 
+	add = TRUE)
 plot(kMap, add = TRUE)
 mapmisc::legendBreaks('topleft', countyCol)
 
 # plot population data
 data('kentuckyTract')
 
-kCol = mapmisc::colourScale(
-	kentuckyTract$expected, 
-	breaks = 9, style = 'equal', dec = 0
-) 
+kCol = mapmisc::colourScale(kentuckyTract$expected, 
+						breaks = 9, style = 'equal', dec = 0)
 
 mapmisc::map.new(kentuckyTract)
 plot(kentuckyTract, 
-		col = kCol$plot, 
-		border = '#00000010',
-		add = TRUE
-)
+	col = kCol$plot, border = '#00000010', 
+	add = TRUE)
 plot(kMap, add = TRUE)
 mapmisc::legendBreaks('topleft', kCol)
 }

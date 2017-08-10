@@ -57,16 +57,15 @@ path = 'example'
 
 # rasters of case and population data
 lemRaster = rasterPartition(polyCoarse = kentuckyCounty, 
-								polyFine = kentuckyTract, 
-                           	cellsCoarse = cellsCoarse, 
-                           	cellsFine = cellsFine, 
-                           	bw = bw, 
-                           	ncores = ncores, 
-                           	path = path, 
-                           	path = path, 
+							polyFine = kentuckyTract, 
+							cellsCoarse = cellsCoarse, 
+							cellsFine = cellsFine, 
+							bw = bw, 
+							ncores = ncores, 
+							path = path, 
 							idFile = 'lemId.grd', 
 							offsetFile = 'lemOffsets.grd', 
-                           	verbose = TRUE)
+							verbose = TRUE)
 }
 
 }
