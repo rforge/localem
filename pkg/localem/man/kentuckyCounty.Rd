@@ -1,4 +1,3 @@
-
 \docType{data}
 \name{kentuckyCounty}
 \alias{kentuckyCounty}
