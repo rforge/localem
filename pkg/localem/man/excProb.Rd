@@ -88,8 +88,9 @@ lemExcProb = excProb(lemObjects = lemRisk,
 
 # plot exceedance probabilities
 pCol = mapmisc::colourScale(lemExcProb$excProb, 
-						breaks = c(0,0.2,0.8,0.95,1), style = 'fixed', dec = 2, 
-						col = c('green','yellow','orange','red'))
+					breaks = c(0,0.2,0.8,0.95,1), 
+					style = 'fixed', dec = 2, 
+					col = c('green','yellow','orange','red'))
 
 par(mfrow = c(2,2), mar = c(0.5,0.5,3,0.5))
 for(inT in 1:length(threshold)) {
