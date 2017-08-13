@@ -307,7 +307,7 @@ riskKentucky = riskEst(
 
 ```
 
-```{r plotRiskOne, fig.cap = 'Risk Estimation for Simulation 1', fig.subcap = paste('Risk, bw=', Sbw / 1000, ' km', sep = ''), fig.height = 4, fig.width = 6, out.width = '80%', fig.ncol = NULL}
+```{r plotRiskOne, echo = FALSE, fig.cap = 'Risk Estimation for Simulation 1', fig.subcap = paste('Risk, bw=', Sbw / 1000, ' km', sep = ''), fig.height = 4, fig.width = 6, out.width = '80%', fig.ncol = NULL}
 
 # estimated risk maps
 toPlot = riskKentucky$riskEst
