@@ -61,55 +61,6 @@ dir.create('cache', showWarnings = FALSE, recursive = TRUE)
 
 ```
 
-<!--
-```{r setupOld, message = FALSE}
-
-# specify number of grid cells and number of cores for computations in parallel 
-if(any(commandArgs() == 'highRes' | basename(getwd()) == 'www')) {
-
-    # this uses about 20GB of memory
-    cellsFine = 400
-    cellsSimulate = 600
-    cellsCoarse = 20
-    nsim = 20
-    nxv = 12
-    path = paste('/store/', Sys.info()['user'], '/localem/highRes', sep = '')
-    Sbw = unique(round(exp(seq(log(5), log(50), len=15)))) * 1000
-    threshold = c(1, 1.25, 1.5, 2)
-    Nboot = 400
-
-    knitr::opts_chunk$set(dpi = 200)
-
-    # number of cores set to total available, min 2, max 32
-    if(.Platform$OS.type == 'unix') {
-        ncores = pmin(32, parallel::detectCores())
-    }
-} else {
-
-    # a less computationally intensive setup
-    ncores = 2
-    cellsFine = 80
-    cellsSimulate = 200
-    cellsCoarse = 8
-    nsim = 4
-    nxv = 4
-    # on unix systems results will be saved in /tmp/localEMusername
-    path = file.path(dirname(tempdir()),  paste('localEM', Sys.info()['user'], sep = ''))
-    Sbw = seq(10, 35, by = 5) * 1000
-    threshold = c(1, 1.25, 1.5, 2)
-    Nboot = 100 
-}
-
-if(!requireNamespace('RandomFields', quietly = TRUE)) {
-    cellsSimulate = 100
-}
-
-dir.create(path, showWarnings = FALSE, recursive = TRUE)
-dir.create('cache', showWarnings = FALSE, recursive = TRUE)
-
-```
--->
-
 ```{r data}
 
 library('mapmisc')
