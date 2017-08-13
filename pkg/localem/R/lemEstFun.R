@@ -156,6 +156,7 @@ riskEst = function(
       if(verbose) cat("starting new cluster\n")
       theCluster = parallel::makeCluster(spec=ncores, type='PSOCK', methods=TRUE)
       parallel::setDefaultCluster(theCluster)
+	  parallel::clusterEvalQ(theCluster, library('raster'))
       endCluster = TRUE
     }
   }
@@ -175,9 +176,6 @@ riskEst = function(
     verbose=verbose)
   
   if(!is.null(theCluster)) {
-    
-	parallel::clusterEvalQ(theCluster, library('raster'))
-
     estList = parallel::clusterMap(
       theCluster,
       finalLemIter,

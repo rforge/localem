@@ -58,6 +58,7 @@ lemXv = function(
   if(ncores > 1) {
     theCluster = parallel::makeCluster(spec=ncores, type='PSOCK', methods=TRUE)
     parallel::setDefaultCluster(theCluster)
+	parallel::clusterEvalQ(theCluster, library('raster'))
   } else {
     theCluster = NULL
   }
@@ -152,9 +153,6 @@ lemXv = function(
     verbose=verbose)
   
   if(!is.null(theCluster)) {
-
-	parallel::clusterEvalQ(theCluster, library('raster'))
-    
     estList = parallel::clusterMap(
       theCluster,
       finalLemIter,

@@ -76,10 +76,14 @@ smoothingMatrix = function(
   theCluster = NULL
   if(length(grep("cluster", class(ncores))) ) {
     theCluster = ncores
+	parallel::clusterEvalQ(theCluster, library('raster'))
+	parallel::clusterEvalQ(theCluster, library('Matrix'))
   } else if(!is.null(ncores)) {
     if(ncores > 1) {
       theCluster = parallel::makeCluster(spec=ncores, type='PSOCK', methods=TRUE)
       parallel::setDefaultCluster(theCluster)
+	  parallel::clusterEvalQ(theCluster, library('raster'))
+	  parallel::clusterEvalQ(theCluster, library('Matrix'))
       endCluster = TRUE
     }
   }
