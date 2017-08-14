@@ -151,6 +151,7 @@ riskEst = function(
   if(length(grep("cluster", class(ncores))) ) {
     if(verbose) cat("using existing cluster\n")
     theCluster = ncores
+	parallel::clusterEvalQ(theCluster, library('raster'))
   } else if(!is.null(ncores)) {
     if(ncores > 1) {
       if(verbose) cat("starting new cluster\n")
