@@ -38,6 +38,8 @@ The methodology of this package is demonstrated on simulated lung cancer cases f
 ```{r setup, message = FALSE}
 
 # specify number of grid cells and number of cores for computations in parallel 
+options(scipen = 22)
+
 ncores = 2
 cellsFine = 80
 cellsCoarse = 8
