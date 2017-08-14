@@ -340,7 +340,7 @@ Specifically, under the assumption that disease events are a realisation from th
 
 Exceedance probabilities with risk thresholds of 1, 1.25, 1.5 and 2 are provided for the first simulated dataset. The plots show the area east of Bowling Green and south of Frankfurt having high lung cancer risk with the estimated risk being higher than most bootstrap samples with the threshold of 1.5; however, the estimated risk does not appear to exceed a threshold of 2. 
 
-```{r excProbOne, warning = FALSE}
+```{r excProbOne, warning = FALSE, eval = FALSE, purl = FALSE}
 
 excProbKentucky = excProb(
     lemObjects = xvKentucky, 
@@ -352,7 +352,7 @@ excProbKentucky = excProb(
 
 ```
 
-```{r plotExcProbOne, echo = FALSE, fig.cap = 'Exceedance Probabilities for Simulation 1', fig.subcap = paste('Threshold ', threshold, sep = ''), fig.height = 4, fig.width = 6, out.width = '80%', fig.ncol = NULL}
+```{r plotExcProbOne, echo = FALSE, eval = FALSE, purl = FALSE, fig.cap = 'Exceedance Probabilities for Simulation 1', fig.subcap = paste('Threshold ', threshold, sep = ''), fig.height = 4, fig.width = 6, out.width = '80%', fig.ncol = NULL}
 
 toPlot = excProbKentucky$excProb
 
