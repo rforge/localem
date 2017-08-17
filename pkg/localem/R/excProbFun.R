@@ -114,10 +114,12 @@ excProb = function(
 	}
 
 	# bandwidths of interest
-	bw = as.numeric(gsub('^bw', '', lemObjects$bw))
+  bwString = lemObjects$bw
+	bw = as.numeric(gsub('^bw', '', bwString))
 	
 	# risk estimate of interest
 	theEstRisk = lemObjects$riskEst
+	theEstNames = names(theEstRisk)
 
 	if(verbose) {
 		cat(date(), "\n")
@@ -153,39 +155,88 @@ excProb = function(
 		cat("running local-EM estimation for bootstrap cases with original bw\n")
 	}
 
-	bootLemRisk = riskEst(cases = bootCountsDf, 
-						lemObjects = lemObjects$smoothingMatrix, 
-						bw = bw,  
-						ncores = ncores, 
-						iterations = iterations, 
-						path = path, 
-						filename = paste(tempfile('riskBootTemp', path), '.grd', sep = ''), 
-						verbose = FALSE)
-	bootEstRisk = bootLemRisk$riskEst
-	
+	theBootRiskList = list()
+	for(inB in 1:length(bw)) {
+	  
+	  # first bw
+	  if(inB == 1) {
+
+  	 	bootLemRisk = riskEst(cases = bootCountsDf, 
+    						lemObjects = lemObjects$smoothingMatrix, 
+    						bw = bw[inB], 
+    						ncores = ncores, 
+    						iterations = iterations, 
+    						path = path, 
+    						filename = paste('riskBootTempBw', bw[inB], '.grd', sep = ''), 
+    						verbose = FALSE)
+    	bootEstRisk = bootLemRisk$riskEst
+    	
+    	theBootRiskList[[inB]] = bootEstRisk
+
+    # additional bw
+	  } else {
+	    
+	    indexBw = grep(bw[inB], bw[1:inB])
+	 
+	    if(length(indexBw) == 1){
+
+	      bootLemRisk = riskEst(cases = bootCountsDf, 
+	                            lemObjects = lemObjects$smoothingMatrix, 
+	                            bw = bw[inB], 
+	                            ncores = ncores, 
+	                            iterations = iterations, 
+	                            path = path, 
+	                            filename = paste('riskBootTempBw', bw[inB], '.grd', sep = ''), 
+	                            verbose = FALSE)
+	      bootEstRisk = bootLemRisk$riskEst
+	      
+	      theBootRiskList[[inB]] = bootEstRisk
+
+	    # use previous results if same bw was used before
+	    } else {
+	      theBootRiskList[[inB]] = theBootRiskList[[indexBw[1]]]
+      }
+	  }	    
+  }	
+
 	# exceedance probabilities
 	if(verbose) {
 		cat(date(), "\n")
 		cat("computing exceedance probabilities with input thresholds\n")
 	}
 	
-	indexT = gsub('count[[:digit:]]+_', '', names(bootEstRisk))
-	
-	bootEstRisk = raster::overlay(x = bootEstRisk, y = theEstRisk, 
-								fun = function(x,y) return(x < y), 
-								filename = paste(tempfile('probBootTemp', path), '.grd', sep = ''), 
-								overwrite = TRUE)
+	theExcProbList = list()
+	for(inB in 1:length(bw)) {
+	  
+	  theBootEstRisk = theBootRiskList[[inB]]
 
-	theExcProb = raster::stackApply(bootEstRisk, 
+  	theProbEstRisk = raster::overlay(x = theBootEstRisk, y = theEstRisk[[inB]], 
+                      fun = function(x,y) return(x < y), 
+                      filename = paste(tempfile('probBootTemp', path), '.grd', sep = ''), 
+                      overwrite = TRUE)
+
+  	indexT = gsub('count[[:digit:]]+_', '', names(theBootEstRisk))
+  	
+  	theExcProb = raster::stackApply(theProbEstRisk, 
 								indices = indexT, 
 								fun = mean, 
-								filename = filename, 
-								overwrite = file.exists(filename))
-	names(theExcProb) = gsub('^index_', '', names(theExcProb))
+								filename = paste(tempfile('excProbTemp', path), '.grd', sep = ''), 
+								overwrite = TRUE)
+
+  	theExcProbList[[inB]] = theExcProb
+	}
 	
+	theExcProbStack = raster::writeRaster(
+                  	  raster::stack(theExcProbList), 
+                  	  filename = filename, 
+                  	  overwrite = file.exists(filename))
+	names(theExcProbStack) = paste(rep(theEstNames, each = length(threshold)), 
+	                               '_threshold', rep(threshold, length(theEstNames)), 
+	                               sep = '')
+
 	result = list(
 				riskEst = theEstRisk, 
-				excProb = theExcProb
+				excProb = theExcProbStack
 			)
 	
 	if(verbose) {
@@ -193,5 +244,10 @@ excProb = function(
 		cat("done\n")
 	}	
 
+	# remove temporary raster files
+	unlink(file.path(path, 'riskBootTempBw*'))
+	unlink(file.path(path, 'probBootTemp*'))
+	unlink(file.path(path, 'excProbTemp*'))
+	
 	return(result)
 }
