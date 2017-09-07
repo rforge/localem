@@ -5,6 +5,7 @@
 #' @param cases Spatial polygons, data frame or vector of case data
 #' @param lemObjects List of arrays for the smoothing matrix, and raster stacks for the partition and smoothed offsets
 #' @param bw Vector of bandwidths specifying which smoothing matrix in \code{lemObjects} to use
+#' @param finalSmooth kernel smooth the piecewise constant estimate, can be memory intensive
 #' @param ncores Number of cores/threads for parallel processing
 #' @param iterations List of convergence tolerance, number of iterations, and use of gpuR package for running local-EM recursions
 #' @param path Folder for storing rasters
@@ -76,6 +77,7 @@ riskEst = function(
   cases, 
   lemObjects, 
   bw, 
+  finalSmooth = FALSE,
   ncores = 1, 
   iterations = list(tol = 1e-5, maxIter = 1000, gpu = FALSE), 
   path = getwd(), 

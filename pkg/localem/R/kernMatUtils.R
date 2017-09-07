@@ -409,7 +409,7 @@ focalMult = function(
   # if outer, smooths every layer of x with every focal in w
   
   if(edgeCorrect) {
-    firstFile = paste(tempfile(), '.grd', sep='')
+    firstFile = tempfile("forEdge",tempdir(), '.grd')
   } else {
     firstFile = filename
   }
@@ -436,10 +436,32 @@ focalMult = function(
   outBrick = brick(raster(x), nl = length(outNames))  
   names(outBrick) = outNames
   
+  # get rid of outer parts of the focal array
+  # if the values are all very small
+  wArray = do.call(abind::abind, c(w, list(along=3)))
+  
+  Dseq = seq(1, pmax(1,floor(dim(wArray)[1]/2)-2))
+  intSeq = NULL
+  for(D in Dseq) {
+    innerSeq = seq(D, dim(wArray)[1]+1-D)
+    intSeq = cbind(intSeq,
+        apply(wArray[innerSeq,innerSeq,,drop=FALSE],3,sum)
+    )
+  }
+  
+  toCrop = Dseq[max(which(apply(intSeq, 2, min) > 0.99))]
+  innerSeq = seq(toCrop, dim(wArray)[1]+1-toCrop)
+  wArray = wArray[
+      innerSeq, innerSeq,,drop=FALSE
+      ] 
+  wArray = wArray / rep(intSeq[,toCrop], each=prod(dim(wArray)[1:2]))
+  
+  # do some truncation
+  
   focalMat = matrix(
-    do.call(abind::abind, c(w, list(along=3))),
-    ncol = length(w), 
-    dimnames = list(NULL, names(w)))
+    wArray,
+    ncol = dim(wArray)[3], 
+    dimnames = list(NULL, dimnames(wArray)[[3]]))
   
   outBrick = writeStart(
     outBrick, 
@@ -456,7 +478,7 @@ focalMult = function(
   forMoreArgs = list(
     x=x,
     focalMat = focalMat,
-    focalDim = dim(w[[1]]),
+    focalDim = dim(wArray)[1],
     out = outBrick
   )
   

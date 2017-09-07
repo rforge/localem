@@ -21,44 +21,44 @@
 #'  
 #' @export
 lemXv = function(
-  cases, 
-  population, 
-  cellsCoarse, 
-  cellsFine, 
-  bw,
-  xv = 4, 
-  lemObjects, 
-  ncores = 1, 
-  iterations = list(tol = 1e-5, maxIter = 1000, gpu = FALSE), 
-  randomSeed = NULL, 
-  path = getwd(), 
-  verbose = FALSE
+    cases, 
+    population, 
+    cellsCoarse, 
+    cellsFine, 
+    bw,
+    xv = 4, 
+    lemObjects, 
+    ncores = 1, 
+    iterations = list(tol = 1e-5, maxIter = 1000, gpu = FALSE), 
+    randomSeed = NULL, 
+    path = getwd(), 
+    verbose = FALSE
 ){
   
   dir.create(path, showWarnings = FALSE, recursive = TRUE)
   
   # warning messages
   if(missing(lemObjects)) { 
-	if(class(cases) != 'SpatialPolygonsDataFrame') {
-		stop("spatial polygons for case data must be provided if smoothing matrix not supplied")
-	} 
-	
-	if(class(cases) == 'SpatialPolygonsDataFrame') {
-	
-	  #names of interest for regions in the coarse shapefile
-	  countcol = grep('^(count|cases)', names(cases), value=TRUE, ignore.case=TRUE)
-	
-	  if(!length(countcol)) {
-		stop("column names of case data must start with 'count' or 'cases'")
-	  }
-	}
+    if(class(cases) != 'SpatialPolygonsDataFrame') {
+      stop("spatial polygons for case data must be provided if smoothing matrix not supplied")
+    } 
+    
+    if(class(cases) == 'SpatialPolygonsDataFrame') {
+      
+      #names of interest for regions in the coarse shapefile
+      countcol = grep('^(count|cases)', names(cases), value=TRUE, ignore.case=TRUE)
+      
+      if(!length(countcol)) {
+        stop("column names of case data must start with 'count' or 'cases'")
+      }
+    }
   }
   
   # initializing parallel features (if specified)
   if(ncores > 1) {
     theCluster = parallel::makeCluster(spec=ncores, type='PSOCK', methods=TRUE)
     parallel::setDefaultCluster(theCluster)
-	parallel::clusterEvalQ(theCluster, library('raster'))
+    parallel::clusterEvalQ(theCluster, library('raster'))
   } else {
     theCluster = NULL
   }
@@ -75,31 +75,31 @@ lemXv = function(
   
   if(missing(lemObjects)) {  
     if(verbose) {
-	  cat(date(), "\n")
+      cat(date(), "\n")
       cat("computing smoothing matrix\n")
     }
-       
+    
     ##raster partition
     xvLemRaster = rasterPartition(
-      polyCoarse = cases, 
-      polyFine = population, 
-      cellsCoarse = cellsCoarse, 
-      cellsFine = cellsFine, 
-      xv = xv, 
-      bw = bw, 
-      ncores = theCluster, 
-      path = path, 
-      idFile = 'idXv.grd', 
-      offsetFile = 'offsetXv.grd', 
-      verbose = verbose)
+        polyCoarse = cases, 
+        polyFine = population, 
+        cellsCoarse = cellsCoarse, 
+        cellsFine = cellsFine, 
+        xv = xv, 
+        bw = bw, 
+        ncores = theCluster, 
+        path = path, 
+        idFile = 'idXv.grd', 
+        offsetFile = 'offsetXv.grd', 
+        verbose = verbose)
     
-	# smoothing matrix
+    # smoothing matrix
     xvSmoothMat =  smoothingMatrix(
-      rasterObjects = xvLemRaster, 
-      ncores = theCluster, 
-	  path = path, 
-      filename = 'smoothMatXv.grd', 
-      verbose = verbose)
+        rasterObjects = xvLemRaster, 
+        ncores = theCluster, 
+        path = path, 
+        filename = 'smoothMatXv.grd', 
+        verbose = verbose)
     
     
     # save smoothing matrix, useful in case of failure later on
@@ -109,7 +109,7 @@ lemXv = function(
     
   } else {
     if(verbose) {
-	  cat(date(), "\n")
+      cat(date(), "\n")
       cat("using supplied smoothing matrix\n")
     }
     
@@ -119,10 +119,10 @@ lemXv = function(
   
   
   # checking structure of case data
-   if(is.vector(cases)) {
+  if(is.vector(cases)) {
     cases = data.frame(cases=cases)
   }
-   if(is.matrix(cases)) {
+  if(is.matrix(cases)) {
     cases = as.data.frame(cases)
   }
   if(class(cases) == 'SpatialPolygonsDataFrame') {
@@ -135,7 +135,7 @@ lemXv = function(
   #names of interest for regions in the coarse shapefile
   countcol = grep('^(count|cases)', names(cases), value=TRUE, ignore.case=TRUE)
   # if(!length(countcol)){
-    # countcol = grep("^(id|name)", names(cases), invert=TRUE, value=TRUE)[1]
+  # countcol = grep("^(id|name)", names(cases), invert=TRUE, value=TRUE)[1]
   # }
   
   if(verbose) {
@@ -145,28 +145,28 @@ lemXv = function(
   # estimate risk (by partition, not continuous) for each bw/cv combinantion
   
   forMoreArgs = list(
-    x=cases[,countcol, drop=FALSE],
-    lemObjects = xvSmoothMat,
-    tol = iterations$tol, 
-    maxIter = iterations$maxIter,
-    gpu = iterations$gpu,
-    verbose=verbose)
+      x=cases[,countcol, drop=FALSE],
+      lemObjects = xvSmoothMat,
+      tol = iterations$tol, 
+      maxIter = iterations$maxIter,
+      gpu = iterations$gpu,
+      verbose=verbose)
   
   if(!is.null(theCluster)) {
     estList = parallel::clusterMap(
-      theCluster,
-      finalLemIter,
-      bw = xvSmoothMat$bw,
-      MoreArgs = forMoreArgs,
-      SIMPLIFY=FALSE
+        theCluster,
+        finalLemIter,
+        bw = xvSmoothMat$bw,
+        MoreArgs = forMoreArgs,
+        SIMPLIFY=FALSE
     )
     
   } else {
     estList = mapply(
-      finalLemIter,
-      bw = xvSmoothMat$bw,
-      MoreArgs = forMoreArgs,
-      SIMPLIFY=FALSE
+        finalLemIter,
+        bw = xvSmoothMat$bw,
+        MoreArgs = forMoreArgs,
+        SIMPLIFY=FALSE
     )
   }
   
@@ -181,10 +181,10 @@ lemXv = function(
   estDf = as.matrix(do.call(cbind, estListExp))
   riskDf = as.matrix(do.call(cbind, estListRisk))
   colnames(estDf) = colnames(riskDf) = paste(
-    rep(names(estList), unlist(lapply(estListExp, function(xx) dim(xx)[2]))),
-    unlist(lapply(
-        estListExp, colnames
-      )), sep = '_')
+      rep(names(estList), unlist(lapply(estListExp, function(xx) dim(xx)[2]))),
+      unlist(lapply(
+              estListExp, colnames
+          )), sep = '_')
   rownames(riskDf) = colnames(xvSmoothMat$regionMat)
   
   if(verbose) {
@@ -207,46 +207,46 @@ lemXv = function(
   logProb = apply(logProbCoarse, 2, sum)
   
   logProbFull = data.frame(
-    bw = as.numeric(Sbw),
-    cases = Scount, 
-    fold = Sxv, 
-    minusLogProb = -logProb
+      bw = as.numeric(Sbw),
+      cases = Scount, 
+      fold = Sxv, 
+      minusLogProb = -logProb
   )
   
   xvRes = stats::aggregate(
-    logProbFull[,'minusLogProb'],
-    as.list(logProbFull[,c('bw','cases')]),
-    sum
+      logProbFull[,'minusLogProb'],
+      as.list(logProbFull[,c('bw','cases')]),
+      sum
   )
   xvRes = stats::reshape(
-    xvRes, direction = 'wide',
-    idvar = 'bw',
-    timevar = 'cases'
+      xvRes, direction = 'wide',
+      idvar = 'bw',
+      timevar = 'cases'
   )
   colnames(xvRes) = gsub("^x[.]", "", colnames(xvRes))    
   xvRes = xvRes[,c('bw',countcol)]
   minXvScore = apply(xvRes[,countcol, drop=FALSE],2,min)
   xvRes[,countcol] = xvRes[,countcol] - 
-    matrix(minXvScore, nrow=nrow(xvRes), ncol=length(minXvScore), byrow=TRUE)
-
+      matrix(minXvScore, nrow=nrow(xvRes), ncol=length(minXvScore), byrow=TRUE)
+  
 #  stuff <<- list(xvSmoothMat$rasterFine, riskDf) 
   newDf <- riskDf[
-    as.character(raster::levels(xvSmoothMat$rasterFine)[[1]]$partition),]
+      as.character(raster::levels(xvSmoothMat$rasterFine)[[1]]$partition),]
   
   riskRaster = xvSmoothMat$rasterFine
   levels(riskRaster)[[1]] =  as.data.frame(cbind(
-      ID = raster::levels(xvSmoothMat$rasterFine)[[1]]$ID,
-      newDf))
+          ID = raster::levels(xvSmoothMat$rasterFine)[[1]]$ID,
+          newDf))
   
   
   
   result = list(
-    xv = xvRes,
-    xvFull = logProbFull,
-    riskAll = riskRaster,
-    smoothingMatrix = xvSmoothMat,
-    expected = polyCoarse,
-    folds = xvMat
+      xv = xvRes,
+      xvFull = logProbFull,
+      riskAll = riskRaster,
+      smoothingMatrix = xvSmoothMat,
+      expected = polyCoarse,
+      folds = xvMat
   )
   
   if(verbose) {
@@ -258,10 +258,10 @@ lemXv = function(
   Slayers = paste('bw', bwMin, '_', countcol, sep = '')
   
   result$riskEst = finalSmooth(
-    x = result, 
-	Slayers = Slayers, 
-    filename = file.path(path, 'riskXv.grd'),
-    ncores = theCluster)
+      x = result, 
+      Slayers = Slayers, 
+      filename = file.path(path, 'riskXv.grd'),
+      ncores = theCluster)
   names(result$riskEst) = Slayers
   
   result$bw = paste('bw', bwMin, sep = '')

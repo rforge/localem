@@ -3,6 +3,7 @@
 #' @description The \code{excProb} function first bootstraps cases with the input risk thresholds and expected counts from the rasterization of the spatial polygons of population data, and then, computes the exceedance probablities with the same bandwidths as the risk estimation on the same raster resolution. 
 #' 
 #' @param lemObjects List of arrays for the smoothing matrix, and raster stacks for the partition, smoothed offsets and risk estimation
+#' @param bw bandwidth to use, should be name of a layer in the smoothing matrix
 #' @param threshold Vector of risk thresholds
 #' @param Nboot Number of bootstraps
 #' @param ncores Number of cores/threads for parallel processing
@@ -86,168 +87,176 @@
 #'
 #' @export
 excProb = function(
-  lemObjects, 
-  threshold = 1, 
-  Nboot = 100, 
-  ncores = 1, 
-  iterations = list(tol = 1e-5, maxIter = 1000, gpu = FALSE), 
-  path = getwd(), 
-  filename, 
-  verbose = FALSE
+    lemObjects, 
+    bw = lemObjects$bw,
+    threshold = 1, 
+    Nboot = 100, 
+    ncores = 1, 
+    iterations = list(tol = 1e-5, maxIter = 1000, gpu = FALSE), 
+    path = getwd(), 
+    filename, 
+    verbose = FALSE
 ){
   
-	dir.create(path, showWarnings = FALSE, recursive = TRUE)
-
- 	if(missing(filename)) {
-		filename = paste(tempfile('lemExcProb', path), '.grd', sep = '')
-	}
-	if(!length(grep('/', filename))) {
-		filename = file.path(path, filename)
-	}
-	if(!(length(grep("\\.gr[id]$", filename)))){
-		warning("filename should have .grd extension")
-	}
-	
-	# warning messages
-	if(missing(lemObjects)) {
-		stop("smoothing matrix and rasters not supplied")
-	}
-
-	# bandwidths of interest
-  bwString = lemObjects$bw
-	bw = as.numeric(gsub('^bw', '', bwString))
-	
-	# risk estimate of interest
-	theEstRisk = lemObjects$riskEst
-	theEstNames = names(theEstRisk)
-
-	if(verbose) {
-		cat(date(), "\n")
-		cat("generating bootstrap cases for input thresholds\n")
-	}
-	
-	# offsets of spatial polygons of case data based on population data
- 	idCoarse = 1:length(lemObjects$smoothingMatrix$polyCoarse)
-		  
-	offsetRaster = raster::stack(lemObjects$smoothingMatrix$offset$offset, 
-									raster::deratify(lemObjects$smoothingMatrix$rasterFine))
-	offsetDf = stats::aggregate(x = values(offsetRaster$offset) * prod(res(offsetRaster)), 
-							by = list(idCoarse = values(offsetRaster$idCoarse)), 
-							FUN = sum)
-	colnames(offsetDf) = c('idCoarse','offset')
-	offsetDf = merge(data.frame(idCoarse = idCoarse), offsetDf, by = 'idCoarse', all = TRUE)
-	offsetDf$offset[is.na(offsetDf$offset)] = 0
-	
-	# bootstrap cases
-	offsetT = outer(offsetDf$offset, threshold)
-
-	bootCountsDf = matrix(data = stats::rpois(length(offsetT) * Nboot, rep(offsetT, Nboot)), 
-							nrow = nrow(offsetDf), 
-							ncol = length(threshold) * Nboot)
-	dimnames(bootCountsDf) = list(rownames(offsetDf), 
-									paste('count', rep(1:Nboot, rep(length(threshold), Nboot)), 
-											'_threshold', rep(threshold, Nboot), 
-											sep = ''))
-
-	# estimate risk from bootstrap cases
-	if(verbose) {
-		cat(date(), "\n")	
-		cat("running local-EM estimation for bootstrap cases with original bw\n")
-	}
-
-	theBootRiskList = list()
-	for(inB in 1:length(bw)) {
-	  
-	  # first bw
-	  if(inB == 1) {
-
-  	 	bootLemRisk = riskEst(cases = bootCountsDf, 
-    						lemObjects = lemObjects$smoothingMatrix, 
-    						bw = bw[inB], 
-    						ncores = ncores, 
-    						iterations = iterations, 
-    						path = path, 
-    						filename = paste('riskBootTempBw', bw[inB], '.grd', sep = ''), 
-    						verbose = FALSE)
-    	bootEstRisk = bootLemRisk$riskEst
-    	
-    	theBootRiskList[[inB]] = bootEstRisk
-
-    # additional bw
-	  } else {
-	    
-	    indexBw = grep(bw[inB], bw[1:inB])
-	 
-	    if(length(indexBw) == 1){
-
-	      bootLemRisk = riskEst(cases = bootCountsDf, 
-	                            lemObjects = lemObjects$smoothingMatrix, 
-	                            bw = bw[inB], 
-	                            ncores = ncores, 
-	                            iterations = iterations, 
-	                            path = path, 
-	                            filename = paste('riskBootTempBw', bw[inB], '.grd', sep = ''), 
-	                            verbose = FALSE)
-	      bootEstRisk = bootLemRisk$riskEst
-	      
-	      theBootRiskList[[inB]] = bootEstRisk
-
-	    # use previous results if same bw was used before
-	    } else {
-	      theBootRiskList[[inB]] = theBootRiskList[[indexBw[1]]]
+  dir.create(path, showWarnings = FALSE, recursive = TRUE)
+  
+  if(missing(filename)) {
+    filename = paste(tempfile('lemExcProb', path), '.grd', sep = '')
+  }
+  if(!length(grep('/', filename))) {
+    filename = file.path(path, filename)
+  }
+  if(!(length(grep("\\.gr[id]$", filename)))){
+    warning("filename should have .grd extension")
+  }
+  
+  # warning messages
+  if(missing(lemObjects)) {
+    stop("smoothing matrix and rasters not supplied")
+  }
+  
+  # bandwidths of interest
+  bwString = bw
+  bw = as.numeric(gsub('^bw', '', bwString))
+  
+  # risk estimate of interest
+  theEstRisk = lemObjects$riskEst
+  theEstNames = names(theEstRisk)
+  
+  if(verbose) {
+    cat(date(), "\n")
+    cat("generating bootstrap cases for input thresholds\n")
+  }
+  
+  # offsets of spatial polygons of case data based on population data
+  idCoarse = 1:length(lemObjects$smoothingMatrix$polyCoarse)
+  
+  offsetRaster = raster::stack(lemObjects$smoothingMatrix$offset$offset, 
+      raster::deratify(lemObjects$smoothingMatrix$rasterFine))
+  offsetDf = stats::aggregate(x = values(offsetRaster$offset) * prod(res(offsetRaster)), 
+      by = list(idCoarse = values(offsetRaster$idCoarse)), 
+      FUN = sum)
+  colnames(offsetDf) = c('idCoarse','offset')
+  offsetDf = merge(data.frame(idCoarse = idCoarse), offsetDf, by = 'idCoarse', all = TRUE)
+  offsetDf$offset[is.na(offsetDf$offset)] = 0
+  
+  # bootstrap cases
+  offsetT = outer(offsetDf$offset, threshold)
+  
+  bootCountsDf = matrix(
+      data = stats::rpois(
+          length(offsetT) * Nboot, 
+          rep(offsetT, Nboot)), 
+      nrow = nrow(offsetDf), 
+      ncol = length(threshold) * Nboot,
+      dimnames = list(rownames(offsetDf), 
+          paste('count', rep(1:Nboot, rep(length(threshold), Nboot)), 
+              '_threshold', rep(threshold, Nboot), 
+              sep = '')
+      )
+  )
+  
+  # estimate risk from bootstrap cases
+  if(verbose) {
+    cat(date(), "\n")	
+    cat("running local-EM estimation for bootstrap cases with original bw\n")
+  }
+  
+  theBootRiskList = list()
+  for(inB in 1:length(bw)) {
+    
+    # first bw
+    if(inB == 1) {
+      
+      bootLemRisk = riskEst(
+          cases = bootCountsDf, 
+          lemObjects = lemObjects$smoothingMatrix, 
+          bw = bw[inB], 
+          ncores = ncores, 
+          iterations = iterations, 
+          path = path, 
+          filename = paste('riskBootTempBw', bw[inB], '.grd', sep = ''), 
+          verbose = TRUE)
+      bootEstRisk = bootLemRisk$riskEst
+      
+      theBootRiskList[[inB]] = bootEstRisk
+      
+      # additional bw
+    } else {
+      
+      indexBw = grep(bw[inB], bw[1:inB])
+      
+      if(length(indexBw) == 1){
+        
+        bootLemRisk = riskEst(
+            cases = bootCountsDf, 
+            lemObjects = lemObjects$smoothingMatrix, 
+            bw = bw[inB], 
+            ncores = ncores, 
+            iterations = iterations, 
+            path = path, 
+            filename = paste('riskBootTempBw', bw[inB], '.grd', sep = ''), 
+            verbose = FALSE)
+        bootEstRisk = bootLemRisk$riskEst
+        
+        theBootRiskList[[inB]] = bootEstRisk
+        
+        # use previous results if same bw was used before
+      } else {
+        theBootRiskList[[inB]] = theBootRiskList[[indexBw[1]]]
       }
-	  }	    
+    }	    
   }	
-
-	# exceedance probabilities
-	if(verbose) {
-		cat(date(), "\n")
-		cat("computing exceedance probabilities with input thresholds\n")
-	}
-	
-	theExcProbList = list()
-	for(inB in 1:length(bw)) {
-	  
-	  theBootEstRisk = theBootRiskList[[inB]]
-
-  	theProbEstRisk = raster::overlay(x = theBootEstRisk, y = theEstRisk[[inB]], 
-                      fun = function(x,y) return(x < y), 
-                      filename = paste(tempfile('probBootTemp', path), '.grd', sep = ''), 
-                      overwrite = TRUE)
-
-  	indexT = gsub('count[[:digit:]]+_', '', names(theBootEstRisk))
-  	
-  	theExcProb = raster::stackApply(theProbEstRisk, 
-								indices = indexT, 
-								fun = mean, 
-								filename = paste(tempfile('excProbTemp', path), '.grd', sep = ''), 
-								overwrite = TRUE)
-
-  	theExcProbList[[inB]] = theExcProb
-	}
-	
-	theExcProbStack = raster::writeRaster(
-                  	  raster::stack(theExcProbList), 
-                  	  filename = filename, 
-                  	  overwrite = file.exists(filename))
-	names(theExcProbStack) = paste(rep(theEstNames, each = length(threshold)), 
-	                               '_threshold', rep(threshold, length(theEstNames)), 
-	                               sep = '')
-
-	result = list(
-				riskEst = theEstRisk, 
-				excProb = theExcProbStack
-			)
-	
-	if(verbose) {
-		cat(date(), "\n")
-		cat("done\n")
-	}	
-
-	# remove temporary raster files
-	unlink(file.path(path, 'riskBootTempBw*'))
-	unlink(file.path(path, 'probBootTemp*'))
-	unlink(file.path(path, 'excProbTemp*'))
-	
-	return(result)
+  
+  # exceedance probabilities
+  if(verbose) {
+    cat(date(), "\n")
+    cat("computing exceedance probabilities with input thresholds\n")
+  }
+  
+  theExcProbList = list()
+  for(inB in 1:length(bw)) {
+    
+    theBootEstRisk = theBootRiskList[[inB]]
+    
+    theProbEstRisk = raster::overlay(x = theBootEstRisk, y = theEstRisk[[inB]], 
+        fun = function(x,y) return(x < y), 
+        filename = paste(tempfile('probBootTemp', path), '.grd', sep = ''), 
+        overwrite = TRUE)
+    
+    indexT = gsub('count[[:digit:]]+_', '', names(theBootEstRisk))
+    
+    theExcProb = raster::stackApply(theProbEstRisk, 
+        indices = indexT, 
+        fun = mean, 
+        filename = paste(tempfile('excProbTemp', path), '.grd', sep = ''), 
+        overwrite = TRUE)
+    
+    theExcProbList[[inB]] = theExcProb
+  }
+  
+  theExcProbStack = raster::writeRaster(
+      raster::stack(theExcProbList), 
+      filename = filename, 
+      overwrite = file.exists(filename))
+  names(theExcProbStack) = paste(rep(theEstNames, each = length(threshold)), 
+      '_threshold', rep(threshold, length(theEstNames)), 
+      sep = '')
+  
+  result = list(
+      riskEst = theEstRisk, 
+      excProb = theExcProbStack
+  )
+  
+  if(verbose) {
+    cat(date(), "\n")
+    cat("done\n")
+  }	
+  
+  # remove temporary raster files
+  unlink(file.path(path, 'riskBootTempBw*'))
+  unlink(file.path(path, 'probBootTemp*'))
+  unlink(file.path(path, 'excProbTemp*'))
+  
+  return(result)
 }

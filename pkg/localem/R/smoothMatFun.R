@@ -47,25 +47,25 @@
 #'
 #' @export
 smoothingMatrix = function(
-  rasterObjects,
-  ncores = 1,
-  path = getwd(), 
-  filename, 
-  verbose = FALSE
+    rasterObjects,
+    ncores = 1,
+    path = getwd(), 
+    filename, 
+    verbose = FALSE
 ){
   
-	dir.create(path, showWarnings = FALSE, recursive = TRUE)
-
-  	if(missing(filename)) {
-		filename = paste(tempfile('lemSmoothMat', path), '.grd', sep = '')
-	}
-	if(!length(grep('/', filename))) {
-		filename = file.path(path, filename)
-	}
-	if(!(length(grep("\\.gr[id]$", filename)))){
-		warning("filename should have .grd extension")
-	}
-   
+  dir.create(path, showWarnings = FALSE, recursive = TRUE)
+  
+  if(missing(filename)) {
+    filename = paste(tempfile('lemSmoothMat', path), '.grd', sep = '')
+  }
+  if(!length(grep('/', filename))) {
+    filename = file.path(path, filename)
+  }
+  if(!(length(grep("\\.gr[id]$", filename)))){
+    warning("filename should have .grd extension")
+  }
+  
   if(verbose) {
     cat(date(), "\n")
     cat("diagonal blocks of smoothing matrix\n")
@@ -76,26 +76,26 @@ smoothingMatrix = function(
   theCluster = NULL
   if(length(grep("cluster", class(ncores))) ) {
     theCluster = ncores
-	parallel::clusterEvalQ(theCluster, library('raster'))
-	parallel::clusterEvalQ(theCluster, library('Matrix'))
+    parallel::clusterEvalQ(theCluster, library('raster'))
+    parallel::clusterEvalQ(theCluster, library('Matrix'))
   } else if(!is.null(ncores)) {
     if(ncores > 1) {
       theCluster = parallel::makeCluster(spec=ncores, type='PSOCK', methods=TRUE)
       parallel::setDefaultCluster(theCluster)
-	  parallel::clusterEvalQ(theCluster, library('raster'))
-	  parallel::clusterEvalQ(theCluster, library('Matrix'))
+      parallel::clusterEvalQ(theCluster, library('raster'))
+      parallel::clusterEvalQ(theCluster, library('Matrix'))
       endCluster = TRUE
     }
   }
   
   theMat = smoothingMatrixDiag(
-    rasterCoarse=rasterObjects$rasterCoarse,
-    rasterFine=rasterObjects$rasterFine,
-    focalList=rasterObjects$focal,
-    offsetRaster=rasterObjects$offset,
-    filename = filename,
-    cl = theCluster,
-    verbose=verbose)
+      rasterCoarse=rasterObjects$rasterCoarse,
+      rasterFine=rasterObjects$rasterFine,
+      focalList=rasterObjects$focal,
+      offsetRaster=rasterObjects$offset,
+      filename = filename,
+      cl = theCluster,
+      verbose=verbose)
   
   smoothingRaster = theMat$smoothingArray
   smoothingRasterFile = gsub("grd$", "gri", filename(smoothingRaster))
@@ -104,7 +104,7 @@ smoothingMatrix = function(
   Spartitions = theMat$partitions
   
   if(verbose) {
-      cat(date(), "\n")
+    cat(date(), "\n")
     cat('off-diagonals of smoothing matrix', "\n")
   }
   
@@ -115,42 +115,42 @@ smoothingMatrix = function(
   
   
   forMoreArgs = list(
-    theMat = theMat, 
-    rasterObjects = rasterObjects,
-    image_x=image_dims[1],
-    image_y=image_dims[2],
-    image_z=image_dims[3],
-    Spartitions = Spartitions,
-    # theType = mmap::real64();dput(theType, '')
-    theType = structure(numeric(0), bytes = 8L, signed = 1L, class = c("Ctype", 
-        "double")),
-    smoothingRasterFile = smoothingRasterFile,
-    layerSeq = layerSeq,
-    verbose=verbose
+      theMat = theMat, 
+      rasterObjects = rasterObjects,
+      image_x=image_dims[1],
+      image_y=image_dims[2],
+      image_z=image_dims[3],
+      Spartitions = Spartitions,
+      # theType = mmap::real64();dput(theType, '')
+      theType = structure(numeric(0), bytes = 8L, signed = 1L, class = c("Ctype", 
+              "double")),
+      smoothingRasterFile = smoothingRasterFile,
+      layerSeq = layerSeq,
+      verbose=verbose
   )
   
   if(!is.null(theCluster)) {
     
-	parallel::clusterExport(theCluster, 
-		varlist = c('smoothingMatrixOneDist',
-						'smoothingMatrixEntries',
-						'kernMat',
-						'reorderCellsTranslate',
-						'getCellInfo'), 
-		envir = environment()
-	)
-
+    parallel::clusterExport(theCluster, 
+        varlist = c('smoothingMatrixOneDist',
+            'smoothingMatrixEntries',
+            'kernMat',
+            'reorderCellsTranslate',
+            'getCellInfo'), 
+        envir = environment()
+    )
+    
     offDiag = parallel::clusterMap(
-      theCluster,
-      oneBlockOffdiagFun,
-      x = as.vector(theMat$uniqueDist),
-      MoreArgs = forMoreArgs
+        theCluster,
+        oneBlockOffdiagFun,
+        x = as.vector(theMat$uniqueDist),
+        MoreArgs = forMoreArgs
     )
   } else {
     offDiag = mapply(
-      oneBlockOffdiagFun,
-      x = as.vector(theMat$uniqueDist),
-      MoreArgs = forMoreArgs
+        oneBlockOffdiagFun,
+        x = as.vector(theMat$uniqueDist),
+        MoreArgs = forMoreArgs
     )
     
   }  
@@ -160,15 +160,15 @@ smoothingMatrix = function(
   if(endCluster)  
     parallel::stopCluster(theCluster)
   
- 
+  
   if(any(unlist(lapply(offDiag, class)) == 'try-error') ) {
     warning("errors in smoothing matrix construction")
     return(c(list(offDiag = offDiag), 
-        theMat, rasterObjects[setdiff(names(rasterObjects), names(theMat))]))
+            theMat, rasterObjects[setdiff(names(rasterObjects), names(theMat))]))
   }
   
   result = c(theMat, rasterObjects[setdiff(names(rasterObjects), names(theMat))])
-
+  
   if(verbose) {
     cat(date(), "\n")
     cat("done\n")

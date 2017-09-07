@@ -1,11 +1,10 @@
 ```{r vignetteHeader, eval = FALSE, purl = FALSE, include = FALSE}
-
 '
-%\VignetteEngine{knitr::docco_linear} 
-%\VignetteIndexEntry{Local-EM Example with Kentucky}
-'
-
+    %\VignetteEngine{knitr::docco_linear} 
+    %\VignetteIndexEntry{Local-EM Example with Kentucky}
+    '
 ```
+
 
 ```{r knitrSetup, echo = FALSE, purl = FALSE, results = 'asis'}
 
@@ -14,20 +13,35 @@ knitr::opts_chunk$set(
     fig.width = 4, fig.height = 2.5,
     dpi = 100, out.width = '45%', fig.ncol = 2)
 
-if(requireNamespace('Pmisc', quietly = TRUE) & basename(getwd()) == 'www') {
+# high resolution 
+# either give R command argument highRes
+# or have highRes variable defined as TRUE
+if(!exists('highRes'))
+  highRes = any(commandArgs() == 'highRes')
 
-    knitr::knit_hooks$set(plot = Pmisc::hook_plot_mdsubfig)
-    Pmisc::markdownHeader(
-        title = 'High Resolution Local-EM Example with Kentucky', 
-        author = 'Patrick Brown, Paul Nguyen')
+if(requireNamespace('Pmisc', quietly = TRUE)) {
+  file.copy(system.file('src','webpage.css', package='Pmisc')
+        , 'webpage.css')
+  if(highRes) {
+    cat(Pmisc::markdownHeader(
+            title = 'High Resolution Local-EM Example with Kentucky', 
+            author = 'Patrick Brown, Paul Nguyen',
+            css = 'webpage.css'))
+  } else {
+    cat(Pmisc::markdownHeader(
+            title = 'Local-EM Example with Kentucky', 
+            author = 'Patrick Brown, Paul Nguyen',
+            css = 'webpage.css'))
+  }
+  knitr::knit_hooks$set(plot = Pmisc::hook_plot_mdsubfig)
+  theWidth = '45%'
 } else {
-
-    cat('\n# Local-EM Example with Kentucky\n')
-    knitr::knit_hooks$set(plot = knitr::hook_plot_html)
+  knitr::knit_hooks$set(plot = knitr::hook_plot_html)
+  cat('\n# Local-EM Example with Kentucky\n')
+  theWidth = '80%'
 }
 
 ```
-
 	
 ## Introduction 
 
@@ -35,36 +49,56 @@ The `localEM` package contains functions to implement the kernel smoothing local
 
 The methodology of this package is demonstrated on simulated lung cancer cases for the state of Kentucky, USA. The spatial polygons for the census counties and tracts of Kentucky are included with this package. 
 
-```{r setup, message = FALSE}
+```{r setupHighRes, eval=highRes, purl=highRes, echo = highRes}
 
-# specify number of grid cells and number of cores for computations in parallel 
+
+ncores = parallel::detectCores()
+cellsFine = 200
+cellsCoarse = 12
+nsim = 12
+nxv = 6
+Sbw = seq(5, 40, by = 2.5) * 1000
+threshold = c(1, 1.25, 1.5, 2)
+Nboot = 100 
+# on unix systems results will be saved in /tmp/localEMusername
+path = 'highResLocalem/'
+cacheDir = 'highResCache/'
+figDir = 'highResFigure/'
+```
+
+```{r setupLowRes, eval=!highRes, purl=!highRes, echo = !highRes}
+
+# specify number of grid cells and number of cores for computations in parallel
 ncores = 2
 cellsFine = 80
 cellsCoarse = 8
 nsim = 4
 nxv = 4
 Sbw = seq(10, 35, by = 5) * 1000
-threshold = c(1, 1.25, 1.5, 2)
-Nboot = 100 
-
+threshold = c(1, 1.5)
+Nboot = 20 
 # on unix systems results will be saved in /tmp/localEMusername
 path = file.path(dirname(tempdir()),  paste('localEM', Sys.info()['user'], sep = ''))
+cacheDir = 'cache/'
+figDir = 'figure/'
+```  
 
-# specify number of grid cells for simulation
-cellsSimulate = 200
-if(!requireNamespace('RandomFields', quietly = TRUE)) {
-    cellsSimulate = 100
+
+specify number of grid cells for simulation
+
+```{r setupSim, message=FALSE}
+if(requireNamespace('RandomFields', quietly = TRUE)) {
+  cellsSimulate = 200
+} else {
+  cellsSimulate = 100  
 }
-
-dir.create(path, showWarnings = FALSE, recursive = TRUE)
-dir.create('cache', showWarnings = FALSE, recursive = TRUE)
 
 ```
 
-```{r data}
+```{r data, message=FALSE}
 
-library('mapmisc')
-library('rgdal')
+require('mapmisc', quietly=TRUE)
+require('rgdal', quietly=TRUE)
 
 data('kentuckyCounty', package = 'localEM') 
 data('kentuckyTract', package = 'localEM') 
@@ -72,6 +106,19 @@ data('kMap', package = 'localEM')
 
 ```
 
+```{r mampiscCache, echo=FALSE, message=FALSE}
+if(exists('persistentCache', 'package:mapmisc')) {   
+  mapmisc::persistentCache() 
+}
+dir.create(path, showWarnings = FALSE, recursive = TRUE)
+dir.create(cacheDir, showWarnings = FALSE, recursive = TRUE)
+dir.create(figDir, showWarnings = FALSE, recursive = TRUE)
+knitr::opts_chunk$set(fig.path=figDir, cache.path=cacheDir)  
+```
+
+```{r kMap, cache=TRUE}
+kMap = mapmisc::tonerToTrans(mapmisc::openmap(kentuckyCounty, fact=2, path='stamen-toner'))
+```
 
 ## Simulate Cases
 
@@ -83,7 +130,7 @@ Using the `simLgcp()` function from the `geostatsp` package, case locations are 
 * range: 120 km
 * offsets: log of expected cases/m$^2$ of the census tracts
 
-```{r simcases, message = FALSE, warning = FALSE, cache = (basename(getwd()) == 'www'), cache.path = 'cache'}
+```{r simcases, message = FALSE, warning = FALSE, cache = TRUE, results='hide'}
 
 kentuckyOffset = geostatsp::spdfToBrick(
     kentuckyTract,
@@ -106,10 +153,17 @@ The simulated cases are then aggregated to the appropriate counties. Plots of th
 
 kCases$agg = lapply(
     kCases[grep('^events[[:digit:]]+?', names(kCases))],
-    function(qq) over(qq, kentuckyCounty)[,'id'])
+    function(qq) over(qq, kentuckyCounty)[,'id']
+)
+
 countyCounts = as.data.frame(lapply(
-    kCases$agg,  
-    function(xx) as.vector(table(xx, exclude = NULL)[as.character(kentuckyCounty$id)])))
+        kCases$agg,  
+        function(xx) {
+          as.vector(table(xx, exclude = NULL)[
+                  as.character(kentuckyCounty$id)])
+        }
+    ))
+
 countyCounts[is.na(countyCounts)] = 0
 names(countyCounts) = gsub('^events', 'count', names(countyCounts))
 rownames(countyCounts) = as.character(kentuckyCounty$id)
@@ -117,25 +171,25 @@ kentuckyCounty = merge(kentuckyCounty, countyCounts, by.x = 'id', by.y = 'row.na
 
 ```
 
-```{r plotOffset, echo = FALSE, warning = FALSE, fig.cap = 'Events for Simulation 1', fig.subcap = c('Offset', 'Relative Intensity', 'Events', 'Counts'), fig.height = 4, fig.width = 6, out.width = '80%', fig.ncol = NULL}
+```{r plotOffset, echo = FALSE, warning = FALSE, fig.cap = 'Events for Simulation 1', fig.subcap = c('Offset', 'Relative Intensity', 'Events', 'Counts'), fig.height = 3, fig.width = 6, out.width = theWidth, fig.ncol = 2}
 
 # offset map
 oCol = colourScale(
-    c(0, exp(maxValue(kentuckyOffset))), 
-    breaks = 10, style = 'equal', dec = 7, 
-    transform = 'sqrt')
+    breaks=c(0, 0.01, 0.02, 0.05, 0.1, 1,4), 
+    style = 'fixed',
+    col = 'YlOrRd')
 
-map.new(kentuckyTract, 
-    mar = c(0, 0, 1, 0), 
-	  main = 'Offsets')
+map.new(kentuckyTract)#, 
+#    mar = c(0, 0, 1, 0), 
+#    main = 'Offsets')
 plot(kentuckyOffset, 
     col = oCol$col, 
-    breaks = pmax(-100,log(oCol$breaks)), 
+    breaks = pmax(-100, log(oCol$breaks)) - 6*log(10), 
     legend = FALSE, 
     add = TRUE)
-plot(kMap, add = TRUE)
+plot(kMap, add = TRUE, maxpixels=10^7)
 legendBreaks('topleft', 
-    breaks = oCol$breaks * 10^6, col = oCol$col, 
+    breaks = oCol$breaks, col = oCol$col, 
     title = expression(plain('cases/km')^2), 
     bg = 'white')
 
@@ -145,9 +199,10 @@ iCol = colourScale(
     kCases$raster$relativeIntensity1, 
     breaks = 8, style = 'equal', dec = -log10(0.5))
 
-map.new(kentuckyTract, 
-    mar = c(0, 0, 1, 0), 
-	  main = 'Simulated Risk')
+map.new(kentuckyTract#, 
+#    mar = c(0, 0, 1, 0), 
+#    main = 'Simulated Risk'
+)
 plot(kCases$raster$relativeIntensity1, 
     col = iCol$col, breaks = iCol$breaks, 
     legend = FALSE, 
@@ -160,9 +215,10 @@ legendBreaks('topleft',
 
 
 # simulated events map
-map.new(kentuckyTract, 
-    mar = c(0, 0, 1, 0), 
-	  main = 'Simulated Events')
+map.new(kentuckyTract#, 
+#    mar = c(0, 0, 1, 0), 
+#    main = 'Simulated Events'
+)
 plot(kMap, add = TRUE)
 points(kCases$events1, col = '#FF000030', pch = 20, cex = 0.5)
 scaleBar(kentuckyCounty, 
@@ -175,9 +231,10 @@ cCol = colourScale(
     kentuckyCounty$count1, 
     breaks = 10, style = 'quantile', dec = -1)
 
-map.new(kentuckyTract, 
-    mar = c(0, 0, 1, 0), 
-    main = 'Aggregated Counts')
+map.new(kentuckyTract#, 
+#    mar = c(0, 0, 1, 0), 
+#    main = 'Aggregated Counts'
+)
 plot(kentuckyCounty, col = cCol$plot, add = TRUE)
 plot(kMap, add = TRUE)
 legendBreaks('topleft', cCol)
@@ -203,156 +260,163 @@ library('localEM')
 
 fileHere = file.path(path, 'xvKentucky.RData')
 
+if(FALSE) {
+  library(raster)
+  # devtools::load_all("../..")
+  # devtools::install("../..")
+  firstFile = 'stuff.grd'
+  smoothingRasterTemplate = brick(
+      nrows=5, ncols=6, 
+      xmn=0,xmx=1.2,ymn=0,ymx=1,
+      nl = 2
+  )
+  toWrite = matrix(as.double(0.1), ncol(smoothingRasterTemplate), nlayers(smoothingRasterTemplate))
+  
+  firstRaster = writeStart(
+      smoothingRasterTemplate,
+      filename = firstFile, 
+      format = 'raster',
+      datatype = 'FLT8S', 
+      bandorder = 'BSQ',
+      overwrite=file.exists(firstFile))
+  
+  for(Drow in 1:nrow(firstRaster)) {
+    firstRaster = writeValues(firstRaster, toWrite, Drow) 
+  }  
+  firstRaster = writeStop(firstRaster)
+  smoothingRaster = gsub("grd$", "gri", filename(firstRaster))
+  out = mmap::mmap(
+      smoothingRaster,
+      mode=mmap::real64()
+  )	
+    
+  out[1] = as.numeric(-2.2)
+  out[]
+  .Call("mmapReplaceReal", 
+      as.double(2), 
+      as.double(-2.5), 
+      out, 
+      PACKAGE='localEM') 
+#  out[prod(dim(firstRaster))] = as.numeric(-3.2)        
+ # out[c(1:4, prod(dim(firstRaster)))
+  out[1:4]
+  ( mmap::munmap(out)  )
+  
+}
+
 if(!file.exists(fileHere)) {
-
-    xvKentucky = lemXv(
-        cases = kentuckyCounty[,c('id','count1')], 
-        population = kentuckyTract, 
-        cellsCoarse = cellsCoarse,  
-        cellsFine = cellsFine, 
-        bw = Sbw, 
-        xv = nxv, 
-        ncores = ncores, 
-        path = path, 
-        verbose = TRUE)
-
-    save(xvKentucky, file = fileHere)
+  
+  xvKentucky = lemXv(
+      cases = kentuckyCounty[,c('id','count1')], 
+      population = kentuckyTract, 
+      cellsCoarse = cellsCoarse,  
+      cellsFine = cellsFine, 
+      bw = Sbw, 
+      xv = nxv, 
+      ncores = ncores, 
+      path = path, 
+      verbose = TRUE)
+  
+  save(xvKentucky, file = fileHere)
 } else {
-
-    load(fileHere)
+  load(fileHere)
 }
 
 ```
 
-```{r cvPlotOne, echo = FALSE, fig.cap = 'Cross-validation Scores for Simulation 1', fig.height = 4, fig.width = 6, out.width = '80%', fig.ncol = NULL}
+```{r cvPlotOne, echo = FALSE, fig.cap = 'Cross-validation Scores for Simulation 1', fig.height = 4, fig.width = 6, out.width = '60%', fig.ncol = 1}
 
 plot(xvKentucky$xv[,1]/1000, xvKentucky$xv[,2], 
     main = 'CV Scores for Simulation 1', 
     xlab = 'km', ylab = '-log p', 
-    type = 'o')
-
-```
-
-
-Using the R objects created from the `lemXv()` function for the first simulated dataset, this CV method can be efficiently implemented on the remaining simulated datasets. The CV scores are provided for all simulated datasets, yielding optimal bandwidths ranging from 15 to 30 km. 
-
-```{r cvAll, warning = FALSE, cache = (basename(getwd()) == 'www'), cache.path = 'cache'}
-
-xvAllKentucky = lemXv(
-    cases = kentuckyCounty@data[,grep('^count[[:digit:]]', names(kentuckyCounty))], 
-    lemObjects = xvKentucky$smoothingMatrix, 
-    ncores = ncores, 
-    path = 'cache', 
-    verbose = TRUE)
-
-```
-
-```{r cvPlotAll, echo = FALSE, fig.cap = 'Cross-validation Scores for All Simulations', fig.height = 4, fig.width = 6, out.width = '80%', fig.ncol = NULL}
-
-maxY = min(max(xvAllKentucky$xv[,-1]), 30)
-
-matplot(xvAllKentucky$xv[,'bw']/1000, xvAllKentucky$xv[,-1], 
-    main = 'CV Scores for All Simulations', 
-    xlab = 'km', ylab = '-log p', 
-    type = 'l', lty = 1, col = 1:4, 
-    ylim = c(0, maxY))
-legend('topright', paste('Simulation ', 1:4, sep = ''), 
-    lty = 1, col = 1:4, 
-    cex = 0.6)
-
+    type = 'o', xlim = c(8, 30), ylim = c(0, 20))
 ```
 
 
 ## Risk Estimation
 
-The R objects created from the `lemXv()` function also contain the local-EM risk estimation done with the optimal bandwidth found in the CV approach. High-resolution plots (i.e., raster resolution of 8.5x8.5 km) of the local-EM estimation with their optimal bandwidths are provided for all simulated datasets. 
+The R objects created from the `lemXv()` function also contain the local-EM risk
+estimation done with the optimal bandwidth found in the CV approach.
+High-resolution plots (i.e., raster resolution of 8.5x8.5 km) of the local-EM
+estimation with their optimal bandwidths are provided for all simulated
+datasets. 
 
-```{r plotRiskAll, echo = FALSE, warning = FALSE, fig.cap = 'Risk Estimation with Optimal Bandwidths', fig.subcap = paste('Simulation ', 1:4, sep = ''), fig.height = 4, fig.width = 6, out.width = '80%', fig.ncol = NULL}
+The `riskEst()` function allows local-EM risk estimation to be done with
+specified bandwidths. Plots of the local-EM estimation with all bandwidths used
+in this example are provided for the first simulated dataset. The plots show
+high cancer risk in the areas located east of Bowling Green and south of
+Frankfurt decreasing as the bandwidth increases. 
 
-toPlot = xvAllKentucky$riskEst
-
-rCol = colourScale(
-    toPlot, 
-    breaks = 8, style = 'equal', dec = 2)
-
-bw = as.numeric(gsub('^bw', '', xvAllKentucky$bw))
-
-for(inR in 1:nlayers(toPlot)) {
-
-    map.new(kentuckyCounty, 
-        mar = c(0, 0, 1, 0), 
-        main = paste('Simulation ', inR, ': Estimated Risk, bw=', bw[inR] / 1000, ' km', sep = ''))
-    plot(toPlot[[inR]], 
-        col = rCol$col, breaks = rCol$breaks, 
-        legend = FALSE, 
-        add = TRUE)
-    plot(kMap, add = TRUE)
-    legendBreaks('topleft', rCol, bg = 'white')
-}
-
-```
-
-
-The `riskEst()` function allows local-EM risk estimation to be done with specified bandwidths. Plots of the local-EM estimation with all bandwidths used in this example are provided for the first simulated dataset. The plots show high cancer risk in the areas located east of Bowling Green and south of Frankfurt decreasing as the bandwidth increases. 
-
-```{r riskOne, warning = FALSE}
+```{r riskOne, warning = FALSE, cache=TRUE}
 
 riskKentucky = riskEst(
     cases = kentuckyCounty[,c('id','count1')], 
     lemObjects = xvKentucky$smoothingMatrix, 
     bw = Sbw, 
     ncores = ncores, 
-    path = path, 
-    verbose = TRUE)
+    path = cacheDir)
 
 ```
 
-```{r plotRiskOne, echo = FALSE, warning = FALSE, fig.cap = 'Risk Estimation for Simulation 1', fig.subcap = paste('Risk, bw=', Sbw / 1000, ' km', sep = ''), fig.height = 4, fig.width = 6, out.width = '80%', fig.ncol = NULL}
+```{r plotRiskOne, echo = FALSE, warning = FALSE, fig.cap = 'Risk Estimation for Simulation 1', fig.subcap = paste('Risk, bw=', Sbw / 1000, ' km', sep = ''), fig.height = 3, fig.width = 6, out.width = theWidth, fig.ncol = 2}
 
 # estimated risk maps
-toPlot = riskKentucky$riskEst
+toPlot = brick(filename(riskKentucky$riskEst))
 
 rCol = colourScale(
-    toPlot, 
-    breaks = 8, style = 'equal', dec = 2)
+    c(0, maxValue(toPlot)), 
+    breaks = 9, style = 'equal', 
+    dec = -log10(0.5))
 
 for(inR in 1:nlayers(toPlot)) {
-
-    map.new(kentuckyCounty, 
-        mar = c(0, 0, 1, 0), 
-    	  main = paste('Simulation 1: Estimated Risk, bw=', Sbw[inR] / 1000, ' km', sep = ''))
-    plot(toPlot[[inR]], 
-        col = rCol$col, breaks = rCol$breaks, 
-        legend = FALSE, 
-        add = TRUE)
-    plot(kMap, add = TRUE)
-    legendBreaks('topleft', rCol, bg = 'white')
+  map.new(kentuckyCounty)#, 
+#      mar = c(0, 0, 1, 0), 
+#      main = paste('Simulation 1: Estimated Risk, bw=', Sbw[inR] / 1000, ' km', sep = ''))
+  plot(toPlot[[inR]], 
+      col = rCol$col, breaks = rCol$breaks, 
+      legend = FALSE, 
+      add = TRUE)
+  plot(kMap, add = TRUE, maxpixels=10^7)
+  legendBreaks('topleft', rCol, bg = 'white')
 }
 
 ```
-  
 
 ## Uncertainty Estimation
 
-To measure the uncertainty of the local-EM algorithm, the `excProb()` function computes the exceedance probabilities with the same bandwidth parameter used in the risk estimation. Bootstrapping from a Poisson process is used to simulate the events for calculating these exceedance probabilities. 
+To measure the uncertainty of the local-EM algorithm, the `excProb()` function
+computes the exceedance probabilities with the same bandwidth parameter used in
+the risk estimation. Bootstrapping from a Poisson process is used to simulate
+the events for calculating these exceedance probabilities. 
 
-Specifically, under the assumption that disease events are a realisation from the background population and constant risk threshold, cases are bootstrapped and randomly aggregated to the areal regions. Using the same bandwidth as the observed data, the local-EM risk is then estimated for each of the bootstrapped data. Afterwards, exceedance probabilities are computed as the proportion of the observed risk estimate at least as large as the ones of the bootstrap data. Large exceedance probabilities are consistent with the risk being greater than the specified threshold. 
+Specifically, under the assumption that disease events are a realisation from
+the background population and constant risk threshold, cases are bootstrapped
+and randomly aggregated to the areal regions. Using the same bandwidth as the
+observed data, the local-EM risk is then estimated for each of the bootstrapped
+data. Afterwards, exceedance probabilities are computed as the proportion of the
+observed risk estimate at least as large as the ones of the bootstrap data.
+Large exceedance probabilities are consistent with the risk being greater than
+the specified threshold. 
 
-Exceedance probabilities with risk thresholds of 1, 1.25, 1.5 and 2 are provided for the first simulated dataset. The plots show the area east of Bowling Green and south of Frankfurt having high lung cancer risk with the estimated risk being higher than most bootstrap samples with the threshold of 1.5; however, the estimated risk does not appear to exceed a threshold of 2. 
+Exceedance probabilities with risk thresholds of 1, 1.25, 1.5 and 2 are provided
+for the first simulated dataset. The plots show the area east of Bowling Green
+and south of Frankfurt having high lung cancer risk with the estimated risk
+being higher than most bootstrap samples with the threshold of 1.5; however, the
+estimated risk does not appear to exceed a threshold of 2. 
 
-```{r excProbOne, warning = FALSE}
+```{r excProbOne, eval=FALSE, warning = FALSE, cache=TRUE}
 
 excProbKentucky = excProb(
     lemObjects = xvKentucky, 
     threshold = threshold, 
     Nboot = Nboot, 
     ncores = ncores, 
-    path = path, 
-    verbose = TRUE)
+    path = path,
+    verbose=TRUE)
 
 ```
 
-```{r plotExcProbOne, echo = FALSE, warning = FALSE, fig.cap = 'Exceedance Probabilities for Simulation 1', fig.subcap = paste('Threshold ', threshold, sep = ''), fig.height = 4, fig.width = 6, out.width = '80%', fig.ncol = NULL}
+```{r plotExcProbOne, eval=FALSE, echo = FALSE, warning = FALSE, fig.cap = 'Exceedance Probabilities for Simulation 1', fig.subcap = paste('Threshold ', threshold, sep = ''), fig.height = 3, fig.width = 6, out.width = theWidth, fig.ncol = 2}
 
 toPlot = excProbKentucky$excProb
 
@@ -362,19 +426,85 @@ pCol = colourScale(
     col = c('green', 'yellow', 'orange', 'red'))								
 
 for(inT in 1:nlayers(toPlot)) {
-
-    map.new(kentuckyCounty, 
-        mar = c(0, 0, 1, 0), 
-    	  main = paste('Simulation 1: Exceedance Probabilities, t=', threshold[inT], sep = ''))
-    plot(toPlot[[inT]], 
-        col = pCol$col, breaks = pCol$breaks, 
-        legend = FALSE, 
-        add = TRUE)
-    plot(kMap, add = TRUE)
+  
+  map.new(kentuckyCounty)#, 
+#      mar = c(0, 0, 1, 0), 
+#      main = paste('Simulation 1: Exceedance Probabilities, t=', threshold[inT], sep = ''))
+  plot(toPlot[[inT]], 
+      col = pCol$col, breaks = pCol$breaks, 
+      legend = FALSE, 
+      add = TRUE)
+  plot(kMap, add = TRUE)
 }
 legendBreaks('topleft', pCol, bg = 'white')
+```
+
+
+## Multiple datasets
+
+Using the R objects created from the `lemXv()` function for the first simulated dataset, this CV method can be efficiently implemented on the remaining simulated datasets. The CV scores are provided for all simulated datasets, yielding optimal bandwidths ranging from 15 to 30 km. 
+
+```{r cvAll, cache = TRUE}
+xvAllKentucky = lemXv(
+    cases = kentuckyCounty@data[,grep('^count[[:digit:]]', names(kentuckyCounty))], 
+    lemObjects = xvKentucky$smoothingMatrix, 
+    ncores = ncores, 
+    path = cacheDir)
+```
+
+```{r cvPlotAll, echo = FALSE, fig.cap = 'Cross-validation Scores for All Simulations', fig.height = 4, fig.width = 6, out.width = '50%', fig.ncol = 1}
+
+maxY = min(max(xvAllKentucky$xv[,-1]), 30)
+
+Scol = RColorBrewer::brewer.pal(4, "Dark2")
+ScolFull = c(Scol,
+    rep(mapmisc::col2html('grey', 0.5), 
+        nrow(xvAllKentucky$xv) - length(Scol) )
+)
+
+matplot(xvAllKentucky$xv[,'bw']/1000, xvAllKentucky$xv[,-1], 
+    main = 'CV Scores for All Simulations', 
+    xlab = 'km', ylab = '-log p', 
+    type = 'l', lty = 1, 
+    col = ScolFull,
+    xlim = c(7, 36),
+    ylim = c(0, 12), log='x')
+
+legend('topright', paste('Simulation ', 1:4, sep = ''), 
+    lty = 1, col = Scol, 
+    cex = 0.6)
+```
+
+
+
+```{r plotRiskAll, echo = FALSE, warning = FALSE, fig.cap = 'Risk Estimation with Optimal Bandwidths', fig.subcap = paste('Simulation ', 1:4, gsub("bw", ", bw=", xvAllKentucky$bw), sep = ' '), fig.height = 3, fig.width = 6, out.width = theWidth, fig.ncol = 2}
+
+toPlot = brick(filename(xvAllKentucky$riskEst))
+
+rCol = colourScale(
+    toPlot, 
+    breaks = 8, style = 'equal', dec = -log10(0.25))
+
+#bw = as.numeric(gsub('^bw', '', xvAllKentucky$bw))
+
+for(inR in 1:nlayers(toPlot)) {
+  
+  map.new(kentuckyCounty)#, 
+#      mar = c(0, 0, 1, 0), 
+#      main = paste('Simulation ', inR, ': Estimated Risk, bw=', bw[inR] / 1000, ' km', sep = ''))
+  plot(toPlot[[inR]], 
+      col = rCol$col, breaks = rCol$breaks, 
+      legend = FALSE, 
+      add = TRUE)
+  plot(kMap, add = TRUE)
+  legendBreaks('topleft', rCol, bg = 'white')
+}
 
 ```
+
+
+  
+
 
 ## References
 

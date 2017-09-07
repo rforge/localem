@@ -421,7 +421,10 @@ finalSmooth = function(
   
   toSmooth = x$riskAll
   levels(toSmooth)[[1]] = levels(toSmooth)[[1]][, c("ID", Slayers)]
-  toSmooth = deratify(toSmooth)
+  
+  deratifyFile = tempfile("deratify", tempdir(), ".grd")
+  
+  toSmooth = deratify(toSmooth, filename = deratifyFile)
   
   endCluster = FALSE
   theCluster = NULL
@@ -435,9 +438,10 @@ finalSmooth = function(
     }
   }
   
+  xOrig = x
   result = focalMult(
     x=toSmooth, 
-    w=x$smoothingMatrix$focal$focal, 
+    w=xOrig$smoothingMatrix$focal$focal, 
     edgeCorrect = TRUE,
     filename = filename,
     cl = theCluster
