@@ -260,49 +260,6 @@ library('localEM')
 
 fileHere = file.path(path, 'xvKentucky.RData')
 
-if(FALSE) {
-  library(raster)
-  # devtools::load_all("../..")
-  # devtools::install("../..")
-  firstFile = 'stuff.grd'
-  smoothingRasterTemplate = brick(
-      nrows=5, ncols=6, 
-      xmn=0,xmx=1.2,ymn=0,ymx=1,
-      nl = 2
-  )
-  toWrite = matrix(as.double(0.1), ncol(smoothingRasterTemplate), nlayers(smoothingRasterTemplate))
-  
-  firstRaster = writeStart(
-      smoothingRasterTemplate,
-      filename = firstFile, 
-      format = 'raster',
-      datatype = 'FLT8S', 
-      bandorder = 'BSQ',
-      overwrite=file.exists(firstFile))
-  
-  for(Drow in 1:nrow(firstRaster)) {
-    firstRaster = writeValues(firstRaster, toWrite, Drow) 
-  }  
-  firstRaster = writeStop(firstRaster)
-  smoothingRaster = gsub("grd$", "gri", filename(firstRaster))
-  out = mmap::mmap(
-      smoothingRaster,
-      mode=mmap::real64()
-  )	
-    
-  out[1] = as.numeric(-2.2)
-  out[]
-  .Call("mmapReplaceReal", 
-      as.double(2), 
-      as.double(-2.5), 
-      out, 
-      PACKAGE='localEM') 
-#  out[prod(dim(firstRaster))] = as.numeric(-3.2)        
- # out[c(1:4, prod(dim(firstRaster)))
-  out[1:4]
-  ( mmap::munmap(out)  )
-  
-}
 
 if(!file.exists(fileHere)) {
   
@@ -327,7 +284,6 @@ if(!file.exists(fileHere)) {
 ```{r cvPlotOne, echo = FALSE, fig.cap = 'Cross-validation Scores for Simulation 1', fig.height = 4, fig.width = 6, out.width = '60%', fig.ncol = 1}
 
 plot(xvKentucky$xv[,1]/1000, xvKentucky$xv[,2], 
-    main = 'CV Scores for Simulation 1', 
     xlab = 'km', ylab = '-log p', 
     type = 'o', xlim = c(8, 30), ylim = c(0, 20))
 ```

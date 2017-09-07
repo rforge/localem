@@ -160,49 +160,6 @@ kentuckyCounty =<span class="st"> </span><span class="kw">merge</span>(kentuckyC
 
 fileHere =<span class="st"> </span><span class="kw">file.path</span>(path, <span class="st">&#39;xvKentucky.RData&#39;</span>)
 
-<span class="cf">if</span>(<span class="ot">FALSE</span>) {
-  <span class="kw">library</span>(raster)
-  <span class="co"># devtools::load_all(&quot;../..&quot;)</span>
-  <span class="co"># devtools::install(&quot;../..&quot;)</span>
-  firstFile =<span class="st"> &#39;stuff.grd&#39;</span>
-  smoothingRasterTemplate =<span class="st"> </span><span class="kw">brick</span>(
-      <span class="dt">nrows=</span><span class="dv">5</span>, <span class="dt">ncols=</span><span class="dv">6</span>, 
-      <span class="dt">xmn=</span><span class="dv">0</span>,<span class="dt">xmx=</span><span class="fl">1.2</span>,<span class="dt">ymn=</span><span class="dv">0</span>,<span class="dt">ymx=</span><span class="dv">1</span>,
-      <span class="dt">nl =</span> <span class="dv">2</span>
-  )
-  toWrite =<span class="st"> </span><span class="kw">matrix</span>(<span class="kw">as.double</span>(<span class="fl">0.1</span>), <span class="kw">ncol</span>(smoothingRasterTemplate), <span class="kw">nlayers</span>(smoothingRasterTemplate))
-  
-  firstRaster =<span class="st"> </span><span class="kw">writeStart</span>(
-      smoothingRasterTemplate,
-      <span class="dt">filename =</span> firstFile, 
-      <span class="dt">format =</span> <span class="st">&#39;raster&#39;</span>,
-      <span class="dt">datatype =</span> <span class="st">&#39;FLT8S&#39;</span>, 
-      <span class="dt">bandorder =</span> <span class="st">&#39;BSQ&#39;</span>,
-      <span class="dt">overwrite=</span><span class="kw">file.exists</span>(firstFile))
-  
-  <span class="cf">for</span>(Drow <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="kw">nrow</span>(firstRaster)) {
-    firstRaster =<span class="st"> </span><span class="kw">writeValues</span>(firstRaster, toWrite, Drow) 
-  }  
-  firstRaster =<span class="st"> </span><span class="kw">writeStop</span>(firstRaster)
-  smoothingRaster =<span class="st"> </span><span class="kw">gsub</span>(<span class="st">&quot;grd$&quot;</span>, <span class="st">&quot;gri&quot;</span>, <span class="kw">filename</span>(firstRaster))
-  out =<span class="st"> </span>mmap<span class="op">::</span><span class="kw">mmap</span>(
-      smoothingRaster,
-      <span class="dt">mode=</span>mmap<span class="op">::</span><span class="kw">real64</span>()
-  ) 
-    
-  out[<span class="dv">1</span>] =<span class="st"> </span><span class="kw">as.numeric</span>(<span class="op">-</span><span class="fl">2.2</span>)
-  out[]
-  <span class="kw">.Call</span>(<span class="st">&quot;mmapReplaceReal&quot;</span>, 
-      <span class="kw">as.double</span>(<span class="dv">2</span>), 
-      <span class="kw">as.double</span>(<span class="op">-</span><span class="fl">2.5</span>), 
-      out, 
-      <span class="dt">PACKAGE=</span><span class="st">&#39;localEM&#39;</span>) 
-<span class="co">#  out[prod(dim(firstRaster))] = as.numeric(-3.2)        </span>
- <span class="co"># out[c(1:4, prod(dim(firstRaster)))</span>
-  out[<span class="dv">1</span><span class="op">:</span><span class="dv">4</span>]
-  ( mmap<span class="op">::</span><span class="kw">munmap</span>(out)  )
-  
-}
 
 <span class="cf">if</span>(<span class="op">!</span><span class="kw">file.exists</span>(fileHere)) {
   
