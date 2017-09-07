@@ -256,19 +256,19 @@ lemXv = function(
   
   bwMin = result$xv[apply(result$xv[,colnames(result$xv)[-1]],2,which.min),'bw']
   Slayers = paste('bw', bwMin, '_', countcol, sep = '')
+
+  # done with the cluster
+  if(!is.null(theCluster))
+    parallel::stopCluster(theCluster)
   
   result$riskEst = finalSmooth(
       x = result, 
       Slayers = Slayers, 
       filename = file.path(path, 'riskXv.grd'),
-      ncores = theCluster)
+      ncores = 1)
   names(result$riskEst) = Slayers
   
   result$bw = paste('bw', bwMin, sep = '')
-  
-  # done with the cluster
-  if(!is.null(theCluster))
-    parallel::stopCluster(theCluster)
   
   if(verbose) {
     cat(date(), "\n")

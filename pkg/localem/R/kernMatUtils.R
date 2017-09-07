@@ -456,7 +456,6 @@ focalMult = function(
       ] 
   wArray = wArray / rep(intSeq[,toCrop], each=prod(dim(wArray)[1:2]))
   
-  # do some truncation
   
   focalMat = matrix(
     wArray,
