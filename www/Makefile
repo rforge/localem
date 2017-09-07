@@ -5,8 +5,8 @@ all: kentucky.html kentuckyHighRes.html
 
 .PRECIOUS: *.md
 
-kentucky.Rmd:
-	$(REXE) -e "file.copy(system.file(file.path('doc','kentucky.Rmd'), package='localEM'), 'kentucky.Rmd', overwrite=TRUE)"
+kentucky.Rmd: ../pkg/localem/inst/doc/kentucky.Rmd
+	cp $< $@
 	
 kentuckyHighRes.md: kentucky.Rmd
 	$(REXE) -e "knitr::knit('$<', '$@', encoding='UTF-8')" highRes

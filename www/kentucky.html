@@ -248,6 +248,39 @@ fileHere =<span class="st"> </span><span class="kw">file.path</span>(path, <span
     <span class="dt">ncores =</span> ncores, 
     <span class="dt">path =</span> path,
     <span class="dt">verbose=</span><span class="ot">TRUE</span>)</code></pre></div>
+<pre><code>## Thu Sep  7 16:48:55 2017 
+## generating bootstrap cases for input thresholds
+## Thu Sep  7 16:48:55 2017 
+## running local-EM estimation for bootstrap cases with original bw
+## starting new cluster
+## Thu Sep  7 16:48:56 2017 
+## running local-EM estimation for input bw</code></pre>
+<pre><code>## Loading required package: Matrix</code></pre>
+<pre><code>## Thu Sep  7 16:49:02 2017 
+## done
+## Thu Sep  7 16:49:02 2017 
+## computing exceedance probabilities with input thresholds
+## Thu Sep  7 16:49:02 2017 
+## done</code></pre>
+<div id="fig:plotExcProbOne" class="subfigures">
+<table style="width:90%;">
+<colgroup>
+<col style="width: 45%" />
+<col style="width: 45%" />
+</colgroup>
+<tbody>
+<tr class="odd">
+<td style="text-align: center;"><figure>
+<img src="figure/plotExcProbOne-1.png" alt="a) Threshold 1" style="width:100.0%" /><figcaption>a) Threshold 1</figcaption>
+</figure></td>
+<td style="text-align: center;"><figure>
+<img src="figure/plotExcProbOne-2.png" alt="b) Threshold 1.5" style="width:100.0%" /><figcaption>b) Threshold 1.5</figcaption>
+</figure></td>
+</tr>
+</tbody>
+</table>
+<p><em>Figure 4</em>: Exceedance Probabilities for Simulation 1</p>
+</div>
 <h2 id="multiple-datasets">Multiple datasets</h2>
 <p>Using the R objects created from the <code>lemXv()</code> function for the first simulated dataset, this CV method can be efficiently implemented on the remaining simulated datasets. The CV scores are provided for all simulated datasets, yielding optimal bandwidths ranging from 15 to 30 km.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">xvAllKentucky =<span class="st"> </span><span class="kw">lemXv</span>(
@@ -268,7 +301,7 @@ fileHere =<span class="st"> </span><span class="kw">file.path</span>(path, <span
 </tr>
 </tbody>
 </table>
-<p><em>Figure 4</em>: Cross-validation Scores for All Simulations</p>
+<p><em>Figure 5</em>: Cross-validation Scores for All Simulations</p>
 </div>
 <div id="fig:plotRiskAll" class="subfigures">
 <table style="width:90%;">
@@ -295,7 +328,7 @@ fileHere =<span class="st"> </span><span class="kw">file.path</span>(path, <span
 </tr>
 </tbody>
 </table>
-<p><em>Figure 5</em>: Risk Estimation with Optimal Bandwidths</p>
+<p><em>Figure 6</em>: Risk Estimation with Optimal Bandwidths</p>
 </div>
 <h2 id="references">References</h2>
 <ol type="1">

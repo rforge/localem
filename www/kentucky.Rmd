@@ -3,6 +3,7 @@
     %\VignetteEngine{knitr::docco_linear} 
     %\VignetteIndexEntry{Local-EM Example with Kentucky}
     '
+knitr::knit("../pkg/localem/inst/doc/kentucky.Rmd", 'kentucky.md')
 ```
 
 
@@ -360,7 +361,7 @@ and south of Frankfurt having high lung cancer risk with the estimated risk
 being higher than most bootstrap samples with the threshold of 1.5; however, the
 estimated risk does not appear to exceed a threshold of 2. 
 
-```{r excProbOne, eval=FALSE, warning = FALSE, cache=TRUE}
+```{r excProbOne, warning = FALSE, cache=TRUE}
 
 excProbKentucky = excProb(
     lemObjects = xvKentucky, 
@@ -372,7 +373,7 @@ excProbKentucky = excProb(
 
 ```
 
-```{r plotExcProbOne, eval=FALSE, echo = FALSE, warning = FALSE, fig.cap = 'Exceedance Probabilities for Simulation 1', fig.subcap = paste('Threshold ', threshold, sep = ''), fig.height = 3, fig.width = 6, out.width = theWidth, fig.ncol = 2}
+```{r plotExcProbOne, echo = FALSE, warning = FALSE, fig.cap = 'Exceedance Probabilities for Simulation 1', fig.subcap = paste('Threshold ', threshold, sep = ''), fig.height = 3, fig.width = 6, out.width = theWidth, fig.ncol = 2}
 
 toPlot = excProbKentucky$excProb
 
