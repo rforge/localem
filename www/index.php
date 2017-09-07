@@ -45,8 +45,8 @@ echo $contents; } ?>
 
 <ul>
 <li> The Kentucky vignette <a href='kentucky.Rmd'>Kentucky.Rmd</a>. </li>
-<li> The <a href='kentucky.html'>compiled</a>Kentucky vignette. </li>
-<li> The <a href='kentuckyHighRes.html'>High resolution</a>Kentucky vignette.</li>
+<li> The <a href='kentucky.html'>compiled</a> Kentucky vignette. </li>
+<li> The <a href='kentuckyHighRes.html'>High resolution</a> Kentucky vignette.</li>
 </ul>
 
 <p> The <strong>project summary page</strong> you can find <a href="http://<?php echo $domain; ?>/projects/<?php echo $group_name; ?>/"><strong>here</strong></a>. </p>
