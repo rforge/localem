@@ -43,7 +43,7 @@ echo $contents; } ?>
 
 <!-- end of project description -->
 
-<p> High-resolution version of the <a href='simulations.html'>Kentucky vignette</a>. </p>
+<p> High-resolution version of the <a href='kentuckyHighRes.html'>Kentucky vignette</a>. </p>
 
 <p> The <strong>project summary page</strong> you can find <a href="http://<?php echo $domain; ?>/projects/<?php echo $group_name; ?>/"><strong>here</strong></a>. </p>
 

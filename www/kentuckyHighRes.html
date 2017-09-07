@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="generator" content="pandoc">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <meta name="author" content="Patrick Brown, Paul Nguyen">
+  <title>High Resolution Local-EM Example with Kentucky</title>
+  <style type="text/css">code{white-space: pre;}</style>
+  <style type="text/css">
+div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+code > span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code > span.dt { color: #902000; } /* DataType */
+code > span.dv { color: #40a070; } /* DecVal */
+code > span.bn { color: #40a070; } /* BaseN */
+code > span.fl { color: #40a070; } /* Float */
+code > span.ch { color: #4070a0; } /* Char */
+code > span.st { color: #4070a0; } /* String */
+code > span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code > span.ot { color: #007020; } /* Other */
+code > span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code > span.fu { color: #06287e; } /* Function */
+code > span.er { color: #ff0000; font-weight: bold; } /* Error */
+code > span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+code > span.cn { color: #880000; } /* Constant */
+code > span.sc { color: #4070a0; } /* SpecialChar */
+code > span.vs { color: #4070a0; } /* VerbatimString */
+code > span.ss { color: #bb6688; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { color: #19177c; } /* Variable */
+code > span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code > span.op { color: #666666; } /* Operator */
+code > span.bu { } /* BuiltIn */
+code > span.ex { } /* Extension */
+code > span.pp { color: #bc7a00; } /* Preprocessor */
+code > span.at { color: #7d9029; } /* Attribute */
+code > span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code > span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code > span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+  </style>
+  <link rel="stylesheet" href="/home/patrick/R/x86_64-pc-linux-gnu-library/3.4/Pmisc/src/webpage.css">
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
+  
+  
+  
+</head>
+<body>
+<header>
+<h1 class="title">High Resolution Local-EM Example with Kentucky</h1>
+<p class="author">Patrick Brown, Paul Nguyen</p>
+<p class="date">Tuesday 5 September 2017</p>
+</header>
+<h2 id="introduction">Introduction</h2>
+<p>The <code>localEM</code> package contains functions to implement the kernel smoothing local-EM algorithm<span class="math inline"><em></em><sup>1</sup></span> of disease data aggregated to geographical regions. This algorithm provides an nonparametric alternative to the standard geospatial models, such as the Besag-York-Mollie (BYM) model<span class="math inline"><em></em><sup>2</sup></span>, for estimating spatial risk of areal disease data. With disease cases typically aggregated to highly coarse geographical regions (e.g., census counties, or census subdivisions), the local-EM method creates a tessellation of distinct regions by overlaying the map of these coarse regions with another map containing fine geographical regions (e.g., census tracts, census blocks, or census dissemination areas) of population data. This allows for the spatial risk to be estimated at a better resolution with the fine regions.</p>
+<p>The methodology of this package is demonstrated on simulated lung cancer cases for the state of Kentucky, USA. The spatial polygons for the census counties and tracts of Kentucky are included with this package.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">ncores =<span class="st"> </span>parallel<span class="op">::</span><span class="kw">detectCores</span>()
+cellsFine =<span class="st"> </span><span class="dv">200</span>
+cellsCoarse =<span class="st"> </span><span class="dv">12</span>
+nsim =<span class="st"> </span><span class="dv">12</span>
+nxv =<span class="st"> </span><span class="dv">6</span>
+Sbw =<span class="st"> </span><span class="kw">seq</span>(<span class="dv">5</span>, <span class="dv">40</span>, <span class="dt">by =</span> <span class="fl">2.5</span>) <span class="op">*</span><span class="st"> </span><span class="dv">1000</span>
+threshold =<span class="st"> </span><span class="kw">c</span>(<span class="dv">1</span>, <span class="fl">1.25</span>, <span class="fl">1.5</span>, <span class="dv">2</span>)
+Nboot =<span class="st"> </span><span class="dv">100</span> 
+<span class="co"># on unix systems results will be saved in /tmp/localEMusername</span>
+path =<span class="st"> </span><span class="kw">file.path</span>(<span class="kw">dirname</span>(<span class="kw">tempdir</span>()),  <span class="kw">paste</span>(<span class="st">&#39;highResLocalEM&#39;</span>, <span class="kw">Sys.info</span>()[<span class="st">&#39;user&#39;</span>], <span class="dt">sep =</span> <span class="st">&#39;&#39;</span>))
+cacheDir =<span class="st"> &#39;highResCache/&#39;</span>
+figDir =<span class="st"> &#39;highResFigure/&#39;</span></code></pre></div>
+<p>specify number of grid cells for simulation</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="cf">if</span>(<span class="kw">requireNamespace</span>(<span class="st">&#39;RandomFields&#39;</span>, <span class="dt">quietly =</span> <span class="ot">TRUE</span>)) {
+  cellsSimulate =<span class="st"> </span><span class="dv">200</span>
+} <span class="cf">else</span> {
+  cellsSimulate =<span class="st"> </span><span class="dv">100</span>  
+}</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">require</span>(<span class="st">&#39;mapmisc&#39;</span>, <span class="dt">quietly=</span><span class="ot">TRUE</span>)
+<span class="kw">require</span>(<span class="st">&#39;rgdal&#39;</span>, <span class="dt">quietly=</span><span class="ot">TRUE</span>)
+
+<span class="kw">data</span>(<span class="st">&#39;kentuckyCounty&#39;</span>, <span class="dt">package =</span> <span class="st">&#39;localEM&#39;</span>) 
+<span class="kw">data</span>(<span class="st">&#39;kentuckyTract&#39;</span>, <span class="dt">package =</span> <span class="st">&#39;localEM&#39;</span>) 
+<span class="kw">data</span>(<span class="st">&#39;kMap&#39;</span>, <span class="dt">package =</span> <span class="st">&#39;localEM&#39;</span>)</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">kMap =<span class="st"> </span>mapmisc<span class="op">::</span><span class="kw">tonerToTrans</span>(mapmisc<span class="op">::</span><span class="kw">openmap</span>(kentuckyCounty, <span class="dt">fact=</span><span class="dv">2</span>, <span class="dt">path=</span><span class="st">&#39;stamen-toner&#39;</span>))</code></pre></div>
+<h2 id="simulate-cases">Simulate Cases</h2>
+<p>Using the <code>simLgcp()</code> function from the <code>geostatsp</code> package, case locations are simulated with the log Gaussian Cox process (LGCP) and following parameters:</p>
+<ul>
+<li>mean: 0</li>
+<li>variance: 0.16</li>
+<li>shape: 2</li>
+<li>range: 120 km</li>
+<li>offsets: log of expected cases/m<span class="math inline"><em></em><sup>2</sup></span> of the census tracts</li>
+</ul>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">kentuckyOffset =<span class="st"> </span>geostatsp<span class="op">::</span><span class="kw">spdfToBrick</span>(
+    kentuckyTract,
+    geostatsp<span class="op">::</span><span class="kw">squareRaster</span>(kentuckyTract, cellsSimulate),
+    <span class="dt">pattern =</span> <span class="st">&#39;^expected$&#39;</span>,
+    <span class="dt">logSumExpected =</span> <span class="ot">TRUE</span>)
+
+<span class="kw">set.seed</span>(<span class="dv">0</span>)
+kCases =<span class="st"> </span>geostatsp<span class="op">::</span><span class="kw">simLgcp</span>(
+    <span class="dt">param =</span> <span class="kw">c</span>(<span class="dt">mean =</span> <span class="dv">0</span>, <span class="dt">variance =</span> <span class="fl">0.4</span><span class="op">^</span><span class="dv">2</span>, <span class="dt">range =</span> <span class="dv">120</span> <span class="op">*</span><span class="st"> </span><span class="dv">1000</span>, <span class="dt">shape =</span> <span class="dv">2</span>),
+    <span class="dt">covariates =</span> <span class="kw">list</span>(<span class="dt">logExpected =</span> kentuckyOffset), 
+    <span class="dt">offset =</span> <span class="st">&#39;logExpected&#39;</span>, <span class="dt">n =</span> nsim)</code></pre></div>
+<p>The simulated cases are then aggregated to the appropriate counties. Plots of the relative intensity, event locations and aggregated data are provided for the first simulated dataset.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">kCases<span class="op">$</span>agg =<span class="st"> </span><span class="kw">lapply</span>(
+    kCases[<span class="kw">grep</span>(<span class="st">&#39;^events[[:digit:]]+?&#39;</span>, <span class="kw">names</span>(kCases))],
+    <span class="cf">function</span>(qq) <span class="kw">over</span>(qq, kentuckyCounty)[,<span class="st">&#39;id&#39;</span>]
+)
+
+countyCounts =<span class="st"> </span><span class="kw">as.data.frame</span>(<span class="kw">lapply</span>(
+        kCases<span class="op">$</span>agg,  
+        <span class="cf">function</span>(xx) {
+          <span class="kw">as.vector</span>(<span class="kw">table</span>(xx, <span class="dt">exclude =</span> <span class="ot">NULL</span>)[
+                  <span class="kw">as.character</span>(kentuckyCounty<span class="op">$</span>id)])
+        }
+    ))
+
+countyCounts[<span class="kw">is.na</span>(countyCounts)] =<span class="st"> </span><span class="dv">0</span>
+<span class="kw">names</span>(countyCounts) =<span class="st"> </span><span class="kw">gsub</span>(<span class="st">&#39;^events&#39;</span>, <span class="st">&#39;count&#39;</span>, <span class="kw">names</span>(countyCounts))
+<span class="kw">rownames</span>(countyCounts) =<span class="st"> </span><span class="kw">as.character</span>(kentuckyCounty<span class="op">$</span>id)
+kentuckyCounty =<span class="st"> </span><span class="kw">merge</span>(kentuckyCounty, countyCounts, <span class="dt">by.x =</span> <span class="st">&#39;id&#39;</span>, <span class="dt">by.y =</span> <span class="st">&#39;row.names&#39;</span>)</code></pre></div>
+<div id="fig:plotOffset" class="subfigures">
+<table style="width:90%;">
+<colgroup>
+<col style="width: 45%" />
+<col style="width: 45%" />
+</colgroup>
+<tbody>
+<tr class="odd">
+<td style="text-align: center;"><figure>
+<img src="highResFigure/plotOffset-1.png" alt="a) Offset" style="width:100.0%" /><figcaption>a) Offset</figcaption>
+</figure></td>
+<td style="text-align: center;"><figure>
+<img src="highResFigure/plotOffset-2.png" alt="b) Relative Intensity" style="width:100.0%" /><figcaption>b) Relative Intensity</figcaption>
+</figure></td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><figure>
+<img src="highResFigure/plotOffset-3.png" alt="c) Events" style="width:100.0%" /><figcaption>c) Events</figcaption>
+</figure></td>
+<td style="text-align: center;"><figure>
+<img src="highResFigure/plotOffset-4.png" alt="d) Counts" style="width:100.0%" /><figcaption>d) Counts</figcaption>
+</figure></td>
+</tr>
+</tbody>
+</table>
+<p><em>Figure 1</em>: Events for Simulation 1</p>
+</div>
+<h2 id="cross-validation">Cross-validation</h2>
+<p>The local-EM algorithm requires a smoothing parameter called the bandwidth to estimate the spatial risk. Small values of the bandwidth yield estimates similar to standardized incidence ratios of each areal regions, while large values yield estimates to the overall mean incidence ratio of the entire study area (i.e., [total counts]/[total offsets]). The preferred or optimal bandwidth for the disease data is one that minimizes the trade-off between the bias and variance of the estimator.</p>
+<p>To automatic the selection of the optimal bandwidth, the <code>lemXv()</code> function of this package implements a likelihood cross-validation (CV) approach with the set of specified bandwidths. CV scores are computed with <span class="math inline"><em>k</em></span>-fold sampling without replacement of the dataset. The optimal bandwidth is the one that yields the smallest CV score.</p>
+<p>The CV scores with 4-fold sampling are provided for the first simulated dataset. An optimal bandwidth of 15 km is preferrable for the local-EM risk estimation of this dataset.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(<span class="st">&#39;localEM&#39;</span>)
+
+fileHere =<span class="st"> </span><span class="kw">file.path</span>(path, <span class="st">&#39;xvKentucky.RData&#39;</span>)
+
+<span class="cf">if</span>(<span class="op">!</span><span class="kw">file.exists</span>(fileHere)) {
+  
+  xvKentucky =<span class="st"> </span><span class="kw">lemXv</span>(
+      <span class="dt">cases =</span> kentuckyCounty[,<span class="kw">c</span>(<span class="st">&#39;id&#39;</span>,<span class="st">&#39;count1&#39;</span>)], 
+      <span class="dt">population =</span> kentuckyTract, 
+      <span class="dt">cellsCoarse =</span> cellsCoarse,  
+      <span class="dt">cellsFine =</span> cellsFine, 
+      <span class="dt">bw =</span> Sbw, 
+      <span class="dt">xv =</span> nxv, 
+      <span class="dt">ncores =</span> ncores, 
+      <span class="dt">path =</span> path, 
+      <span class="dt">verbose =</span> <span class="ot">TRUE</span>)
+  
+  <span class="kw">save</span>(xvKentucky, <span class="dt">file =</span> fileHere)
+} <span class="cf">else</span> {
+  
+  <span class="kw">load</span>(fileHere)
+}</code></pre></div>
+<div id="fig:cvPlotOne" class="subfigures">
+<table style="width:60%;">
+<colgroup>
+<col style="width: 60%" />
+</colgroup>
+<tbody>
+<tr class="odd">
+<td style="text-align: center;"><figure>
+<img src="highResFigure/cvPlotOne-1.png" alt="a) Cross-validation Scores for Simulation 1" style="width:100.0%" /><figcaption>a) Cross-validation Scores for Simulation 1</figcaption>
+</figure></td>
+</tr>
+</tbody>
+</table>
+<p><em>Figure 2</em>: Cross-validation Scores for Simulation 1</p>
+</div>
+<h2 id="risk-estimation">Risk Estimation</h2>
+<p>The R objects created from the <code>lemXv()</code> function also contain the local-EM risk estimation done with the optimal bandwidth found in the CV approach. High-resolution plots (i.e., raster resolution of 8.5x8.5 km) of the local-EM estimation with their optimal bandwidths are provided for all simulated datasets.</p>
+<p>The <code>riskEst()</code> function allows local-EM risk estimation to be done with specified bandwidths. Plots of the local-EM estimation with all bandwidths used in this example are provided for the first simulated dataset. The plots show high cancer risk in the areas located east of Bowling Green and south of Frankfurt decreasing as the bandwidth increases.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">riskKentucky =<span class="st"> </span><span class="kw">riskEst</span>(
+    <span class="dt">cases =</span> kentuckyCounty[,<span class="kw">c</span>(<span class="st">&#39;id&#39;</span>,<span class="st">&#39;count1&#39;</span>)], 
+    <span class="dt">lemObjects =</span> xvKentucky<span class="op">$</span>smoothingMatrix, 
+    <span class="dt">bw =</span> Sbw, 
+    <span class="dt">ncores =</span> ncores, 
+    <span class="dt">path =</span> cacheDir)</code></pre></div>
+<div id="fig:plotRiskOne" class="subfigures">
+<table style="width:90%;">
+<colgroup>
+<col style="width: 45%" />
+<col style="width: 45%" />
+</colgroup>
+<tbody>
+<tr class="odd">
+<td style="text-align: center;"><figure>
+<img src="highResFigure/plotRiskOne-1.png" alt="a) Risk, bw=5 km" style="width:100.0%" /><figcaption>a) Risk, bw=5 km</figcaption>
+</figure></td>
+<td style="text-align: center;"><figure>
+<img src="highResFigure/plotRiskOne-2.png" alt="b) Risk, bw=7.5 km" style="width:100.0%" /><figcaption>b) Risk, bw=7.5 km</figcaption>
+</figure></td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><figure>
+<img src="highResFigure/plotRiskOne-3.png" alt="c) Risk, bw=10 km" style="width:100.0%" /><figcaption>c) Risk, bw=10 km</figcaption>
+</figure></td>
+<td style="text-align: center;"><figure>
+<img src="highResFigure/plotRiskOne-4.png" alt="d) Risk, bw=12.5 km" style="width:100.0%" /><figcaption>d) Risk, bw=12.5 km</figcaption>
+</figure></td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;"><figure>
+<img src="highResFigure/plotRiskOne-5.png" alt="e) Risk, bw=15 km" style="width:100.0%" /><figcaption>e) Risk, bw=15 km</figcaption>
+</figure></td>
+<td style="text-align: center;"><figure>
+<img src="highResFigure/plotRiskOne-6.png" alt="f) Risk, bw=17.5 km" style="width:100.0%" /><figcaption>f) Risk, bw=17.5 km</figcaption>
+</figure></td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><figure>
+<img src="highResFigure/plotRiskOne-7.png" alt="g) Risk, bw=20 km" style="width:100.0%" /><figcaption>g) Risk, bw=20 km</figcaption>
+</figure></td>
+<td style="text-align: center;"><figure>
+<img src="highResFigure/plotRiskOne-8.png" alt="h) Risk, bw=22.5 km" style="width:100.0%" /><figcaption>h) Risk, bw=22.5 km</figcaption>
+</figure></td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;"><figure>
+<img src="highResFigure/plotRiskOne-9.png" alt="i) Risk, bw=25 km" style="width:100.0%" /><figcaption>i) Risk, bw=25 km</figcaption>
+</figure></td>
+<td style="text-align: center;"><figure>
+<img src="highResFigure/plotRiskOne-10.png" alt="j) Risk, bw=27.5 km" style="width:100.0%" /><figcaption>j) Risk, bw=27.5 km</figcaption>
+</figure></td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><figure>
+<img src="highResFigure/plotRiskOne-11.png" alt="k) Risk, bw=30 km" style="width:100.0%" /><figcaption>k) Risk, bw=30 km</figcaption>
+</figure></td>
+<td style="text-align: center;"><figure>
+<img src="highResFigure/plotRiskOne-12.png" alt="l) Risk, bw=32.5 km" style="width:100.0%" /><figcaption>l) Risk, bw=32.5 km</figcaption>
+</figure></td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;"><figure>
+<img src="highResFigure/plotRiskOne-13.png" alt="m) Risk, bw=35 km" style="width:100.0%" /><figcaption>m) Risk, bw=35 km</figcaption>
+</figure></td>
+<td style="text-align: center;"><figure>
+<img src="highResFigure/plotRiskOne-14.png" alt="n) Risk, bw=37.5 km" style="width:100.0%" /><figcaption>n) Risk, bw=37.5 km</figcaption>
+</figure></td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><figure>
+<img src="highResFigure/plotRiskOne-15.png" alt="o) Risk, bw=40 km" style="width:100.0%" /><figcaption>o) Risk, bw=40 km</figcaption>
+</figure></td>
+</tr>
+</tbody>
+</table>
+<p><em>Figure 3</em>: Risk Estimation for Simulation 1</p>
+</div>
+<h2 id="uncertainty-estimation">Uncertainty Estimation</h2>
+<p>To measure the uncertainty of the local-EM algorithm, the <code>excProb()</code> function computes the exceedance probabilities with the same bandwidth parameter used in the risk estimation. Bootstrapping from a Poisson process is used to simulate the events for calculating these exceedance probabilities.</p>
+<p>Specifically, under the assumption that disease events are a realisation from the background population and constant risk threshold, cases are bootstrapped and randomly aggregated to the areal regions. Using the same bandwidth as the observed data, the local-EM risk is then estimated for each of the bootstrapped data. Afterwards, exceedance probabilities are computed as the proportion of the observed risk estimate at least as large as the ones of the bootstrap data. Large exceedance probabilities are consistent with the risk being greater than the specified threshold.</p>
+<p>Exceedance probabilities with risk thresholds of 1, 1.25, 1.5 and 2 are provided for the first simulated dataset. The plots show the area east of Bowling Green and south of Frankfurt having high lung cancer risk with the estimated risk being higher than most bootstrap samples with the threshold of 1.5; however, the estimated risk does not appear to exceed a threshold of 2.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">excProbKentucky =<span class="st"> </span><span class="kw">excProb</span>(
+    <span class="dt">lemObjects =</span> xvKentucky, 
+    <span class="dt">threshold =</span> threshold, 
+    <span class="dt">Nboot =</span> Nboot, 
+    <span class="dt">ncores =</span> ncores, 
+    <span class="dt">path =</span> path)</code></pre></div>
+<h2 id="multiple-datasets">Multiple datasets</h2>
+<p>Using the R objects created from the <code>lemXv()</code> function for the first simulated dataset, this CV method can be efficiently implemented on the remaining simulated datasets. The CV scores are provided for all simulated datasets, yielding optimal bandwidths ranging from 15 to 30 km.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">xvAllKentucky =<span class="st"> </span><span class="kw">lemXv</span>(
+    <span class="dt">cases =</span> kentuckyCounty<span class="op">@</span>data[,<span class="kw">grep</span>(<span class="st">&#39;^count[[:digit:]]&#39;</span>, <span class="kw">names</span>(kentuckyCounty))], 
+    <span class="dt">lemObjects =</span> xvKentucky<span class="op">$</span>smoothingMatrix, 
+    <span class="dt">ncores =</span> ncores, 
+    <span class="dt">path =</span> cacheDir)</code></pre></div>
+<div id="fig:cvPlotAll" class="subfigures">
+<table style="width:50%;">
+<colgroup>
+<col style="width: 50%" />
+</colgroup>
+<tbody>
+<tr class="odd">
+<td style="text-align: center;"><figure>
+<img src="highResFigure/cvPlotAll-1.png" alt="a) Cross-validation Scores for All Simulations" style="width:100.0%" /><figcaption>a) Cross-validation Scores for All Simulations</figcaption>
+</figure></td>
+</tr>
+</tbody>
+</table>
+<p><em>Figure 4</em>: Cross-validation Scores for All Simulations</p>
+</div>
+<div id="fig:plotRiskAll" class="subfigures">
+<table style="width:90%;">
+<colgroup>
+<col style="width: 45%" />
+<col style="width: 45%" />
+</colgroup>
+<tbody>
+<tr class="odd">
+<td style="text-align: center;"><figure>
+<img src="highResFigure/plotRiskAll-1.png" alt="a) Simulation 1 , bw=10000" style="width:100.0%" /><figcaption>a) Simulation 1 , bw=10000</figcaption>
+</figure></td>
+<td style="text-align: center;"><figure>
+<img src="highResFigure/plotRiskAll-2.png" alt="b) Simulation 2 , bw=12500" style="width:100.0%" /><figcaption>b) Simulation 2 , bw=12500</figcaption>
+</figure></td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><figure>
+<img src="highResFigure/plotRiskAll-3.png" alt="c) Simulation 3 , bw=5000" style="width:100.0%" /><figcaption>c) Simulation 3 , bw=5000</figcaption>
+</figure></td>
+<td style="text-align: center;"><figure>
+<img src="highResFigure/plotRiskAll-4.png" alt="d) Simulation 4 , bw=12500" style="width:100.0%" /><figcaption>d) Simulation 4 , bw=12500</figcaption>
+</figure></td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;"><figure>
+<img src="highResFigure/plotRiskAll-5.png" alt="e) Simulation 1 , bw=35000" style="width:100.0%" /><figcaption>e) Simulation 1 , bw=35000</figcaption>
+</figure></td>
+<td style="text-align: center;"><figure>
+<img src="highResFigure/plotRiskAll-6.png" alt="f) Simulation 2 , bw=30000" style="width:100.0%" /><figcaption>f) Simulation 2 , bw=30000</figcaption>
+</figure></td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><figure>
+<img src="highResFigure/plotRiskAll-7.png" alt="g) Simulation 3 , bw=12500" style="width:100.0%" /><figcaption>g) Simulation 3 , bw=12500</figcaption>
+</figure></td>
+<td style="text-align: center;"><figure>
+<img src="highResFigure/plotRiskAll-8.png" alt="h) Simulation 4 , bw=22500" style="width:100.0%" /><figcaption>h) Simulation 4 , bw=22500</figcaption>
+</figure></td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;"><figure>
+<img src="highResFigure/plotRiskAll-9.png" alt="i) Simulation 1 , bw=22500" style="width:100.0%" /><figcaption>i) Simulation 1 , bw=22500</figcaption>
+</figure></td>
+<td style="text-align: center;"><figure>
+<img src="highResFigure/plotRiskAll-10.png" alt="j) Simulation 2 , bw=17500" style="width:100.0%" /><figcaption>j) Simulation 2 , bw=17500</figcaption>
+</figure></td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><figure>
+<img src="highResFigure/plotRiskAll-11.png" alt="k) Simulation 3 , bw=10000" style="width:100.0%" /><figcaption>k) Simulation 3 , bw=10000</figcaption>
+</figure></td>
+<td style="text-align: center;"><figure>
+<img src="highResFigure/plotRiskAll-12.png" alt="l) Simulation 4 , bw=7500" style="width:100.0%" /><figcaption>l) Simulation 4 , bw=7500</figcaption>
+</figure></td>
+</tr>
+</tbody>
+</table>
+<p><em>Figure 5</em>: Risk Estimation with Optimal Bandwidths</p>
+</div>
+<h2 id="references">References</h2>
+<ol type="1">
+<li><p>Nguyen P, Brown PE, Stafford J. Mapping cancer risk in southwestern Ontario with changing census boundaries. Biometrics. 2012; 68(4): 1229-37.</p></li>
+<li><p>Besag J, York J, Mollie A. Bayesian image restoration, with two applications in spatial statistics. Ann Inst Statist Math. 1991; 43(1): 1-59.</p></li>
+</ol>
+</body>
+</html>
