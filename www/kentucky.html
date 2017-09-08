@@ -56,7 +56,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <header>
 <h1 class="title">Local-EM Example with Kentucky</h1>
 <p class="author">Patrick Brown, Paul Nguyen</p>
-<p class="date">Thursday 7 September 2017</p>
+<p class="date">Friday 8 September 2017</p>
 </header>
 <h2 id="introduction">Introduction</h2>
 <p>The <code>localEM</code> package contains functions to implement the kernel smoothing local-EM algorithm<span class="math inline"><em></em><sup>1</sup></span> of disease data aggregated to geographical regions. This algorithm provides an nonparametric alternative to the standard geospatial models, such as the Besag-York-Mollie (BYM) model<span class="math inline"><em></em><sup>2</sup></span>, for estimating spatial risk of areal disease data. With disease cases typically aggregated to highly coarse geographical regions (e.g., census counties, or census subdivisions), the local-EM method creates a tessellation of distinct regions by overlaying the map of these coarse regions with another map containing fine geographical regions (e.g., census tracts, census blocks, or census dissemination areas) of population data. This allows for the spatial risk to be estimated at a better resolution with the fine regions.</p>
@@ -240,14 +240,14 @@ fileHere =<span class="st"> </span><span class="kw">file.path</span>(path, <span
 <h2 id="uncertainty-estimation">Uncertainty Estimation</h2>
 <p>To measure the uncertainty of the local-EM algorithm, the <code>excProb()</code> function computes the exceedance probabilities with the same bandwidth parameter used in the risk estimation. Bootstrapping from a Poisson process is used to simulate the events for calculating these exceedance probabilities.</p>
 <p>Specifically, under the assumption that disease events are a realisation from the background population and constant risk threshold, cases are bootstrapped and randomly aggregated to the areal regions. Using the same bandwidth as the observed data, the local-EM risk is then estimated for each of the bootstrapped data. Afterwards, exceedance probabilities are computed as the proportion of the observed risk estimate at least as large as the ones of the bootstrap data. Large exceedance probabilities are consistent with the risk being greater than the specified threshold.</p>
-<p>Exceedance probabilities with risk thresholds of 1, 1.25, 1.5 and 2 are provided for the first simulated dataset. The plots show the area east of Bowling Green and south of Frankfurt having high lung cancer risk with the estimated risk being higher than most bootstrap samples with the threshold of 1.5; however, the estimated risk does not appear to exceed a threshold of 2.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">excProbKentucky =<span class="st"> </span><span class="kw">excProb</span>(
     <span class="dt">lemObjects =</span> xvKentucky, 
     <span class="dt">threshold =</span> threshold, 
     <span class="dt">Nboot =</span> Nboot, 
-    <span class="dt">ncores =</span> <span class="kw">pmin</span>(<span class="dv">2</span>,ncores),  <span class="co"># each core uses a lot of memory</span>
+    <span class="dt">ncores =</span> <span class="kw">pmin</span>(<span class="dv">4</span>,ncores),  <span class="co"># no more than 4 cores because the memory requirement is large</span>
     <span class="dt">path =</span> path,
     <span class="dt">verbose=</span><span class="ot">FALSE</span>)</code></pre></div>
+<pre><code>## Loading required package: Matrix</code></pre>
 <div id="fig:plotExcProbOne" class="subfigures">
 <table style="width:90%;">
 <colgroup>
