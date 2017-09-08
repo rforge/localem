@@ -54,7 +54,6 @@ The methodology of this package is demonstrated on simulated lung cancer cases f
 
 ```{r setupHighRes, eval=highRes, purl=highRes, echo = highRes}
 
-
 ncores = parallel::detectCores()
 cellsFine = 200
 cellsCoarse = 12
@@ -64,7 +63,7 @@ Sbw = seq(5, 40, by = 2.5) * 1000
 threshold = c(1, 1.25, 1.5, 2)
 Nboot = 100 
 # on unix systems results will be saved in /tmp/localEMusername
-path = 'highResLocalem/'
+path = '/store/highResLocalem/'
 cacheDir = 'highResCache/'
 figDir = 'highResFigure/'
 ```
@@ -363,7 +362,7 @@ and south of Frankfurt having high lung cancer risk with the estimated risk
 being higher than most bootstrap samples with the threshold of 1.5; however, the
 estimated risk does not appear to exceed a threshold of 2. 
 
-```{r excProbOne, warning = FALSE, cache=TRUE, eval=FALSE}
+```{r excProbOne, warning = FALSE, cache=TRUE}
 
 excProbKentucky = excProb(
     lemObjects = xvKentucky, 
@@ -430,7 +429,8 @@ Using the R objects created from the `lemXv()` function for the first simulated 
 
 ```{r cvAll, cache = TRUE}
 xvAllKentucky = lemXv(
-    cases = kentuckyCounty@data[,grep('^count[[:digit:]]', names(kentuckyCounty))], 
+    cases = kentuckyCounty@data[,
+        grep('^count[[:digit:]]', names(kentuckyCounty))], 
     lemObjects = xvKentucky$smoothingMatrix, 
     ncores = ncores, 
     path = cacheDir)

@@ -347,7 +347,14 @@ oneBlockOffdiagFun = function(
               mode=theType
           )	
           
-          out[cell_position] = as.double(partHere[theOrder[[1]], theOrder[[2]],,] )      
+          if(TRUE) {
+            .Call("mmapReplaceReal", as.double(cell_position), 
+                as.double(partHere[theOrder[[1]], theOrder[[2]],,] ),
+                out)#, PACKAGE='localEM') 
+          } else {
+            out[cell_position] = as.double(partHere[theOrder[[1]], theOrder[[2]],,] )      
+          }
+          
           
           haveWrittenFirst = mmap::munmap(out)  
           
@@ -384,7 +391,13 @@ oneBlockOffdiagFun = function(
           )	
           dim(out)
           
-          out[cell_position] = as.double(partHere[theOrder[[1]], theOrder[[2]],,] )      
+          if(TRUE) {
+            .Call("mmapReplaceReal", as.double(cell_position), 
+                as.double(partHere[theOrder[[1]], theOrder[[2]],,] ),
+                out)#, PACKAGE='localEM') 
+          } else {
+            out[cell_position] = as.double(partHere[theOrder[[1]], theOrder[[2]],,] )      
+          }
           
           haveWrittenFirst = mmap::munmap(out)  
           
