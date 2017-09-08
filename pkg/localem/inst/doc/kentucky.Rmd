@@ -356,11 +356,6 @@ observed risk estimate at least as large as the ones of the bootstrap data.
 Large exceedance probabilities are consistent with the risk being greater than
 the specified threshold. 
 
-Exceedance probabilities with risk thresholds of 1, 1.25, 1.5 and 2 are provided
-for the first simulated dataset. The plots show the area east of Bowling Green
-and south of Frankfurt having high lung cancer risk with the estimated risk
-being higher than most bootstrap samples with the threshold of 1.5; however, the
-estimated risk does not appear to exceed a threshold of 2. 
 
 ```{r excProbOne, warning = FALSE, cache=TRUE}
 excProbKentucky = excProb(
