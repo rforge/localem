@@ -172,7 +172,7 @@ fileHere =<span class="st"> </span><span class="kw">file.path</span>(path, <span
       <span class="dt">xv =</span> nxv, 
       <span class="dt">ncores =</span> ncores, 
       <span class="dt">path =</span> path, 
-      <span class="dt">verbose =</span> <span class="ot">TRUE</span>)
+      <span class="dt">verbose =</span> highRes)
   
   <span class="kw">save</span>(xvKentucky, <span class="dt">file =</span> fileHere)
 } <span class="cf">else</span> {
@@ -245,23 +245,9 @@ fileHere =<span class="st"> </span><span class="kw">file.path</span>(path, <span
     <span class="dt">lemObjects =</span> xvKentucky, 
     <span class="dt">threshold =</span> threshold, 
     <span class="dt">Nboot =</span> Nboot, 
-    <span class="dt">ncores =</span> ncores, 
+    <span class="dt">ncores =</span> <span class="kw">pmin</span>(<span class="dv">2</span>,ncores),  <span class="co"># each core uses a lot of memory</span>
     <span class="dt">path =</span> path,
-    <span class="dt">verbose=</span><span class="ot">TRUE</span>)</code></pre></div>
-<pre><code>## Thu Sep  7 16:48:55 2017 
-## generating bootstrap cases for input thresholds
-## Thu Sep  7 16:48:55 2017 
-## running local-EM estimation for bootstrap cases with original bw
-## starting new cluster
-## Thu Sep  7 16:48:56 2017 
-## running local-EM estimation for input bw</code></pre>
-<pre><code>## Loading required package: Matrix</code></pre>
-<pre><code>## Thu Sep  7 16:49:02 2017 
-## done
-## Thu Sep  7 16:49:02 2017 
-## computing exceedance probabilities with input thresholds
-## Thu Sep  7 16:49:02 2017 
-## done</code></pre>
+    <span class="dt">verbose=</span><span class="ot">FALSE</span>)</code></pre></div>
 <div id="fig:plotExcProbOne" class="subfigures">
 <table style="width:90%;">
 <colgroup>
@@ -277,6 +263,14 @@ fileHere =<span class="st"> </span><span class="kw">file.path</span>(path, <span
 <img src="figure/plotExcProbOne-2.png" alt="b) Threshold 1.5" style="width:100.0%" /><figcaption>b) Threshold 1.5</figcaption>
 </figure></td>
 </tr>
+<tr class="even">
+<td style="text-align: center;"><figure>
+<img src="figure/plotExcProbOne-3.png" alt="c) truth" style="width:100.0%" /><figcaption>c) truth</figcaption>
+</figure></td>
+<td style="text-align: center;"><figure>
+<img src="figure/plotExcProbOne-4.png" alt="d) estimate" style="width:100.0%" /><figcaption>d) estimate</figcaption>
+</figure></td>
+</tr>
 </tbody>
 </table>
 <p><em>Figure 4</em>: Exceedance Probabilities for Simulation 1</p>
@@ -284,14 +278,15 @@ fileHere =<span class="st"> </span><span class="kw">file.path</span>(path, <span
 <h2 id="multiple-datasets">Multiple datasets</h2>
 <p>Using the R objects created from the <code>lemXv()</code> function for the first simulated dataset, this CV method can be efficiently implemented on the remaining simulated datasets. The CV scores are provided for all simulated datasets, yielding optimal bandwidths ranging from 15 to 30 km.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">xvAllKentucky =<span class="st"> </span><span class="kw">lemXv</span>(
-    <span class="dt">cases =</span> kentuckyCounty<span class="op">@</span>data[,<span class="kw">grep</span>(<span class="st">&#39;^count[[:digit:]]&#39;</span>, <span class="kw">names</span>(kentuckyCounty))], 
+    <span class="dt">cases =</span> kentuckyCounty<span class="op">@</span>data[,
+        <span class="kw">grep</span>(<span class="st">&#39;^count[[:digit:]]&#39;</span>, <span class="kw">names</span>(kentuckyCounty))], 
     <span class="dt">lemObjects =</span> xvKentucky<span class="op">$</span>smoothingMatrix, 
     <span class="dt">ncores =</span> ncores, 
     <span class="dt">path =</span> cacheDir)</code></pre></div>
 <div id="fig:cvPlotAll" class="subfigures">
-<table style="width:50%;">
+<table style="width:80%;">
 <colgroup>
-<col style="width: 50%" />
+<col style="width: 80%" />
 </colgroup>
 <tbody>
 <tr class="odd">
@@ -312,23 +307,39 @@ fileHere =<span class="st"> </span><span class="kw">file.path</span>(path, <span
 <tbody>
 <tr class="odd">
 <td style="text-align: center;"><figure>
-<img src="figure/plotRiskAll-1.png" alt="a) Simulation 1 , bw=15000" style="width:100.0%" /><figcaption>a) Simulation 1 , bw=15000</figcaption>
+<img src="figure/plotRiskAll-1.png" alt="a) est 1 , bw=15000" style="width:100.0%" /><figcaption>a) est 1 , bw=15000</figcaption>
 </figure></td>
 <td style="text-align: center;"><figure>
-<img src="figure/plotRiskAll-2.png" alt="b) Simulation 2 , bw=30000" style="width:100.0%" /><figcaption>b) Simulation 2 , bw=30000</figcaption>
+<img src="figure/plotRiskAll-2.png" alt="b) truth 1" style="width:100.0%" /><figcaption>b) truth 1</figcaption>
 </figure></td>
 </tr>
 <tr class="even">
 <td style="text-align: center;"><figure>
-<img src="figure/plotRiskAll-3.png" alt="c) Simulation 3 , bw=15000" style="width:100.0%" /><figcaption>c) Simulation 3 , bw=15000</figcaption>
+<img src="figure/plotRiskAll-3.png" alt="c) est 2 , bw=30000" style="width:100.0%" /><figcaption>c) est 2 , bw=30000</figcaption>
 </figure></td>
 <td style="text-align: center;"><figure>
-<img src="figure/plotRiskAll-4.png" alt="d) Simulation 4 , bw=20000" style="width:100.0%" /><figcaption>d) Simulation 4 , bw=20000</figcaption>
+<img src="figure/plotRiskAll-4.png" alt="d) truth 2" style="width:100.0%" /><figcaption>d) truth 2</figcaption>
+</figure></td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;"><figure>
+<img src="figure/plotRiskAll-5.png" alt="e) est 3 , bw=15000" style="width:100.0%" /><figcaption>e) est 3 , bw=15000</figcaption>
+</figure></td>
+<td style="text-align: center;"><figure>
+<img src="figure/plotRiskAll-6.png" alt="f) truth 3" style="width:100.0%" /><figcaption>f) truth 3</figcaption>
+</figure></td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><figure>
+<img src="figure/plotRiskAll-7.png" alt="g) est 4 , bw=20000" style="width:100.0%" /><figcaption>g) est 4 , bw=20000</figcaption>
+</figure></td>
+<td style="text-align: center;"><figure>
+<img src="figure/plotRiskAll-8.png" alt="h) truth 4" style="width:100.0%" /><figcaption>h) truth 4</figcaption>
 </figure></td>
 </tr>
 </tbody>
 </table>
-<p><em>Figure 6</em>: Risk Estimation with Optimal Bandwidths</p>
+<p><em>Figure 6</em>: Estimated and true relative risk</p>
 </div>
 <h2 id="references">References</h2>
 <ol type="1">

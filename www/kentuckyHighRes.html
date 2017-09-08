@@ -44,7 +44,7 @@ code > span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Ann
 code > span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
 code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
   </style>
-  <link rel="stylesheet" href="/home/patrick/R/x86_64-pc-linux-gnu-library/3.4/Pmisc/src/webpage.css">
+  <link rel="stylesheet" href="webpage.css">
   <!--[if lt IE 9]>
     <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
   <![endif]-->
@@ -56,13 +56,13 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <header>
 <h1 class="title">High Resolution Local-EM Example with Kentucky</h1>
 <p class="author">Patrick Brown, Paul Nguyen</p>
-<p class="date">Tuesday 5 September 2017</p>
+<p class="date">Thursday 7 September 2017</p>
 </header>
 <h2 id="introduction">Introduction</h2>
 <p>The <code>localEM</code> package contains functions to implement the kernel smoothing local-EM algorithm<span class="math inline"><em></em><sup>1</sup></span> of disease data aggregated to geographical regions. This algorithm provides an nonparametric alternative to the standard geospatial models, such as the Besag-York-Mollie (BYM) model<span class="math inline"><em></em><sup>2</sup></span>, for estimating spatial risk of areal disease data. With disease cases typically aggregated to highly coarse geographical regions (e.g., census counties, or census subdivisions), the local-EM method creates a tessellation of distinct regions by overlaying the map of these coarse regions with another map containing fine geographical regions (e.g., census tracts, census blocks, or census dissemination areas) of population data. This allows for the spatial risk to be estimated at a better resolution with the fine regions.</p>
 <p>The methodology of this package is demonstrated on simulated lung cancer cases for the state of Kentucky, USA. The spatial polygons for the census counties and tracts of Kentucky are included with this package.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">ncores =<span class="st"> </span>parallel<span class="op">::</span><span class="kw">detectCores</span>()
-cellsFine =<span class="st"> </span><span class="dv">200</span>
+cellsFine =<span class="st"> </span><span class="dv">300</span>
 cellsCoarse =<span class="st"> </span><span class="dv">12</span>
 nsim =<span class="st"> </span><span class="dv">12</span>
 nxv =<span class="st"> </span><span class="dv">6</span>
@@ -70,7 +70,7 @@ Sbw =<span class="st"> </span><span class="kw">seq</span>(<span class="dv">5</sp
 threshold =<span class="st"> </span><span class="kw">c</span>(<span class="dv">1</span>, <span class="fl">1.25</span>, <span class="fl">1.5</span>, <span class="dv">2</span>)
 Nboot =<span class="st"> </span><span class="dv">100</span> 
 <span class="co"># on unix systems results will be saved in /tmp/localEMusername</span>
-path =<span class="st"> </span><span class="kw">file.path</span>(<span class="kw">dirname</span>(<span class="kw">tempdir</span>()),  <span class="kw">paste</span>(<span class="st">&#39;highResLocalEM&#39;</span>, <span class="kw">Sys.info</span>()[<span class="st">&#39;user&#39;</span>], <span class="dt">sep =</span> <span class="st">&#39;&#39;</span>))
+path =<span class="st"> &#39;/store/highResLocalem/&#39;</span>
 cacheDir =<span class="st"> &#39;highResCache/&#39;</span>
 figDir =<span class="st"> &#39;highResFigure/&#39;</span></code></pre></div>
 <p>specify number of grid cells for simulation</p>
@@ -159,6 +159,7 @@ kentuckyCounty =<span class="st"> </span><span class="kw">merge</span>(kentuckyC
 
 fileHere =<span class="st"> </span><span class="kw">file.path</span>(path, <span class="st">&#39;xvKentucky.RData&#39;</span>)
 
+
 <span class="cf">if</span>(<span class="op">!</span><span class="kw">file.exists</span>(fileHere)) {
   
   xvKentucky =<span class="st"> </span><span class="kw">lemXv</span>(
@@ -170,11 +171,10 @@ fileHere =<span class="st"> </span><span class="kw">file.path</span>(path, <span
       <span class="dt">xv =</span> nxv, 
       <span class="dt">ncores =</span> ncores, 
       <span class="dt">path =</span> path, 
-      <span class="dt">verbose =</span> <span class="ot">TRUE</span>)
+      <span class="dt">verbose =</span> highRes)
   
   <span class="kw">save</span>(xvKentucky, <span class="dt">file =</span> fileHere)
 } <span class="cf">else</span> {
-  
   <span class="kw">load</span>(fileHere)
 }</code></pre></div>
 <div id="fig:cvPlotOne" class="subfigures">
@@ -281,19 +281,56 @@ fileHere =<span class="st"> </span><span class="kw">file.path</span>(path, <span
     <span class="dt">lemObjects =</span> xvKentucky, 
     <span class="dt">threshold =</span> threshold, 
     <span class="dt">Nboot =</span> Nboot, 
-    <span class="dt">ncores =</span> ncores, 
-    <span class="dt">path =</span> path)</code></pre></div>
+    <span class="dt">ncores =</span> <span class="kw">pmin</span>(<span class="dv">2</span>,ncores),  <span class="co"># each core uses a lot of memory</span>
+    <span class="dt">path =</span> path,
+    <span class="dt">verbose=</span><span class="ot">FALSE</span>)</code></pre></div>
+<div id="fig:plotExcProbOne" class="subfigures">
+<table style="width:90%;">
+<colgroup>
+<col style="width: 45%" />
+<col style="width: 45%" />
+</colgroup>
+<tbody>
+<tr class="odd">
+<td style="text-align: center;"><figure>
+<img src="highResFigure/plotExcProbOne-1.png" alt="a) Threshold 1" style="width:100.0%" /><figcaption>a) Threshold 1</figcaption>
+</figure></td>
+<td style="text-align: center;"><figure>
+<img src="highResFigure/plotExcProbOne-2.png" alt="b) Threshold 1.25" style="width:100.0%" /><figcaption>b) Threshold 1.25</figcaption>
+</figure></td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><figure>
+<img src="highResFigure/plotExcProbOne-3.png" alt="c) Threshold 1.5" style="width:100.0%" /><figcaption>c) Threshold 1.5</figcaption>
+</figure></td>
+<td style="text-align: center;"><figure>
+<img src="highResFigure/plotExcProbOne-4.png" alt="d) Threshold 2" style="width:100.0%" /><figcaption>d) Threshold 2</figcaption>
+</figure></td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;"><figure>
+<img src="highResFigure/plotExcProbOne-5.png" alt="e) truth" style="width:100.0%" /><figcaption>e) truth</figcaption>
+</figure></td>
+<td style="text-align: center;"><figure>
+<img src="highResFigure/plotExcProbOne-6.png" alt="f) estimate" style="width:100.0%" /><figcaption>f) estimate</figcaption>
+</figure></td>
+</tr>
+</tbody>
+</table>
+<p><em>Figure 4</em>: Exceedance Probabilities for Simulation 1</p>
+</div>
 <h2 id="multiple-datasets">Multiple datasets</h2>
 <p>Using the R objects created from the <code>lemXv()</code> function for the first simulated dataset, this CV method can be efficiently implemented on the remaining simulated datasets. The CV scores are provided for all simulated datasets, yielding optimal bandwidths ranging from 15 to 30 km.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">xvAllKentucky =<span class="st"> </span><span class="kw">lemXv</span>(
-    <span class="dt">cases =</span> kentuckyCounty<span class="op">@</span>data[,<span class="kw">grep</span>(<span class="st">&#39;^count[[:digit:]]&#39;</span>, <span class="kw">names</span>(kentuckyCounty))], 
+    <span class="dt">cases =</span> kentuckyCounty<span class="op">@</span>data[,
+        <span class="kw">grep</span>(<span class="st">&#39;^count[[:digit:]]&#39;</span>, <span class="kw">names</span>(kentuckyCounty))], 
     <span class="dt">lemObjects =</span> xvKentucky<span class="op">$</span>smoothingMatrix, 
     <span class="dt">ncores =</span> ncores, 
     <span class="dt">path =</span> cacheDir)</code></pre></div>
 <div id="fig:cvPlotAll" class="subfigures">
-<table style="width:50%;">
+<table style="width:80%;">
 <colgroup>
-<col style="width: 50%" />
+<col style="width: 80%" />
 </colgroup>
 <tbody>
 <tr class="odd">
@@ -303,7 +340,7 @@ fileHere =<span class="st"> </span><span class="kw">file.path</span>(path, <span
 </tr>
 </tbody>
 </table>
-<p><em>Figure 4</em>: Cross-validation Scores for All Simulations</p>
+<p><em>Figure 5</em>: Cross-validation Scores for All Simulations</p>
 </div>
 <div id="fig:plotRiskAll" class="subfigures">
 <table style="width:90%;">
@@ -314,55 +351,103 @@ fileHere =<span class="st"> </span><span class="kw">file.path</span>(path, <span
 <tbody>
 <tr class="odd">
 <td style="text-align: center;"><figure>
-<img src="highResFigure/plotRiskAll-1.png" alt="a) Simulation 1 , bw=10000" style="width:100.0%" /><figcaption>a) Simulation 1 , bw=10000</figcaption>
+<img src="highResFigure/plotRiskAll-1.png" alt="a) est 1 , bw=10000" style="width:100.0%" /><figcaption>a) est 1 , bw=10000</figcaption>
 </figure></td>
 <td style="text-align: center;"><figure>
-<img src="highResFigure/plotRiskAll-2.png" alt="b) Simulation 2 , bw=12500" style="width:100.0%" /><figcaption>b) Simulation 2 , bw=12500</figcaption>
+<img src="highResFigure/plotRiskAll-2.png" alt="b) truth 1" style="width:100.0%" /><figcaption>b) truth 1</figcaption>
 </figure></td>
 </tr>
 <tr class="even">
 <td style="text-align: center;"><figure>
-<img src="highResFigure/plotRiskAll-3.png" alt="c) Simulation 3 , bw=5000" style="width:100.0%" /><figcaption>c) Simulation 3 , bw=5000</figcaption>
+<img src="highResFigure/plotRiskAll-3.png" alt="c) est 2 , bw=12500" style="width:100.0%" /><figcaption>c) est 2 , bw=12500</figcaption>
 </figure></td>
 <td style="text-align: center;"><figure>
-<img src="highResFigure/plotRiskAll-4.png" alt="d) Simulation 4 , bw=12500" style="width:100.0%" /><figcaption>d) Simulation 4 , bw=12500</figcaption>
+<img src="highResFigure/plotRiskAll-4.png" alt="d) truth 2" style="width:100.0%" /><figcaption>d) truth 2</figcaption>
 </figure></td>
 </tr>
 <tr class="odd">
 <td style="text-align: center;"><figure>
-<img src="highResFigure/plotRiskAll-5.png" alt="e) Simulation 1 , bw=35000" style="width:100.0%" /><figcaption>e) Simulation 1 , bw=35000</figcaption>
+<img src="highResFigure/plotRiskAll-5.png" alt="e) est 3 , bw=5000" style="width:100.0%" /><figcaption>e) est 3 , bw=5000</figcaption>
 </figure></td>
 <td style="text-align: center;"><figure>
-<img src="highResFigure/plotRiskAll-6.png" alt="f) Simulation 2 , bw=30000" style="width:100.0%" /><figcaption>f) Simulation 2 , bw=30000</figcaption>
+<img src="highResFigure/plotRiskAll-6.png" alt="f) truth 3" style="width:100.0%" /><figcaption>f) truth 3</figcaption>
 </figure></td>
 </tr>
 <tr class="even">
 <td style="text-align: center;"><figure>
-<img src="highResFigure/plotRiskAll-7.png" alt="g) Simulation 3 , bw=12500" style="width:100.0%" /><figcaption>g) Simulation 3 , bw=12500</figcaption>
+<img src="highResFigure/plotRiskAll-7.png" alt="g) est 4 , bw=12500" style="width:100.0%" /><figcaption>g) est 4 , bw=12500</figcaption>
 </figure></td>
 <td style="text-align: center;"><figure>
-<img src="highResFigure/plotRiskAll-8.png" alt="h) Simulation 4 , bw=22500" style="width:100.0%" /><figcaption>h) Simulation 4 , bw=22500</figcaption>
+<img src="highResFigure/plotRiskAll-8.png" alt="h) truth 4" style="width:100.0%" /><figcaption>h) truth 4</figcaption>
 </figure></td>
 </tr>
 <tr class="odd">
 <td style="text-align: center;"><figure>
-<img src="highResFigure/plotRiskAll-9.png" alt="i) Simulation 1 , bw=22500" style="width:100.0%" /><figcaption>i) Simulation 1 , bw=22500</figcaption>
+<img src="highResFigure/plotRiskAll-9.png" alt="i) est 5 , bw=35000" style="width:100.0%" /><figcaption>i) est 5 , bw=35000</figcaption>
 </figure></td>
 <td style="text-align: center;"><figure>
-<img src="highResFigure/plotRiskAll-10.png" alt="j) Simulation 2 , bw=17500" style="width:100.0%" /><figcaption>j) Simulation 2 , bw=17500</figcaption>
+<img src="highResFigure/plotRiskAll-10.png" alt="j) truth 5" style="width:100.0%" /><figcaption>j) truth 5</figcaption>
 </figure></td>
 </tr>
 <tr class="even">
 <td style="text-align: center;"><figure>
-<img src="highResFigure/plotRiskAll-11.png" alt="k) Simulation 3 , bw=10000" style="width:100.0%" /><figcaption>k) Simulation 3 , bw=10000</figcaption>
+<img src="highResFigure/plotRiskAll-11.png" alt="k) est 6 , bw=30000" style="width:100.0%" /><figcaption>k) est 6 , bw=30000</figcaption>
 </figure></td>
 <td style="text-align: center;"><figure>
-<img src="highResFigure/plotRiskAll-12.png" alt="l) Simulation 4 , bw=7500" style="width:100.0%" /><figcaption>l) Simulation 4 , bw=7500</figcaption>
+<img src="highResFigure/plotRiskAll-12.png" alt="l) truth 6" style="width:100.0%" /><figcaption>l) truth 6</figcaption>
+</figure></td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;"><figure>
+<img src="highResFigure/plotRiskAll-13.png" alt="m) est 7 , bw=12500" style="width:100.0%" /><figcaption>m) est 7 , bw=12500</figcaption>
+</figure></td>
+<td style="text-align: center;"><figure>
+<img src="highResFigure/plotRiskAll-14.png" alt="n) truth 7" style="width:100.0%" /><figcaption>n) truth 7</figcaption>
+</figure></td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><figure>
+<img src="highResFigure/plotRiskAll-15.png" alt="o) est 8 , bw=22500" style="width:100.0%" /><figcaption>o) est 8 , bw=22500</figcaption>
+</figure></td>
+<td style="text-align: center;"><figure>
+<img src="highResFigure/plotRiskAll-16.png" alt="p) truth 8" style="width:100.0%" /><figcaption>p) truth 8</figcaption>
+</figure></td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;"><figure>
+<img src="highResFigure/plotRiskAll-17.png" alt="q) est 9 , bw=22500" style="width:100.0%" /><figcaption>q) est 9 , bw=22500</figcaption>
+</figure></td>
+<td style="text-align: center;"><figure>
+<img src="highResFigure/plotRiskAll-18.png" alt="r) truth 9" style="width:100.0%" /><figcaption>r) truth 9</figcaption>
+</figure></td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><figure>
+<img src="highResFigure/plotRiskAll-19.png" alt="s) est 10 , bw=17500" style="width:100.0%" /><figcaption>s) est 10 , bw=17500</figcaption>
+</figure></td>
+<td style="text-align: center;"><figure>
+<img src="highResFigure/plotRiskAll-20.png" alt="t) truth 10" style="width:100.0%" /><figcaption>t) truth 10</figcaption>
+</figure></td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;"><figure>
+<img src="highResFigure/plotRiskAll-21.png" alt="u) est 11 , bw=10000" style="width:100.0%" /><figcaption>u) est 11 , bw=10000</figcaption>
+</figure></td>
+<td style="text-align: center;"><figure>
+<img src="highResFigure/plotRiskAll-22.png" alt="v) truth 11" style="width:100.0%" /><figcaption>v) truth 11</figcaption>
+</figure></td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><figure>
+<img src="highResFigure/plotRiskAll-23.png" alt="w) est 12 , bw=7500" style="width:100.0%" /><figcaption>w) est 12 , bw=7500</figcaption>
+</figure></td>
+<td style="text-align: center;"><figure>
+<img src="highResFigure/plotRiskAll-24.png" alt="x) truth 12" style="width:100.0%" /><figcaption>x) truth 12</figcaption>
 </figure></td>
 </tr>
 </tbody>
 </table>
-<p><em>Figure 5</em>: Risk Estimation with Optimal Bandwidths</p>
+<p><em>Figure 6</em>: Estimated and true relative risk</p>
 </div>
 <h2 id="references">References</h2>
 <ol type="1">

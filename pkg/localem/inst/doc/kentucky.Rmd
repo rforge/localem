@@ -55,12 +55,12 @@ The methodology of this package is demonstrated on simulated lung cancer cases f
 ```{r setupHighRes, eval=highRes, purl=highRes, echo = highRes}
 
 ncores = parallel::detectCores()
-cellsFine = 200
+cellsFine = 300
 cellsCoarse = 12
 nsim = 12
 nxv = 6
-Sbw = seq(5, 40, by = 2.5) * 1000
-threshold = c(1, 1.25, 1.5, 2)
+Sbw = seq(2.5, 40, by = 2.5) * 1000
+threshold = c(1.1, 1.25, 1.5, 2)
 Nboot = 100 
 # on unix systems results will be saved in /tmp/localEMusername
 path = '/store/highResLocalem/'
@@ -287,7 +287,7 @@ if(!file.exists(fileHere)) {
 
 plot(xvKentucky$xv[,1]/1000, xvKentucky$xv[,2], 
     xlab = 'km', ylab = '-log p', 
-    type = 'o', xlim = c(8, 30), ylim = c(0, 20))
+    type = 'o', xlim = c(6, 30), ylim = c(0, 20))
 ```
 
 
@@ -363,15 +363,13 @@ being higher than most bootstrap samples with the threshold of 1.5; however, the
 estimated risk does not appear to exceed a threshold of 2. 
 
 ```{r excProbOne, warning = FALSE, cache=TRUE}
-
 excProbKentucky = excProb(
     lemObjects = xvKentucky, 
     threshold = threshold, 
     Nboot = Nboot, 
-    ncores = pmin(2,ncores),  # each core uses a lot of memory
+    ncores = pmin(4,ncores),  # no more than 4 cores because the memory requirement is large
     path = path,
     verbose=FALSE)
-
 ```
 
 ```{r plotExcProbOne, echo = FALSE, fig.cap = 'Exceedance Probabilities for Simulation 1', fig.subcap = c(paste('Threshold ', threshold, sep = ''),'truth','estimate'), fig.height = 3, fig.width = 6, out.width = theWidth, fig.ncol = 2}
@@ -436,7 +434,7 @@ xvAllKentucky = lemXv(
     path = cacheDir)
 ```
 
-```{r cvPlotAll, echo = FALSE, fig.cap = 'Cross-validation Scores for All Simulations', fig.height = 4, fig.width = 6, out.width = '50%', fig.ncol = 1}
+```{r cvPlotAll, echo = FALSE, fig.cap = 'Cross-validation Scores for All Simulations', fig.height = 4, fig.width = 8, out.width = '80%', fig.ncol = 1}
 
 maxY = min(max(xvAllKentucky$xv[,-1]), 30)
 
@@ -451,7 +449,7 @@ matplot(xvAllKentucky$xv[,'bw']/1000, xvAllKentucky$xv[,-1],
     xlab = 'km', ylab = '-log p', 
     type = 'l', lty = 1, 
     col = ScolFull,
-    xlim = c(7, 36),
+    xlim = c(6, 36),
     ylim = c(0, 12), log='x')
 
 legend('topright', paste('Simulation ', 1:4, sep = ''), 
@@ -461,13 +459,13 @@ legend('topright', paste('Simulation ', 1:4, sep = ''),
 
 
 
-```{r plotRiskAll, echo = FALSE, warning = FALSE, fig.cap = 'Risk Estimation with Optimal Bandwidths', fig.subcap = paste('Simulation ', 1:4, gsub("bw", ", bw=", xvAllKentucky$bw), sep = ' '), fig.height = 3, fig.width = 6, out.width = theWidth, fig.ncol = 2}
+```{r plotRiskAll, echo = FALSE, warning = FALSE, fig.cap = 'Estimated and true relative risk', fig.subcap = as.vector(rbind(paste('est ', 1:length(xvAllKentucky$bw), gsub("bw", ", bw=", xvAllKentucky$bw), sep = ' '), paste('truth ', 1:length(xvAllKentucky$bw)))), fig.height = 3, fig.width = 6, out.width = theWidth, fig.ncol = 2}
 
 toPlot = brick(filename(xvAllKentucky$riskEst))
 
 rCol = colourScale(
-    toPlot, 
-    breaks = 8, style = 'equal', dec = -log10(0.25))
+    breaks = c(seq(0,3, by=0.5), 4),
+    style = 'fixed')
 
 #bw = as.numeric(gsub('^bw', '', xvAllKentucky$bw))
 
@@ -482,21 +480,22 @@ for(inR in 1:nlayers(toPlot)) {
       add = TRUE)
   plot(kMap, add = TRUE)
   legendBreaks('topleft', rCol, bg = 'white')
-}
 
 map.new(kentuckyTract#, 
 #    mar = c(0, 0, 1, 0), 
 #    main = 'Simulated Risk'
 )
-plot(kCases$raster$relativeIntensity1, 
-    col = iCol$col, breaks = iCol$breaks, 
+
+plot(kCases$raster[[paste('relativeIntensity',inR, sep='')]], 
+    col = rCol$col, breaks = rCol$breaks, 
     legend = FALSE, 
     add = TRUE)
 plot(kMap, add = TRUE)
 legendBreaks('topleft', 
-    col = iCol$col, breaks = iCol$breaks, 
+    col = rCol$col, breaks = rCol$breaks, 
     title = 'RR', 
     bg = 'white')
+}
 
 
 ```
