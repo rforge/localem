@@ -3,7 +3,6 @@
 #' @description The \code{excProb} function first bootstraps cases with the input risk thresholds and expected counts from the rasterization of the spatial polygons of population data, and then, computes the exceedance probablities with the same bandwidths as the risk estimation on the same raster resolution. 
 #' 
 #' @param lemObjects List of arrays for the smoothing matrix, and raster stacks for the partition, smoothed offsets and risk estimation
-#' @param bw bandwidth to use, should be name of a layer in the smoothing matrix
 #' @param threshold Vector of risk thresholds
 #' @param Nboot Number of bootstraps
 #' @param ncores Number of cores/threads for parallel processing
@@ -63,10 +62,10 @@
 #' lemExcProb = excProb(lemObjects = lemRisk, 
 #'					  	threshold = threshold, 
 #'					  	Nboot = Nboot, 
-#'                    	ncores = ncores, 
-#'                    	path = path, 
+#'              ncores = ncores, 
+#'              path = path, 
 #'					  	filename = 'lemExcProb.grd', 
-#'                    	verbose = TRUE)
+#'              verbose = TRUE)
 #' 
 #' # plot exceedance probabilities
 #' pCol = mapmisc::colourScale(lemExcProb$excProb, 
@@ -88,7 +87,6 @@
 #' @export
 excProb = function(
     lemObjects, 
-    bw = lemObjects$bw,
     threshold = 1, 
     Nboot = 100, 
     ncores = 1, 
@@ -116,7 +114,7 @@ excProb = function(
   }
   
   # bandwidths of interest
-  bwString = bw
+  bwString = lemObjects$bw
   bw = as.numeric(gsub('^bw', '', bwString))
   
   # risk estimate of interest

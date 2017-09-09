@@ -254,7 +254,7 @@ The local-EM algorithm requires a smoothing parameter called the bandwidth to es
 
 To automatic the selection of the optimal bandwidth, the `lemXv()` function of this package implements a likelihood cross-validation (CV) approach with the set of specified bandwidths. CV scores are computed with $k$-fold sampling without replacement of the dataset. The optimal bandwidth is the one that yields the smallest CV score. 
 
-The CV scores with 4-fold sampling are provided for the first simulated dataset. An optimal bandwidth of 15 km is preferrable for the local-EM risk estimation of this dataset. 
+The CV scores with 4-fold sampling are provided for the first simulated dataset. 
 
 ```{r cvOne, warning = FALSE}
 
@@ -295,15 +295,14 @@ plot(xvKentucky$xv[,1]/1000, xvKentucky$xv[,2],
 
 The R objects created from the `lemXv()` function also contain the local-EM risk
 estimation done with the optimal bandwidth found in the CV approach.
-High-resolution plots (i.e., raster resolution of 8.5x8.5 km) of the local-EM
-estimation with their optimal bandwidths are provided for all simulated
-datasets. 
+High-resolution plots of the local-EM estimation with their optimal bandwidths are 
+provided for all simulated datasets. 
 
 The `riskEst()` function allows local-EM risk estimation to be done with
 specified bandwidths. Plots of the local-EM estimation with all bandwidths used
 in this example are provided for the first simulated dataset. The plots show
-high cancer risk in the areas located east of Bowling Green and south of
-Frankfurt decreasing as the bandwidth increases. 
+high cancer risk in the areas located east of Bowling Green and 
+south of Frankfurt decreasing as the bandwidth increases. 
 
 ```{r riskOne, warning = FALSE, cache=TRUE}
 
@@ -418,7 +417,7 @@ legendBreaks('topleft', iCol, bg = 'white')
 
 ## Multiple datasets
 
-Using the R objects created from the `lemXv()` function for the first simulated dataset, this CV method can be efficiently implemented on the remaining simulated datasets. The CV scores are provided for all simulated datasets, yielding optimal bandwidths ranging from 15 to 30 km. 
+Using the R objects created from the `lemXv()` function for the first simulated dataset, this CV method can be efficiently implemented on the remaining simulated datasets. 
 
 ```{r cvAll, cache = TRUE}
 xvAllKentucky = lemXv(
@@ -454,7 +453,7 @@ legend('topright', paste('Simulation ', 1:4, sep = ''),
 
 
 
-```{r plotRiskAll, echo = FALSE, warning = FALSE, fig.cap = 'Estimated and true relative risk', fig.subcap = as.vector(rbind(paste('est ', 1:length(xvAllKentucky$bw), gsub("bw", ", bw=", xvAllKentucky$bw), sep = ' '), paste('truth ', 1:length(xvAllKentucky$bw)))), fig.height = 3, fig.width = 6, out.width = theWidth, fig.ncol = 2}
+```{r plotRiskAll, echo = FALSE, warning = FALSE, fig.cap = 'Estimated and true relative risk', fig.subcap = as.vector(rbind(paste('est ', 1:length(xvAllKentucky$bw), ', bw=', as.numeric(gsub("^bw", "", xvAllKentucky$bw)) / 1000, ' km', sep = ''), paste('truth ', 1:length(xvAllKentucky$bw), sep = ''))), fig.height = 3, fig.width = 6, out.width = theWidth, fig.ncol = 2}
 
 toPlot = brick(filename(xvAllKentucky$riskEst))
 
