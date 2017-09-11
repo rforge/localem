@@ -453,7 +453,7 @@ legend('topright', paste('Simulation ', 1:4, sep = ''),
 
 
 
-```{r plotRiskAll, echo = FALSE, warning = FALSE, fig.cap = 'Estimated and true relative risk', fig.subcap = as.vector(rbind(paste('est ', 1:length(xvAllKentucky$bw), ', bw=', as.numeric(gsub("^bw", "", xvAllKentucky$bw)) / 1000, ' km', sep = ''), paste('truth ', 1:length(xvAllKentucky$bw), sep = ''))), fig.height = 3, fig.width = 6, out.width = theWidth, fig.ncol = 2}
+```{r plotRiskAll, echo = FALSE, warning = FALSE, fig.cap = 'Estimated and True Relative Risk', fig.subcap = as.vector(rbind(paste('est ', 1:length(xvAllKentucky$bw), ', bw=', as.numeric(gsub("^bw", "", xvAllKentucky$bw)) / 1000, ' km', sep = ''), paste('truth ', 1:length(xvAllKentucky$bw), sep = ''))), fig.height = 3, fig.width = 6, out.width = theWidth, fig.ncol = 2}
 
 toPlot = brick(filename(xvAllKentucky$riskEst))
 

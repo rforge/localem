@@ -155,7 +155,7 @@ kentuckyCounty =<span class="st"> </span><span class="kw">merge</span>(kentuckyC
 <h2 id="cross-validation">Cross-validation</h2>
 <p>The local-EM algorithm requires a smoothing parameter called the bandwidth to estimate the spatial risk. Small values of the bandwidth yield estimates similar to standardized incidence ratios of each areal regions, while large values yield estimates to the overall mean incidence ratio of the entire study area (i.e., [total counts]/[total offsets]). The preferred or optimal bandwidth for the disease data is one that minimizes the trade-off between the bias and variance of the estimator.</p>
 <p>To automatic the selection of the optimal bandwidth, the <code>lemXv()</code> function of this package implements a likelihood cross-validation (CV) approach with the set of specified bandwidths. CV scores are computed with <span class="math inline"><em>k</em></span>-fold sampling without replacement of the dataset. The optimal bandwidth is the one that yields the smallest CV score.</p>
-<p>The CV scores with 4-fold sampling are provided for the first simulated dataset. An optimal bandwidth of 15 km is preferrable for the local-EM risk estimation of this dataset.</p>
+<p>The CV scores with 4-fold sampling are provided for the first simulated dataset.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(<span class="st">&#39;localEM&#39;</span>)
 
 fileHere =<span class="st"> </span><span class="kw">file.path</span>(path, <span class="st">&#39;xvKentucky.RData&#39;</span>)
@@ -194,7 +194,7 @@ fileHere =<span class="st"> </span><span class="kw">file.path</span>(path, <span
 <p><em>Figure 2</em>: Cross-validation Scores for Simulation 1</p>
 </div>
 <h2 id="risk-estimation">Risk Estimation</h2>
-<p>The R objects created from the <code>lemXv()</code> function also contain the local-EM risk estimation done with the optimal bandwidth found in the CV approach. High-resolution plots (i.e., raster resolution of 8.5x8.5 km) of the local-EM estimation with their optimal bandwidths are provided for all simulated datasets.</p>
+<p>The R objects created from the <code>lemXv()</code> function also contain the local-EM risk estimation done with the optimal bandwidth found in the CV approach. High-resolution plots of the local-EM estimation with their optimal bandwidths are provided for all simulated datasets.</p>
 <p>The <code>riskEst()</code> function allows local-EM risk estimation to be done with specified bandwidths. Plots of the local-EM estimation with all bandwidths used in this example are provided for the first simulated dataset. The plots show high cancer risk in the areas located east of Bowling Green and south of Frankfurt decreasing as the bandwidth increases.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">riskKentucky =<span class="st"> </span><span class="kw">riskEst</span>(
     <span class="dt">cases =</span> kentuckyCounty[,<span class="kw">c</span>(<span class="st">&#39;id&#39;</span>,<span class="st">&#39;count1&#39;</span>)], 
@@ -276,7 +276,7 @@ fileHere =<span class="st"> </span><span class="kw">file.path</span>(path, <span
 <p><em>Figure 4</em>: Exceedance Probabilities for Simulation 1</p>
 </div>
 <h2 id="multiple-datasets">Multiple datasets</h2>
-<p>Using the R objects created from the <code>lemXv()</code> function for the first simulated dataset, this CV method can be efficiently implemented on the remaining simulated datasets. The CV scores are provided for all simulated datasets, yielding optimal bandwidths ranging from 15 to 30 km.</p>
+<p>Using the R objects created from the <code>lemXv()</code> function for the first simulated dataset, this CV method can be efficiently implemented on the remaining simulated datasets.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">xvAllKentucky =<span class="st"> </span><span class="kw">lemXv</span>(
     <span class="dt">cases =</span> kentuckyCounty<span class="op">@</span>data[,
         <span class="kw">grep</span>(<span class="st">&#39;^count[[:digit:]]&#39;</span>, <span class="kw">names</span>(kentuckyCounty))], 
@@ -307,7 +307,7 @@ fileHere =<span class="st"> </span><span class="kw">file.path</span>(path, <span
 <tbody>
 <tr class="odd">
 <td style="text-align: center;"><figure>
-<img src="figure/plotRiskAll-1.png" alt="a) est 1 , bw=15000" style="width:100.0%" /><figcaption>a) est 1 , bw=15000</figcaption>
+<img src="figure/plotRiskAll-1.png" alt="a) est 1, bw=15 km" style="width:100.0%" /><figcaption>a) est 1, bw=15 km</figcaption>
 </figure></td>
 <td style="text-align: center;"><figure>
 <img src="figure/plotRiskAll-2.png" alt="b) truth 1" style="width:100.0%" /><figcaption>b) truth 1</figcaption>
@@ -315,7 +315,7 @@ fileHere =<span class="st"> </span><span class="kw">file.path</span>(path, <span
 </tr>
 <tr class="even">
 <td style="text-align: center;"><figure>
-<img src="figure/plotRiskAll-3.png" alt="c) est 2 , bw=30000" style="width:100.0%" /><figcaption>c) est 2 , bw=30000</figcaption>
+<img src="figure/plotRiskAll-3.png" alt="c) est 2, bw=30 km" style="width:100.0%" /><figcaption>c) est 2, bw=30 km</figcaption>
 </figure></td>
 <td style="text-align: center;"><figure>
 <img src="figure/plotRiskAll-4.png" alt="d) truth 2" style="width:100.0%" /><figcaption>d) truth 2</figcaption>
@@ -323,7 +323,7 @@ fileHere =<span class="st"> </span><span class="kw">file.path</span>(path, <span
 </tr>
 <tr class="odd">
 <td style="text-align: center;"><figure>
-<img src="figure/plotRiskAll-5.png" alt="e) est 3 , bw=15000" style="width:100.0%" /><figcaption>e) est 3 , bw=15000</figcaption>
+<img src="figure/plotRiskAll-5.png" alt="e) est 3, bw=15 km" style="width:100.0%" /><figcaption>e) est 3, bw=15 km</figcaption>
 </figure></td>
 <td style="text-align: center;"><figure>
 <img src="figure/plotRiskAll-6.png" alt="f) truth 3" style="width:100.0%" /><figcaption>f) truth 3</figcaption>
@@ -331,7 +331,7 @@ fileHere =<span class="st"> </span><span class="kw">file.path</span>(path, <span
 </tr>
 <tr class="even">
 <td style="text-align: center;"><figure>
-<img src="figure/plotRiskAll-7.png" alt="g) est 4 , bw=20000" style="width:100.0%" /><figcaption>g) est 4 , bw=20000</figcaption>
+<img src="figure/plotRiskAll-7.png" alt="g) est 4, bw=20 km" style="width:100.0%" /><figcaption>g) est 4, bw=20 km</figcaption>
 </figure></td>
 <td style="text-align: center;"><figure>
 <img src="figure/plotRiskAll-8.png" alt="h) truth 4" style="width:100.0%" /><figcaption>h) truth 4</figcaption>
@@ -339,7 +339,7 @@ fileHere =<span class="st"> </span><span class="kw">file.path</span>(path, <span
 </tr>
 </tbody>
 </table>
-<p><em>Figure 6</em>: Estimated and true relative risk</p>
+<p><em>Figure 6</em>: Estimated and True Relative Risk</p>
 </div>
 <h2 id="references">References</h2>
 <ol type="1">
