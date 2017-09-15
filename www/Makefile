@@ -5,7 +5,7 @@ all: kentucky.html kentuckyHighRes.html
 
 .PRECIOUS: *.md
 
-kentucky.Rmd: ../pkg/localem/inst/doc/kentucky.Rmd
+kentucky.Rmd: ../pkg/localem/inst/extdoc/kentucky.Rmd
 	cp $< $@
 	
 kentuckyHighRes.md: kentucky.Rmd
