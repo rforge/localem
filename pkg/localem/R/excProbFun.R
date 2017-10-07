@@ -92,15 +92,15 @@ excProb = function(
     ncores = 1, 
     iterations = list(tol = 1e-5, maxIter = 1000, gpu = FALSE), 
     path = getwd(), 
-    filename, 
+    filename = 'lemExcProb.grd', 
     verbose = FALSE
 ){
   
   dir.create(path, showWarnings = FALSE, recursive = TRUE)
   
-  if(missing(filename)) {
-    filename = paste(tempfile('lemExcProb', path), '.grd', sep = '')
-  }
+  # if(missing(filename)) {
+    # filename = paste(tempfile('lemExcProb', path), '.grd', sep = '')
+  # }
   if(!length(grep('/', filename))) {
     filename = file.path(path, filename)
   }
@@ -162,32 +162,14 @@ excProb = function(
   
   theBootRiskList = list()
   for(inB in 1:length(bw)) {
-    
-    # first bw
-    if(inB == 1) {
-      
-      bootLemRisk = riskEst(
-          cases = bootCountsDf, 
-          lemObjects = lemObjects$smoothingMatrix, 
-          bw = bw[inB], 
-          ncores = ncores, 
-          iterations = iterations, 
-          path = path, 
-          filename = paste('riskBootTempBw', bw[inB], '.grd', sep = ''), 
-          verbose = verbose)
-      bootEstRisk = bootLemRisk$riskEst
-      
-      theBootRiskList[[inB]] = bootEstRisk
-      
-      # additional bw
-    } else {
-      
-      indexBw = grep(bw[inB], bw[1:inB])
-      
-      if(length(indexBw) == 1){
+
+	indexBw = which(bw[1:inB] %in% bw[inB])
+	
+	# generate results for input bw
+    if(length(indexBw) == 1) {
         
-        bootLemRisk = riskEst(
-            cases = bootCountsDf, 
+       bootLemRisk = riskEst(
+			cases = bootCountsDf, 
             lemObjects = lemObjects$smoothingMatrix, 
             bw = bw[inB], 
             ncores = ncores, 
@@ -199,12 +181,54 @@ excProb = function(
         
         theBootRiskList[[inB]] = bootEstRisk
         
-        # use previous results if same bw was used before
-      } else {
-        theBootRiskList[[inB]] = theBootRiskList[[indexBw[1]]]
-      }
-    }	    
-  }	
+    # use previous results if same bw was used before
+    } else {
+       theBootRiskList[[inB]] = theBootRiskList[[indexBw[1]]]
+    }
+  }
+  
+    # # first bw
+    # if(inB == 1) {
+      
+      # bootLemRisk = riskEst(
+          # cases = bootCountsDf, 
+          # lemObjects = lemObjects$smoothingMatrix, 
+          # bw = bw[inB], 
+          # ncores = ncores, 
+          # iterations = iterations, 
+          # path = path, 
+          # filename = paste('riskBootTempBw', bw[inB], '.grd', sep = ''), 
+          # verbose = verbose)
+      # bootEstRisk = bootLemRisk$riskEst
+      
+      # theBootRiskList[[inB]] = bootEstRisk
+      
+      # # additional bw
+    # } else {
+      
+      # indexBw = which(bw[1:inB] %in% bw[inB])
+      
+      # if(length(indexBw) == 1){
+        
+        # bootLemRisk = riskEst(
+            # cases = bootCountsDf, 
+            # lemObjects = lemObjects$smoothingMatrix, 
+            # bw = bw[inB], 
+            # ncores = ncores, 
+            # iterations = iterations, 
+            # path = path, 
+            # filename = paste('riskBootTempBw', bw[inB], '.grd', sep = ''), 
+            # verbose = FALSE)
+        # bootEstRisk = bootLemRisk$riskEst
+        
+        # theBootRiskList[[inB]] = bootEstRisk
+        
+        # # use previous results if same bw was used before
+      # } else {
+        # theBootRiskList[[inB]] = theBootRiskList[[indexBw[1]]]
+      # }
+    # }	    
+  # }	
   
   # exceedance probabilities
   if(verbose) {

@@ -79,15 +79,15 @@ riskEst = function(
   ncores = 1, 
   iterations = list(tol = 1e-5, maxIter = 1000, gpu = FALSE), 
   path = getwd(), 
-  filename,
+  filename = 'lemRisk.grd', 
   verbose = FALSE 
 ) {
   
   dir.create(path, showWarnings = FALSE, recursive = TRUE)
 
- 	if(missing(filename)) {
-		filename = paste(tempfile('lemRisk', path), '.grd', sep = '')
-	}
+ 	# if(missing(filename)) {
+		# filename = paste(tempfile('lemRisk', path), '.grd', sep = '')
+	# }
 	if(!length(grep('/', filename))) {
 		filename = file.path(path, filename)
 	}
@@ -221,20 +221,20 @@ riskEst = function(
     riskAll = riskRaster,
     smoothingMatrix = lemObjects
   )
-  
+
+   # done with the cluster
+	if(endCluster) parallel::stopCluster(theCluster)
+
 	# final smoothing step
 	result$riskEst = finalSmooth(
 						x = result, 
 						Slayers = dimnames(newDf)[[2]], 
 						filename = filename, 
-						ncores = theCluster)
-	names(result$riskEst) = dimnames(newDf)[[2]]
+						ncores = ncores)
+	# names(result$riskEst) = dimnames(newDf)[[2]]
    
 	result$bw = bwString
  
-   # done with the cluster
-	if(endCluster) parallel::stopCluster(theCluster)
-
   if(verbose) {
 	cat(date(), "\n")
     cat("done\n")

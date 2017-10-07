@@ -3,7 +3,7 @@
 finalSmooth = function(
     x, 
     Slayers, 
-    ncores = 1, 
+    ncores, 
     filename) {
   
   toSmooth = x$riskAll
@@ -26,17 +26,24 @@ finalSmooth = function(
   }
   
   xOrig = x
-  result = focalMult(
+  theFinalEst = focalMult(
       x=toSmooth, 
       w=xOrig$smoothingMatrix$focal$focal, 
       edgeCorrect = TRUE,
-      filename = filename,
+      filename = paste(tempfile(), '.grd', sep = ''), 
       cl = theCluster
   )
+
+  names(theFinalEst) = Slayers
   
+  # done with the cluster
   if(endCluster)  
     parallel::stopCluster(theCluster)
   
-  return(result)
+  result = raster::writeRaster(theFinalEst, 
+			filename = filename, 
+			overwrite = file.exists(filename)
+			)
   
+  return(result)
 }

@@ -57,24 +57,24 @@ rasterPartition = function(
   xv = NULL, 
   ncores = 1, 
   path = getwd(),
-  idFile, 
-  offsetFile,
+  idFile = 'lemId.grd', 
+  offsetFile = 'lemOffset.grd', 
   verbose = FALSE
 ){
   
 	dir.create(path, showWarnings = FALSE, recursive = TRUE)
 
 	
-	if(missing(idFile)) {
-		idFile = paste(tempfile('lemId', path), '.grd', sep = '')
-	}
+	# if(missing(idFile)) {
+		# idFile = paste(tempfile('lemId', path), '.grd', sep = '')
+	# }
 	if(!length(grep('/', idFile))) {
 		idFile = file.path(path, idFile)
 	}
 	
-	if(missing(offsetFile)) {
-		offsetFile = paste(tempfile('lemOffset', path), '.grd', sep = '')
-	}
+	# if(missing(offsetFile)) {
+		# offsetFile = paste(tempfile('lemOffset', path), '.grd', sep = '')
+	# }
 	if(!length(grep('/', offsetFile))) {
 		offsetFile = file.path(path, offsetFile)
 	}
@@ -109,7 +109,6 @@ rasterPartition = function(
   }
   
   # coarse poly ID's for fine raster
-  
   polyCoarseIdCol = grep("^id$", names(polyCoarse), value=TRUE)
   if(!length(polyCoarseIdCol)) {
     polyCoarseIdCol = names(polyCoarse)[1]
@@ -174,7 +173,8 @@ rasterPartition = function(
   offsetTempFile = file.path(path, 'offsetTemp.grd')
   
   rasterOffset = raster::mask(rasterOffset, rasterIdCoarse[['idCoarse']],
-    filename=offsetTempFile, overwrite = file.exists(offsetTempFile))
+    filename = offsetTempFile, 
+	overwrite = file.exists(offsetTempFile))
   
   
   rasterFineId = brick(rasterIdCoarse, rasterIdFine, rasterFine)	
@@ -248,7 +248,7 @@ rasterPartition = function(
     w = theFocal$focal,
     filename = paste(tempfile(), '.grd', sep = ''), 
     edgeCorrect=FALSE, 
-    cl = NULL
+    cl = theCluster
   )
   
   if(verbose) {
@@ -260,18 +260,20 @@ rasterPartition = function(
   offsetStack = writeRaster(
     addLayer(rasterOffset, 
       smoothedOffset[[grep('ones$', names(smoothedOffset), invert=TRUE)]]),
-    filename = offsetFile, overwrite = file.exists(offsetFile))  
+    filename = offsetFile, 
+	overwrite = file.exists(offsetFile))
   
+  # done with the cluster
+  if(endCluster) 
+	parallel::stopCluster(theCluster)
   
-  if(endCluster) parallel::stopCluster(theCluster)
-  
-# create list of partitions
+  # create list of partitions
   partitions = as.data.frame(stats::na.omit(raster::unique(rasterFineId)))
   partitions$partition = paste('c', partitions$cellCoarse, 'p', partitions$idCoarse,
     '.', partitions$idFine, sep = '')
   partitions = cbind(ID = 1:nrow(partitions), partitions)
-# raster with partition ID's
-  
+
+  # raster with partition ID's
   partitionRaster = raster::calc(rasterFineId, 
     function(x) which(
         x[1]==partitions[,'idCoarse'] &
@@ -282,8 +284,7 @@ rasterPartition = function(
   partitionRaster = writeRaster(partitionRaster, filename=idFile, overwrite=file.exists(idFile))
   
   
-# offsetMat is the value of the offset at all points in the partition
-  
+  # offsetMat is the value of the offset at all points in the partition
   partitionOffsets = as.data.frame(zonal(
       offsetStack[[grep("^bw", names(offsetStack), invert=TRUE)]],
       partitionRaster,
@@ -294,8 +295,8 @@ rasterPartition = function(
     ), 'partition']    
   
   
-# offsetMat is diagonal matrix with element the integral of offset in the partition 
-# different for each CV set
+  # offsetMat is diagonal matrix with element the integral of offset in the partition 
+  # different for each CV set
   offsetMat = apply(partitionOffsets[,grep("[oO]ffset", colnames(partitionOffsets))], 2, 
     function(x) {
       res = Matrix::Diagonal(nrow(partitionOffsets), x*prod(res(offsetStack)))
@@ -334,6 +335,9 @@ rasterPartition = function(
     cat("done\n")
   }
   
+  # remove temporary raster files
+  unlink(offsetTempFile)
+
   return(result)
   
 }

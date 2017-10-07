@@ -50,15 +50,15 @@ smoothingMatrix = function(
     rasterObjects,
     ncores = 1,
     path = getwd(), 
-    filename, 
+    filename = 'lemSmoothMat.grd', 
     verbose = FALSE
 ){
   
   dir.create(path, showWarnings = FALSE, recursive = TRUE)
   
-  if(missing(filename)) {
-    filename = paste(tempfile('lemSmoothMat', path), '.grd', sep = '')
-  }
+  # if(missing(filename)) {
+    # filename = paste(tempfile('lemSmoothMat', path), '.grd', sep = '')
+  # }
   if(!length(grep('/', filename))) {
     filename = file.path(path, filename)
   }

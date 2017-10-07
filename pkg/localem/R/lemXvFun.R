@@ -12,8 +12,9 @@
 #' @param ncores Number of cores/threads for parallel processing
 #' @param iterations List of convergence tolerance, number of iterations, and use of gpuR package for running local-EM recursions
 #' @param randomSeed Seed for random number generator
-#' @param verbose Verbose output
 #' @param path Folder for storing rasters
+#' @param filename Filename (must have .grd extension) of the risk estimation
+#' @param verbose Verbose output
 #' 
 #' @details After using the \code{lemXv} function, a raster stack containing the IDs for the partitions is created by overlaying the spatial polygons of the case and population data. The smoothed offsets and smoothing matrix are computed for the specified bandwidths of each cross-validation set. 
 #' 
@@ -32,10 +33,15 @@ lemXv = function(
     iterations = list(tol = 1e-5, maxIter = 1000, gpu = FALSE), 
     randomSeed = NULL, 
     path = getwd(), 
+	filename = 'riskXv.grd', 
     verbose = FALSE
 ){
   
   dir.create(path, showWarnings = FALSE, recursive = TRUE)
+
+	if(!length(grep('/', filename))) {
+		riskFile = file.path(path, filename)
+	}
   
   # warning messages
   if(missing(lemObjects)) { 
@@ -264,9 +270,9 @@ lemXv = function(
   result$riskEst = finalSmooth(
       x = result, 
       Slayers = Slayers, 
-      filename = file.path(path, 'riskXv.grd'),
-      ncores = 1)
-  names(result$riskEst) = Slayers
+      filename = riskFile, 
+      ncores = ncores)
+#  names(result$riskEst) = Slayers
   
   result$bw = paste('bw', bwMin, sep = '')
   
