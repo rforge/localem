@@ -31,7 +31,7 @@ finalSmooth = function(
       w=xOrig$smoothingMatrix$focal$focal, 
       edgeCorrect = TRUE,
       filename = paste(tempfile(), '.grd', sep = ''), 
-      cl = theCluster
+      cl = NULL
   )
 
   names(theFinalEst) = Slayers

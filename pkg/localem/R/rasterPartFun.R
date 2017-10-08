@@ -248,7 +248,7 @@ rasterPartition = function(
     w = theFocal$focal,
     filename = paste(tempfile(), '.grd', sep = ''), 
     edgeCorrect=FALSE, 
-    cl = theCluster
+    cl = NULL
   )
   
   if(verbose) {
