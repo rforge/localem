@@ -6,7 +6,7 @@
 \usage{
 lemXv(cases, population, cellsCoarse, cellsFine, bw, xv = 4, lemObjects,
   ncores = 1, iterations = list(tol = 1e-05, maxIter = 1000, gpu = FALSE),
-  randomSeed = NULL, path = getwd(), verbose = FALSE)
+  randomSeed = NULL, path = getwd(), filename = 'riskXv.grd', verbose = FALSE)
 }
 \arguments{
 \item{cases}{Spatial polygons with case data}
@@ -30,6 +30,8 @@ lemXv(cases, population, cellsCoarse, cellsFine, bw, xv = 4, lemObjects,
 \item{randomSeed}{Seed for random number generator}
 
 \item{path}{Folder for storing rasters}
+
+\item{filename}{Filename (must have .grd extension) of the risk estimation}
 
 \item{verbose}{Verbose output}
 }

@@ -6,7 +6,7 @@
 \usage{
 excProb(lemObjects, threshold = 1, Nboot = 100, ncores = 1,
   iterations = list(tol = 1e-05, maxIter = 1000, gpu = FALSE),
-  path = getwd(), filename, verbose = FALSE)
+  path = getwd(), filename = 'lemExcProb.grd', verbose = FALSE)
 }
 \arguments{
 \item{lemObjects}{List of arrays for the smoothing matrix, and raster stacks for the partition, smoothed offsets and risk estimation}

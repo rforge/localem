@@ -5,7 +5,8 @@
 \title{Computes the relative risk estimation}
 \usage{
 riskEst(cases, lemObjects, bw, ncores = 1, iterations = list(tol = 1e-05,
-  maxIter = 1000, gpu = FALSE), path = getwd(), filename, verbose = FALSE)
+  maxIter = 1000, gpu = FALSE), path = getwd(), filename = 'lemRisk.grd', 
+  verbose = FALSE)
 }
 \arguments{
 \item{cases}{Spatial polygons, data frame or vector of case data}

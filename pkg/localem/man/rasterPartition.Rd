@@ -5,8 +5,8 @@
 \title{Generates the partitions by overlaying rasters of spatial polygons}
 \usage{
 rasterPartition(polyCoarse, polyFine, cellsCoarse, cellsFine, bw,
-  focalSize = NULL, xv = NULL, ncores = 1, path = getwd(), idFile,
-  offsetFile, verbose = FALSE)
+  focalSize = NULL, xv = NULL, ncores = 1, path = getwd(), idFile = 'lemId.grd',
+  offsetFile = 'lemOffsets.grd', verbose = FALSE)
 }
 \arguments{
 \item{polyCoarse}{Spatial polygons of case data}

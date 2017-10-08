@@ -4,8 +4,8 @@
 \alias{smoothingMatrix}
 \title{Generates the smoothing matrix for the partitions and bandwidths}
 \usage{
-smoothingMatrix(rasterObjects, ncores = 1, path = getwd(), filename,
-  verbose = FALSE)
+smoothingMatrix(rasterObjects, ncores = 1, path = getwd(), 
+  filename = 'lemSmoothMat.grd', verbose = FALSE)
 }
 \arguments{
 \item{rasterObjects}{Raster stacks for partitions and smoothed offsets}

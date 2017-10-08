@@ -58,7 +58,7 @@ rasterPartition = function(
   ncores = 1, 
   path = getwd(),
   idFile = 'lemId.grd', 
-  offsetFile = 'lemOffset.grd', 
+  offsetFile = 'lemOffsets.grd', 
   verbose = FALSE
 ){
   
