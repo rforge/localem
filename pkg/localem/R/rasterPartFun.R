@@ -336,7 +336,7 @@ rasterPartition = function(
   }
   
   # remove temporary raster files
-  unlink(offsetTempFile)
+  unlink(file.path(path, 'offsetTemp*'))
 
   return(result)
   
