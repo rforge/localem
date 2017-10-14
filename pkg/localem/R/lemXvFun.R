@@ -210,6 +210,7 @@ lemXv = function(
   suppressMessages(xvObs <- xvMat[,Sxv] * as.matrix(cases[,Scount]))
   
   logProbCoarse = stats::dpois(as.matrix(xvObs), as.matrix(xvEstMask), log=TRUE)
+  logProbCoarse[is.infinite(logProbCoarse)] = 0
   logProb = apply(logProbCoarse, 2, sum)
   
   logProbFull = data.frame(
