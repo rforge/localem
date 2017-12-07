@@ -150,7 +150,7 @@ lemXv = function(
     cat(date(), "\n")
     cat("running local-EM for validation sets\n")
   }
-  # estimate risk (by partition, not continuous) for each bw/cv combinantion
+  # estimate risk (by partition, not continuous) for each bw/cv combination
 
   forMoreArgs = list(
       x=cases[,countcol, drop=FALSE],
@@ -247,8 +247,6 @@ lemXv = function(
           ID = raster::levels(xvSmoothMat$rasterFine)[[1]]$ID,
           newDf))
 
-
-
   result = list(
       xv = xvRes,
       xvFull = logProbFull,
@@ -258,19 +256,21 @@ lemXv = function(
       folds = xvMat
   )
 
-  if(verbose) {
-    cat(date(), "\n")
-    cat("computing risk estimation for bw with lowest CV score\n")
-  }
-
-  bwMin = result$xv[apply(result$xv[,colnames(result$xv)[-1]],2,which.min),'bw']
-  Slayers = paste('bw', bwMin, '_', countcol, sep = '')
-
   # done with the cluster
   if(!is.null(theCluster))
     parallel::stopCluster(theCluster)
 
+  # estimate continuous risk at high resolution (if specified)
   if(finalEst) {
+
+    if(verbose) {
+      cat(date(), "\n")
+      cat("computing risk estimation for bw with lowest CV score\n")
+    }
+
+    bwMin = result$xv[apply(result$xv[,colnames(result$xv)[-1]],2,which.min),'bw']
+    Slayers = paste('bw', bwMin, '_', countcol, sep = '')
+
     result$riskEst = finalSmooth(
         x = result,
         Slayers = Slayers,
@@ -278,9 +278,8 @@ lemXv = function(
         ncores = ncores)
 #   names(result$riskEst) = Slayers
 
+    result$bw = paste('bw', bwMin, sep = '')
   }
-
-  result$bw = paste('bw', bwMin, sep = '')
 
   if(verbose) {
     cat(date(), "\n")
