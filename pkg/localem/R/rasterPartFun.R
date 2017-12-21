@@ -284,7 +284,7 @@ rasterPartition = function(
   partitionRaster = writeRaster(partitionRaster, filename=idFile, overwrite=file.exists(idFile))
   
   
-  # offsetMat is the value of the offset at all points in the partition
+  # offsetMat is the mean value of the offset at all points in the partition
   partitionOffsets = as.data.frame(zonal(
       offsetStack[[grep("^bw", names(offsetStack), invert=TRUE)]],
       partitionRaster,
@@ -295,11 +295,11 @@ rasterPartition = function(
     ), 'partition']    
   
   
-  # offsetMat is diagonal matrix with element the integral of offset in the partition 
+  # offsetMat is diagonal matrix of the offset in the partition 
   # different for each CV set
   offsetMat = apply(partitionOffsets[,grep("[oO]ffset", colnames(partitionOffsets))], 2, 
     function(x) {
-      res = Matrix::Diagonal(nrow(partitionOffsets), x*prod(res(offsetStack)))
+      res = Matrix::Diagonal(nrow(partitionOffsets), x)
       dimnames(res) = list(partitionOffsets$partition, partitionOffsets$partition) 
       res
     })
