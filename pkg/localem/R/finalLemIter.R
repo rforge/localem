@@ -259,10 +259,9 @@ finalLemIter = function(
       absdiff = -Inf
     }
     
-    lDiff = oldLambda
     oldLambda = Lambda
-    Lambda = lDiff
     Diter = Diter + 1
+	
     if(verbose) cat(".")
   }
   if(verbose) cat("\ndone lem,", Diter, 'iterations\n')
@@ -271,9 +270,9 @@ finalLemIter = function(
   littleLambda = solve(partitionAreasMat) %*% as.matrix(Lambda)
   
   # expected count using full offsets, not xv offests
-  expectedCoarseRegions = 
-      (regionMat %*% lemObjects$offsetMat[['offset']]) %*% 
-      littleLambda
+  offsetMatFull = lemObjects$offsetMat[['offset']]
+  offsetMatFull = offsetMatFull[colnames(regionMat), colnames(regionMat)]
+  expectedCoarseRegions = (regionMat %*% offsetMatFull) %*% as.matrix(Lambda)
   
   return(list(
           expected = as.matrix(expectedCoarseRegions),
