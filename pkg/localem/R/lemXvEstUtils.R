@@ -1,18 +1,46 @@
 # Generates the matrix of cross-validation sets
-getXvMat = function(coarse, Nxv) {
+getXvMat = function(coarse, coarseRaster, offsetRaster, Nxv) {
+
   if(length(coarse)>1) {
     Ncoarse = length(coarse)
-  } else{
+  } else {
     Ncoarse = coarse
     coarse = as.character(1:Ncoarse)
   }
-  
-  Matrix::sparseMatrix(
-      i = 1:Ncoarse,
-      j=sample(1:Nxv, Ncoarse, replace=TRUE),
-      dimnames = list(coarse, as.character(1:Nxv))
+
+  expectedCoarse = aggregate(values(offsetRaster[['offset']]) * prod(res(offsetRaster)),
+                             by = list(values(coarseRaster[['idCoarse']])),
+                             FUN = 'sum')
+  colnames(expectedCoarse) = c('idCoarse','expected')
+  expectedCoarse = merge(data.frame(idCoarse = 1:Ncoarse), expectedCoarse,
+                         by = 'idCoarse',
+                         all = TRUE)
+  expectedCoarse$expected[is.na(expectedCoarse$expected)] = 0
+
+  xvExpected = expectedCoarse[order(expectedCoarse$expected),]
+  xvExpected$idXv = (1:Ncoarse %% Nxv) + 1
+
+  Matrix::sparseMatrix(i = xvExpected$idCoarse,
+                       j = xvExpected$idXv,
+                       dimnames = list(coarse, as.character(1:Nxv))
   )
+
 }
+
+# getXvMat = function(coarse, Nxv) {
+#   if(length(coarse)>1) {
+#     Ncoarse = length(coarse)
+#   } else{
+#     Ncoarse = coarse
+#     coarse = as.character(1:Ncoarse)
+#   }
+#
+#   Matrix::sparseMatrix(
+#       i = 1:Ncoarse,
+#       j=sample(1:Nxv, Ncoarse, replace=TRUE),
+#       dimnames = list(coarse, as.character(1:Nxv))
+#   )
+# }
 
 
 # Computes the risk estimation aggregated to the partitions for one iteration
@@ -20,17 +48,17 @@ oneLemIter = function(
   Lambda, smoothingMat, regionMat, offsetMat, counts,
 		regionOffset = regionMat %*% offsetMat
 ){
-# to do: write this all in C, with option to link to gpuR 
-	
+# to do: write this all in C, with option to link to gpuR
+
 #  denomOld = t(regionMat) %*% offsetMat %*% Lambda
 
 	 denom = regionOffset %*% Lambda
-	
+
 #  emOld = t(t(counts/denom) %*% t(regionMat) %*% offsetMat) * Lambda
- 
+
   # the script M(Lambda) object
 	em = crossprod(regionOffset, counts/denom) * Lambda
-	
+
   em[as.vector(!is.finite(em))] = 0
 
 #  resultOld = as.matrix(t(smoothingMat) %*% em)
@@ -41,11 +69,11 @@ result = crossprod(smoothingMat, em)
 #    em = gpuR::vclMatrix(as.matrix(em))
 #    result = as.matrix(gpuR::crossprod(smoothingMat, em))
 #  } else {
-#    result = as.matrix(Matrix::crossprod(smoothingMat, em))    
+#    result = as.matrix(Matrix::crossprod(smoothingMat, em))
 #  }
-	
+
 #	attributes(result)$em = em
-	
+
   return(result)
 }
 
@@ -57,11 +85,11 @@ xvLemEstOneBw = function(
   trainCounts,
   regionOffset, # = crossprod(regionMat, offsetMat)
   smoothingMat,
-		regionXvOffset, # = crossprod(regionMat, xvOffsetMat) 
+		regionXvOffset, # = crossprod(regionMat, xvOffsetMat)
 		startingValue,
   tol,
   maxIter) {
-	
+
 	xvLambda = xvLemEst(
 			trainId=trainId,
    trainCounts=trainCounts,
@@ -70,9 +98,9 @@ xvLemEstOneBw = function(
 			startingValue = startingValue,
    tol=tol,
    maxIter = maxIter)
-	
+
 	as.matrix(regionXvOffset %*% xvLambda)
-	
+
 }
 
 
@@ -89,7 +117,7 @@ xvLemEst = function(
 				),
   tol,
   maxIter) {
-	
+
 		if(missing(trainId))
 			trainId = 1:ncol(trainCounts)
   obsCounts = as.matrix(trainCounts[,trainId, drop=FALSE])

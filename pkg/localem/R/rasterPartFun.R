@@ -124,23 +124,29 @@ rasterPartition = function(
 
   polyFine@data[is.na(polyFine@data[,'expected']),'expected'] = 0
 
-  if(length(xv)==1) {
-    xvMat = getXvMat(polyCoarse$idCoarse, xv)
-  } else {
-    if(is.null(xv)) {
-      xvMat = matrix()
-	  dimnames(xvMat) = list(1, 1)
-    } else {
-      xvMat = xv
-    }
-  }
-
-
+  # offsets for fine raster
   rasterOffset = geostatsp::spdfToBrick(
     x=polyFine,
     template=rasterFine,
     pattern='^expected$')
   names(rasterOffset) = 'offset'
+
+  # cross-validation sets
+  if(length(xv) == 1) {
+    # xvMat = getXvMat(polyCoarse$idCoarse, xv)
+    xvMat = getXvMat(polyCoarse$idCoarse,
+                     rasterIdCoarse,
+                     rasterOffset,
+                     xv)
+  } else {
+    if(is.null(xv)) {
+      xvMat = matrix()
+      dimnames(xvMat) = list(1, 1)
+    } else {
+      xvMat = xv
+    }
+  }
+
   # fine ID (iffset
   # scale the offsets to cases per cell
   # times 10 (roughly)
