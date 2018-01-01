@@ -1,7 +1,7 @@
 #' @title Generates the partitions by overlaying rasters of spatial polygons
 #'
-#' @description The \code{rasterPartition} function first rasterizes the spatial polygons of the case and population data based on their respective input resolutions, and then, overlays these rasters to generate the raster of partitions of the local-EM algorithm. It also applies the kernel smoothing function with input bandwidths to the expected counts of the fine polygons to obtain the smoothed offsets (i.e., smoothed expected counts per cell area) of the partitions. If cross-validation is specified, smoothed offsets are computed for each cross-validation set.  
-#' 
+#' @description The \code{rasterPartition} function first rasterizes the spatial polygons of the case and population data based on their respective input resolutions, and then, overlays these rasters to generate the raster of partitions of the local-EM algorithm. It also applies the kernel smoothing function with input bandwidths to the expected counts of the fine polygons to obtain the smoothed offsets (i.e., smoothed expected counts per cell area) of the partitions. If cross-validation is specified, smoothed offsets are computed for each cross-validation set.
+#'
 #' @param polyCoarse Spatial polygons of case data
 #' @param polyFine Spatial polygons of population data
 #' @param cellsCoarse Minimum resolution for rasterization of case data for numerical accuracy of smoothing matrix
@@ -14,14 +14,14 @@
 #' @param idFile Filename (must have .grd extension) of the raster of partitions
 #' @param offsetFile Filename (must have .grd extension) of the rasters of smoothed offsets
 #' @param verbose Verbose output
-#' 
-#' 
-#' @details After using the \code{rasterPartition} function, the partition raster is a raster stack containing the IDs for the partitions created by overlaying the rasterizations of the spatial polygons of case and population data. The offset raster is a raster stack containing the offsets of the partitions smoothed with the specified bandwidths. These values represent the denominator of the kernel smoothing matrix. 
 #'
-#' @return The \code{rasterPartition} function returns a list containing the raster of the case data, raster stacks of the partitions and offsets, focal weight matrix of the Gaussian kernel, and the input coarse polygons. 
-#'  
-#' @examples 
-#' \dontrun{ 
+#'
+#' @details After using the \code{rasterPartition} function, the partition raster is a raster stack containing the IDs for the partitions created by overlaying the rasterizations of the spatial polygons of case and population data. The offset raster is a raster stack containing the offsets of the partitions smoothed with the specified bandwidths. These values represent the denominator of the kernel smoothing matrix.
+#'
+#' @return The \code{rasterPartition} function returns a list containing the raster of the case data, raster stacks of the partitions and offsets, focal weight matrix of the Gaussian kernel, and the input coarse polygons.
+#'
+#' @examples
+#' \dontrun{
 #' # case and population data
 #' data('kentuckyCounty')
 #' data('kentuckyTract')
@@ -32,46 +32,45 @@
 #' cellsFine = 100
 #' bw = c(10, 15, 17.5, 20) * 1000
 #' path = 'example'
-#' 
+#'
 #' # rasters of case and population data
-#' lemRaster = rasterPartition(polyCoarse = kentuckyCounty, 
-#'								polyFine = kentuckyTract, 
-#'								cellsCoarse = cellsCoarse, 
-#'								cellsFine = cellsFine, 
-#'								bw = bw, 
-#'								ncores = ncores, 
-#'								path = path, 
-#'								idFile = 'lemId.grd', 
-#'								offsetFile = 'lemOffsets.grd', 
+#' lemRaster = rasterPartition(polyCoarse = kentuckyCounty,
+#'								polyFine = kentuckyTract,
+#'								cellsCoarse = cellsCoarse,
+#'								cellsFine = cellsFine,
+#'								bw = bw,
+#'								ncores = ncores,
+#'								path = path,
+#'								idFile = 'lemId.grd',
+#'								offsetFile = 'lemOffsets.grd',
 #'								verbose = TRUE)
 #'}
 #'
 #' @export
 rasterPartition = function(
-  polyCoarse, 
-  polyFine, 
-  cellsCoarse, 
-  cellsFine, 
+  polyCoarse,
+  polyFine,
+  cellsCoarse,
+  cellsFine,
   bw,
   focalSize = NULL,
-  xv = NULL, 
-  ncores = 1, 
+  xv = NULL,
+  ncores = 1,
   path = getwd(),
-  idFile = 'lemId.grd', 
-  offsetFile = 'lemOffsets.grd', 
+  idFile = 'lemId.grd',
+  offsetFile = 'lemOffsets.grd',
   verbose = FALSE
 ){
-  
+
 	dir.create(path, showWarnings = FALSE, recursive = TRUE)
 
-	
 	# if(missing(idFile)) {
 		# idFile = paste(tempfile('lemId', path), '.grd', sep = '')
 	# }
 	if(!length(grep('/', idFile))) {
 		idFile = file.path(path, idFile)
 	}
-	
+
 	# if(missing(offsetFile)) {
 		# offsetFile = paste(tempfile('lemOffset', path), '.grd', sep = '')
 	# }
@@ -80,12 +79,11 @@ rasterPartition = function(
 	}
 
 
-	
   if(verbose) {
     cat(date(), "\n")
     cat("obtaining rasters\n")
   }
-  
+
   if(!(length(grep("\\.gr[id]$", offsetFile)))){
     warning("offsetFile should have .grd extension")
   }
@@ -99,7 +97,7 @@ rasterPartition = function(
   } else {
     rasterCoarse = cellsCoarse
   }
-  
+
   if(is.numeric(cellsFine)) {
     rasterFine = disaggregate(rasterCoarse,
       ceiling(cellsFine/ncol(rasterCoarse)))
@@ -107,25 +105,25 @@ rasterPartition = function(
   } else {
     rasterFine = cellsFine
   }
-  
+
   # coarse poly ID's for fine raster
   polyCoarseIdCol = grep("^id$", names(polyCoarse), value=TRUE)
   if(!length(polyCoarseIdCol)) {
     polyCoarseIdCol = names(polyCoarse)[1]
   }
-  
+
   idCoarse = 1:length(polyCoarse)
   names(idCoarse) = polyCoarse@data[[polyCoarseIdCol]]
   polyCoarse$idCoarse = idCoarse
-  
+
   rasterIdCoarse = rasterize(
     polyCoarse,
     rasterFine,
     field='idCoarse')
   names(rasterIdCoarse) = 'idCoarse'
-  
+
   polyFine@data[is.na(polyFine@data[,'expected']),'expected'] = 0
-  
+
   if(length(xv)==1) {
     xvMat = getXvMat(polyCoarse$idCoarse, xv)
   } else {
@@ -136,8 +134,8 @@ rasterPartition = function(
       xvMat = xv
     }
   }
-  
-  
+
+
   rasterOffset = geostatsp::spdfToBrick(
     x=polyFine,
     template=rasterFine,
@@ -157,43 +155,40 @@ rasterPartition = function(
     warning('offset problems, cant find levels')
   }
   rasterIdFine = deratify(ratifyOffset, 'idFine')
-  
+
   for(Dxv in 1:ncol(xvMat)) {
     xvHere = which(xvMat[,Dxv])
-    maskHere = raster::calc(rasterIdCoarse, 
+    maskHere = raster::calc(rasterIdCoarse,
       function(x) ! x %in% xvHere )
     rasterOffset = addLayer(
-      rasterOffset, 
+      rasterOffset,
       rasterOffset[[1]] * maskHere
     )
   }
-  names(rasterOffset) = c("offset", 
+  names(rasterOffset) = c("offset",
     paste('xvOffset', colnames(xvMat), sep = ''))
-  
+
   offsetTempFile = file.path(path, 'offsetTemp.grd')
-  
+
   rasterOffset = raster::mask(rasterOffset, rasterIdCoarse[['idCoarse']],
-    filename = offsetTempFile, 
-	overwrite = file.exists(offsetTempFile))
-  
-  
-  rasterFineId = brick(rasterIdCoarse, rasterIdFine, rasterFine)	
-  
-  rasterFineId = writeRaster(rasterFineId, 
+    filename = offsetTempFile,
+	  overwrite = file.exists(offsetTempFile))
+
+  rasterFineId = brick(rasterIdCoarse, rasterIdFine, rasterFine)
+  rasterFineId = writeRaster(rasterFineId,
     filename = idFile,
     overwrite=file.exists(idFile))
-  
+
   if(verbose) {
     cat(date(), "\n")
     cat("computing focal array\n")
   }
-  
+
   rasterOffset = setMinMax(rasterOffset)
-  
-  
+
   if(is.null(focalSize))
     focalSize = 2.5*max(bw)
-  
+
   endCluster = FALSE
   theCluster = NULL
   if(length(grep("cluster", class(ncores))) ) {
@@ -207,20 +202,18 @@ rasterPartition = function(
       endCluster = TRUE
     }
   }
-  
-  if(verbose) cat("creating arrays\n")
-  
+
   # focal used for smoothing matrix
   theFocal = focalFromBw(
-    bw = bw, 
-    fine=rasterFine, 
+    bw = bw,
+    fine=rasterFine,
     focalSize=focalSize,
     cl=theCluster)
-  
+
   forSmooth = expand.grid(
     bw=names(theFocal$focal),
     layer=names(rasterOffset))
-  
+
   focalArray = array(
     unlist(theFocal$focal),
     c(dim(theFocal$focal[[1]]), length(theFocal$focal)),
@@ -228,45 +221,32 @@ rasterPartition = function(
   )
   focalArray = focalArray[,,forSmooth[,'bw'], drop=FALSE]
   dimnames(focalArray)[[3]] = paste(
-    forSmooth[,'bw'], 
+    forSmooth[,'bw'],
     gsub("offset", "", as.character(forSmooth[,'layer']), ignore.case=TRUE),
     sep = ''
   )
-  theFocal$array = focalArray   
-  
-  if(verbose) cat(".\n")
-  
-  
+  theFocal$array = focalArray
+
   if(verbose) {
     cat(date(), "\n")
     cat("smoothing offsets\n")
   }
-  
-  
+
   smoothedOffset = focalMult(
-    x= rasterOffset, 
+    x= rasterOffset,
     w = theFocal$focal,
-    filename = paste(tempfile(), '.grd', sep = ''), 
-    edgeCorrect=FALSE, 
-    cl = NULL
+    filename = paste(tempfile(), '.grd', sep = ''),
+    edgeCorrect = FALSE,
+    cl = theCluster
   )
-  
-  if(verbose) {
-    cat(date(), "\n")
-    cat("smoothing offsets done\n")
-  }
-  
-  names(smoothedOffset) = gsub("[oO]ffset", "", names(smoothedOffset)) 
+
+  names(smoothedOffset) = gsub("[oO]ffset", "", names(smoothedOffset))
   offsetStack = writeRaster(
-    addLayer(rasterOffset, 
+    addLayer(rasterOffset,
       smoothedOffset[[grep('ones$', names(smoothedOffset), invert=TRUE)]]),
-    filename = offsetFile, 
-	overwrite = file.exists(offsetFile))
-  
-  # done with the cluster
-  if(endCluster) 
-	parallel::stopCluster(theCluster)
-  
+    filename = offsetFile,
+	  overwrite = file.exists(offsetFile))
+
   # create list of partitions
   partitions = as.data.frame(stats::na.omit(raster::unique(rasterFineId)))
   partitions$partition = paste('c', partitions$cellCoarse, 'p', partitions$idCoarse,
@@ -274,7 +254,7 @@ rasterPartition = function(
   partitions = cbind(ID = 1:nrow(partitions), partitions)
 
   # raster with partition ID's
-  partitionRaster = raster::calc(rasterFineId, 
+  partitionRaster = raster::calc(rasterFineId,
     function(x) which(
         x[1]==partitions[,'idCoarse'] &
           x[2] == partitions[,'idFine'] &
@@ -282,8 +262,8 @@ rasterPartition = function(
       )[1])
   levels(partitionRaster) = list(partitions)
   partitionRaster = writeRaster(partitionRaster, filename=idFile, overwrite=file.exists(idFile))
-  
-  
+
+
   # offsetMat is the mean value of the offset at all points in the partition
   partitionOffsets = as.data.frame(zonal(
       offsetStack[[grep("^bw", names(offsetStack), invert=TRUE)]],
@@ -292,32 +272,34 @@ rasterPartition = function(
     ))
   partitionOffsets$partition = partitions[match(
       partitionOffsets$zone, partitions$ID
-    ), 'partition']    
-  
-  
-  # offsetMat is diagonal matrix of the offset in the partition 
+    ), 'partition']
+
+
+  # offsetMat is diagonal matrix of the offset in the partition
   # different for each CV set
-  offsetMat = apply(partitionOffsets[,grep("[oO]ffset", colnames(partitionOffsets))], 2, 
+  offsetMat = apply(partitionOffsets[,grep("[oO]ffset", colnames(partitionOffsets))], 2,
     function(x) {
       res = Matrix::Diagonal(nrow(partitionOffsets), x)
-      dimnames(res) = list(partitionOffsets$partition, partitionOffsets$partition) 
+      dimnames(res) = list(partitionOffsets$partition, partitionOffsets$partition)
       res
     })
-  
+
   regions = gsub("^c[[:digit:]]+p|\\.[[:digit:]]+$", "", partitionOffsets$partition)
   regions = as.integer(regions)
   regionMat = outer(polyCoarse$idCoarse, regions, '==')
   regionMat = Matrix::Matrix(regionMat)
-  
+
   dimnames(regionMat)=
     list(polyCoarse$idCoarse, partitionOffsets$partition)
-  
+
   partitionFreq = raster::freq(partitionRaster)
   rownames(partitionFreq) = raster::levels(partitionRaster)[[1]][partitionFreq[,'value'],'partition']
-  partitionAreas = partitionFreq[,'count'][colnames(regionMat)] * prod(raster::res(partitionRaster))  
-  
-  
-  
+  partitionAreas = partitionFreq[,'count'][colnames(regionMat)] * prod(raster::res(partitionRaster))
+
+  # done with the cluster
+  if(endCluster)
+    parallel::stopCluster(theCluster)
+
   result = list(
     rasterCoarse=rasterCoarse,
     polyCoarse = polyCoarse,
@@ -329,16 +311,16 @@ rasterPartition = function(
     partitionAreas=partitionAreas,
     xv = xvMat
   )
-  
+
   if(verbose) {
     cat(date(), "\n")
     cat("done\n")
   }
-  
+
   # remove temporary raster files
   unlink(file.path(path, 'offsetTemp*'))
 
   return(result)
-  
+
 }
 

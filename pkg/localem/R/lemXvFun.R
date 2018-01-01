@@ -256,10 +256,6 @@ lemXv = function(
       folds = xvMat
   )
 
-  # done with the cluster
-  if(!is.null(theCluster))
-    parallel::stopCluster(theCluster)
-
   # estimate continuous risk at high resolution (if specified)
   if(finalEst) {
 
@@ -275,11 +271,16 @@ lemXv = function(
         x = result,
         Slayers = Slayers,
         filename = riskFile,
-        ncores = ncores)
+        ncores = theCluster
+    )
 #   names(result$riskEst) = Slayers
 
     result$bw = paste('bw', bwMin, sep = '')
   }
+
+  # done with the cluster
+  if(!is.null(theCluster))
+    parallel::stopCluster(theCluster)
 
   if(verbose) {
     cat(date(), "\n")

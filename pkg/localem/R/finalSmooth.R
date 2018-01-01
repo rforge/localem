@@ -1,18 +1,18 @@
 
 # Computes the risk estimation to the fine raster by smoothing the risk of the partitions at the final iteration
 finalSmooth = function(
-    x, 
-    Slayers, 
-    ncores, 
+    x,
+    Slayers,
+    ncores,
     filename) {
-  
+
   toSmooth = x$riskAll
   levels(toSmooth)[[1]] = levels(toSmooth)[[1]][, c("ID", Slayers)]
-  
+
   deratifyFile = tempfile("deratify", tempdir(), ".grd")
-  
+
   toSmooth = deratify(toSmooth, filename = deratifyFile)
-  
+
   endCluster = FALSE
   theCluster = NULL
   if(length(grep("cluster", class(ncores))) ) {
@@ -24,26 +24,26 @@ finalSmooth = function(
       endCluster = TRUE
     }
   }
-  
+
   xOrig = x
   theFinalEst = focalMult(
-      x=toSmooth, 
-      w=xOrig$smoothingMatrix$focal$focal, 
+      x=toSmooth,
+      w=xOrig$smoothingMatrix$focal$focal,
       edgeCorrect = TRUE,
-      filename = paste(tempfile(), '.grd', sep = ''), 
-      cl = NULL
+      filename = paste(tempfile(), '.grd', sep = ''),
+      cl = theCluster
   )
 
   names(theFinalEst) = Slayers
-  
+
   # done with the cluster
-  if(endCluster)  
+  if(endCluster)
     parallel::stopCluster(theCluster)
-  
-  result = raster::writeRaster(theFinalEst, 
-			filename = filename, 
+
+  result = raster::writeRaster(theFinalEst,
+			filename = filename,
 			overwrite = file.exists(filename)
 			)
-  
+
   return(result)
 }
