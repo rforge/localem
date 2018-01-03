@@ -176,7 +176,7 @@ excProb = function(
             iterations = iterations,
             path = path,
             filename = paste('riskBootTempBw', bw[inB], '.grd', sep = ''),
-            verbose = FALSE)
+            verbose = verbose)
         bootEstRisk = bootLemRisk$riskEst
 
         theBootRiskList[[inB]] = bootEstRisk

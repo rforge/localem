@@ -178,7 +178,10 @@ riskEst = function(
     gpu = iterations$gpu,
     verbose=verbose)
 
-  if(!is.null(theCluster)) {
+  if( 
+    (!is.null(theCluster)) &  
+    (length(bwString)>1) 
+    ) {
     estList = parallel::clusterMap(
       theCluster,
       finalLemIter,
@@ -186,8 +189,7 @@ riskEst = function(
       MoreArgs = forMoreArgs,
       SIMPLIFY=FALSE
     )
-
-  } else {
+ } else {
     estList = mapply(
       finalLemIter,
       bw = bwString,
@@ -223,7 +225,10 @@ riskEst = function(
     riskAll = riskRaster,
     smoothingMatrix = lemObjects
   )
-
+  if(verbose) {
+  cat(date(), "\n")
+    cat("final smoothing step\n")
+  }
 	# final smoothing step
 	result$riskEst = finalSmooth(
 						x = result,
