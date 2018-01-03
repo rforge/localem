@@ -241,7 +241,7 @@ rasterPartition = function(
   smoothedOffset = focalMult(
     x= rasterOffset,
     w = theFocal$focal,
-    filename = paste(tempfile(), '.grd', sep = ''),
+    filename = tempfile(tmpdir=path, fileext='.grd'),
     edgeCorrect = FALSE,
     cl = theCluster
   )

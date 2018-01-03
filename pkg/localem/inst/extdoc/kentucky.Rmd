@@ -80,7 +80,8 @@ Sbw = seq(10, 35, by = 5) * 1000
 threshold = c(1, 1.5)
 Nboot = 20 
 # on unix systems results will be saved in /tmp/localEMusername
-path = file.path(dirname(tempdir()),  paste('localEM', Sys.info()['user'], sep = ''))
+path = file.path(dirname(tempdir()),  
+  paste('localEM', Sys.info()['user'], sep = ''))
 cacheDir = 'cache/'
 figDir = 'figure/'
 ```  
@@ -119,7 +120,8 @@ knitr::opts_chunk$set(fig.path=figDir, cache.path=cacheDir)
 ```
 
 ```{r kMap, cache=TRUE}
-kMap = mapmisc::tonerToTrans(mapmisc::openmap(kentuckyCounty, fact=2, path='stamen-toner'))
+kMap = mapmisc::tonerToTrans(
+  mapmisc::openmap(kentuckyCounty, fact=1.6, path='stamen-toner'))
 ```
 
 ## Simulate Cases
@@ -256,11 +258,11 @@ To automatic the selection of the optimal bandwidth, the `lemXv()` function of t
 
 The CV scores with 4-fold sampling are provided for the first simulated dataset. 
 
-```{r cvOne, warning = FALSE}
+```{r cvOne, warning = FALSE, results='hide'}
 
 library('localEM')
 
-fileHere = file.path(path, 'xvKentucky.RData')
+fileHere = file.path(path, 'xvKentucky.rds')
 
 
 if(!file.exists(fileHere)) {
@@ -274,11 +276,11 @@ if(!file.exists(fileHere)) {
       xv = nxv, 
       ncores = ncores, 
       path = path, 
-      verbose = highRes)
+      verbose = TRUE)
   
-  save(xvKentucky, file = fileHere)
+  saveRDS(xvKentucky, file = fileHere)
 } else {
-  load(fileHere)
+  xvKentucky = readRDS(fileHere)
 }
 
 ```
@@ -305,14 +307,12 @@ high cancer risk in the areas located east of Bowling Green and
 south of Frankfurt decreasing as the bandwidth increases. 
 
 ```{r riskOne, warning = FALSE, cache=TRUE}
-
 riskKentucky = riskEst(
     cases = kentuckyCounty[,c('id','count1')], 
     lemObjects = xvKentucky$smoothingMatrix, 
     bw = Sbw, 
     ncores = ncores, 
     path = cacheDir)
-
 ```
 
 ```{r plotRiskOne, echo = FALSE, warning = FALSE, fig.cap = 'Risk Estimation for Simulation 1', fig.subcap = paste('Risk, bw=', Sbw / 1000, ' km', sep = ''), fig.height = 3, fig.width = 6, out.width = theWidth, fig.ncol = 2}
@@ -384,7 +384,7 @@ for(inT in 1:nlayers(toPlot)) {
       col = pCol$col, breaks = pCol$breaks, 
       legend = FALSE, 
       add = TRUE)
-  plot(kMap, add = TRUE)
+  plot(kMap, add = TRUE, maxpixels=10^7)
 }
 legendBreaks('topleft', pCol, bg = 'white')
 
@@ -397,7 +397,7 @@ plot(kCases$raster$relativeIntensity1,
     col = iCol$col, breaks = iCol$breaks, 
     legend = FALSE, 
     add = TRUE)
-plot(kMap, add = TRUE)
+plot(kMap, add = TRUE, maxpixels=10^7)
 legendBreaks('topleft', 
     col = iCol$col, breaks = iCol$breaks, 
     title = 'RR', 
@@ -419,13 +419,13 @@ legendBreaks('topleft', iCol, bg = 'white')
 
 Using the R objects created from the `lemXv()` function for the first simulated dataset, this CV method can be efficiently implemented on the remaining simulated datasets. 
 
-```{r cvAll, cache = TRUE}
+```{r cvAll, cache = TRUE, results='hide', message=FALSE}
 xvAllKentucky = lemXv(
     cases = kentuckyCounty@data[,
         grep('^count[[:digit:]]', names(kentuckyCounty))], 
     lemObjects = xvKentucky$smoothingMatrix, 
     ncores = ncores, 
-    path = cacheDir)
+    path = cacheDir, verbose=TRUE)
 ```
 
 ```{r cvPlotAll, echo = FALSE, fig.cap = 'Cross-validation Scores for All Simulations', fig.height = 4, fig.width = 8, out.width = '80%', fig.ncol = 1}

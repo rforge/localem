@@ -56,7 +56,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <header>
 <h1 class="title">Local-EM Example with Kentucky</h1>
 <p class="author">Patrick Brown, Paul Nguyen</p>
-<p class="date">Friday 8 September 2017</p>
+<p class="date">Tuesday 2 January 2018</p>
 </header>
 <h2 id="introduction">Introduction</h2>
 <p>The <code>localEM</code> package contains functions to implement the kernel smoothing local-EM algorithm<span class="math inline"><em></em><sup>1</sup></span> of disease data aggregated to geographical regions. This algorithm provides an nonparametric alternative to the standard geospatial models, such as the Besag-York-Mollie (BYM) model<span class="math inline"><em></em><sup>2</sup></span>, for estimating spatial risk of areal disease data. With disease cases typically aggregated to highly coarse geographical regions (e.g., census counties, or census subdivisions), the local-EM method creates a tessellation of distinct regions by overlaying the map of these coarse regions with another map containing fine geographical regions (e.g., census tracts, census blocks, or census dissemination areas) of population data. This allows for the spatial risk to be estimated at a better resolution with the fine regions.</p>
@@ -71,7 +71,8 @@ Sbw =<span class="st"> </span><span class="kw">seq</span>(<span class="dv">10</s
 threshold =<span class="st"> </span><span class="kw">c</span>(<span class="dv">1</span>, <span class="fl">1.5</span>)
 Nboot =<span class="st"> </span><span class="dv">20</span> 
 <span class="co"># on unix systems results will be saved in /tmp/localEMusername</span>
-path =<span class="st"> </span><span class="kw">file.path</span>(<span class="kw">dirname</span>(<span class="kw">tempdir</span>()),  <span class="kw">paste</span>(<span class="st">&#39;localEM&#39;</span>, <span class="kw">Sys.info</span>()[<span class="st">&#39;user&#39;</span>], <span class="dt">sep =</span> <span class="st">&#39;&#39;</span>))
+path =<span class="st"> </span><span class="kw">file.path</span>(<span class="kw">dirname</span>(<span class="kw">tempdir</span>()),  
+  <span class="kw">paste</span>(<span class="st">&#39;localEM&#39;</span>, <span class="kw">Sys.info</span>()[<span class="st">&#39;user&#39;</span>], <span class="dt">sep =</span> <span class="st">&#39;&#39;</span>))
 cacheDir =<span class="st"> &#39;cache/&#39;</span>
 figDir =<span class="st"> &#39;figure/&#39;</span></code></pre></div>
 <p>specify number of grid cells for simulation</p>
@@ -86,7 +87,8 @@ figDir =<span class="st"> &#39;figure/&#39;</span></code></pre></div>
 <span class="kw">data</span>(<span class="st">&#39;kentuckyCounty&#39;</span>, <span class="dt">package =</span> <span class="st">&#39;localEM&#39;</span>) 
 <span class="kw">data</span>(<span class="st">&#39;kentuckyTract&#39;</span>, <span class="dt">package =</span> <span class="st">&#39;localEM&#39;</span>) 
 <span class="kw">data</span>(<span class="st">&#39;kMap&#39;</span>, <span class="dt">package =</span> <span class="st">&#39;localEM&#39;</span>)</code></pre></div>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">kMap =<span class="st"> </span>mapmisc<span class="op">::</span><span class="kw">tonerToTrans</span>(mapmisc<span class="op">::</span><span class="kw">openmap</span>(kentuckyCounty, <span class="dt">fact=</span><span class="dv">2</span>, <span class="dt">path=</span><span class="st">&#39;stamen-toner&#39;</span>))</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">kMap =<span class="st"> </span>mapmisc<span class="op">::</span><span class="kw">tonerToTrans</span>(
+  mapmisc<span class="op">::</span><span class="kw">openmap</span>(kentuckyCounty, <span class="dt">fact=</span><span class="fl">1.6</span>, <span class="dt">path=</span><span class="st">&#39;stamen-toner&#39;</span>))</code></pre></div>
 <h2 id="simulate-cases">Simulate Cases</h2>
 <p>Using the <code>simLgcp()</code> function from the <code>geostatsp</code> package, case locations are simulated with the log Gaussian Cox process (LGCP) and following parameters:</p>
 <ul>
@@ -158,7 +160,7 @@ kentuckyCounty =<span class="st"> </span><span class="kw">merge</span>(kentuckyC
 <p>The CV scores with 4-fold sampling are provided for the first simulated dataset.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(<span class="st">&#39;localEM&#39;</span>)
 
-fileHere =<span class="st"> </span><span class="kw">file.path</span>(path, <span class="st">&#39;xvKentucky.RData&#39;</span>)
+fileHere =<span class="st"> </span><span class="kw">file.path</span>(path, <span class="st">&#39;xvKentucky.rds&#39;</span>)
 
 
 <span class="cf">if</span>(<span class="op">!</span><span class="kw">file.exists</span>(fileHere)) {
@@ -172,11 +174,11 @@ fileHere =<span class="st"> </span><span class="kw">file.path</span>(path, <span
       <span class="dt">xv =</span> nxv, 
       <span class="dt">ncores =</span> ncores, 
       <span class="dt">path =</span> path, 
-      <span class="dt">verbose =</span> highRes)
+      <span class="dt">verbose =</span> <span class="ot">TRUE</span>)
   
-  <span class="kw">save</span>(xvKentucky, <span class="dt">file =</span> fileHere)
+  <span class="kw">saveRDS</span>(xvKentucky, <span class="dt">file =</span> fileHere)
 } <span class="cf">else</span> {
-  <span class="kw">load</span>(fileHere)
+  xvKentucky =<span class="st"> </span><span class="kw">readRDS</span>(fileHere)
 }</code></pre></div>
 <div id="fig:cvPlotOne" class="subfigures">
 <table style="width:60%;">
@@ -247,7 +249,6 @@ fileHere =<span class="st"> </span><span class="kw">file.path</span>(path, <span
     <span class="dt">ncores =</span> <span class="kw">pmin</span>(<span class="dv">4</span>,ncores),  <span class="co"># no more than 4 cores because the memory requirement is large</span>
     <span class="dt">path =</span> path,
     <span class="dt">verbose=</span><span class="ot">FALSE</span>)</code></pre></div>
-<pre><code>## Loading required package: Matrix</code></pre>
 <div id="fig:plotExcProbOne" class="subfigures">
 <table style="width:90%;">
 <colgroup>
@@ -282,7 +283,7 @@ fileHere =<span class="st"> </span><span class="kw">file.path</span>(path, <span
         <span class="kw">grep</span>(<span class="st">&#39;^count[[:digit:]]&#39;</span>, <span class="kw">names</span>(kentuckyCounty))], 
     <span class="dt">lemObjects =</span> xvKentucky<span class="op">$</span>smoothingMatrix, 
     <span class="dt">ncores =</span> ncores, 
-    <span class="dt">path =</span> cacheDir)</code></pre></div>
+    <span class="dt">path =</span> cacheDir, <span class="dt">verbose=</span><span class="ot">TRUE</span>)</code></pre></div>
 <div id="fig:cvPlotAll" class="subfigures">
 <table style="width:80%;">
 <colgroup>
@@ -315,7 +316,7 @@ fileHere =<span class="st"> </span><span class="kw">file.path</span>(path, <span
 </tr>
 <tr class="even">
 <td style="text-align: center;"><figure>
-<img src="figure/plotRiskAll-3.png" alt="c) est 2, bw=30 km" style="width:100.0%" /><figcaption>c) est 2, bw=30 km</figcaption>
+<img src="figure/plotRiskAll-3.png" alt="c) est 2, bw=20 km" style="width:100.0%" /><figcaption>c) est 2, bw=20 km</figcaption>
 </figure></td>
 <td style="text-align: center;"><figure>
 <img src="figure/plotRiskAll-4.png" alt="d) truth 2" style="width:100.0%" /><figcaption>d) truth 2</figcaption>
@@ -331,7 +332,7 @@ fileHere =<span class="st"> </span><span class="kw">file.path</span>(path, <span
 </tr>
 <tr class="even">
 <td style="text-align: center;"><figure>
-<img src="figure/plotRiskAll-7.png" alt="g) est 4, bw=20 km" style="width:100.0%" /><figcaption>g) est 4, bw=20 km</figcaption>
+<img src="figure/plotRiskAll-7.png" alt="g) est 4, bw=30 km" style="width:100.0%" /><figcaption>g) est 4, bw=30 km</figcaption>
 </figure></td>
 <td style="text-align: center;"><figure>
 <img src="figure/plotRiskAll-8.png" alt="h) truth 4" style="width:100.0%" /><figcaption>h) truth 4</figcaption>

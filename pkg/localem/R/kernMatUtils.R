@@ -282,6 +282,8 @@ focalFunction = function(x, focalArray, Scvsets)  {
 
 focalMultOneRowOuter = function(x, focalMat, focalDim, out, row, mmap = FALSE) {
 
+  x = brick(raster::filename(x))
+
   valuesHere = raster::getValuesFocal(x, row, 1L, focalDim, array=FALSE, padValue = NA)
   valuesNa = is.na(valuesHere[[1]])
 
@@ -344,9 +346,15 @@ focalMultOneRowOuter = function(x, focalMat, focalDim, out, row, mmap = FALSE) {
 }
 
 
-focalMultOneRow = function(x, focalMat, focalDim, out, row, bw, uniqueBw=NULL, mmap = FALSE) {
+focalMultOneRow = function(x, focalMat, focalDim, 
+  out, row, bw, uniqueBw=NULL, mmap = FALSE) {
 
-  valuesHere = raster::getValuesFocal(x, row, 1L, focalDim, array=FALSE, padValue = NA)
+  x = brick(raster::filename(x))
+#  return(list(x, row, focalDim))
+  valuesHere = raster::getValuesFocal(
+    x, row, 1L, focalDim, 
+    array=FALSE, padValue = NA)
+
   if(is.matrix(valuesHere)) valuesHere = list(valuesHere)
   valuesNa = is.na(valuesHere[[1]])
   colnames(valuesNa) = colnames(focalDim)
@@ -366,12 +374,13 @@ focalMultOneRow = function(x, focalMat, focalDim, out, row, bw, uniqueBw=NULL, m
   colnames(onesMult) = paste(colnames(onesMult), 'ones', sep='')
 
   toWrite = cbind(toWrite, onesMult)
+
   if(mmap) {
 
     outMap = mmap::mmap(
       gsub("[.]grd$", ".gri", raster::filename(out)),
-      mode=structure(numeric(0), bytes = 8L, signed = 1L, class = c("Ctype",
-          "double"))
+      mode=structure(numeric(0), bytes = 8L, signed = 1L, 
+        class = c("Ctype", "double"))
     )
 
     # band ordering BSQ
@@ -401,7 +410,7 @@ focalMult = function(
   x,
   w,
   bw = NULL,
-  filename = paste(tempfile(), '.grd', sep=''),
+  filename = tempfile(fileext= '.grd'),
   edgeCorrect=FALSE,
   cl = NULL
 ) {
@@ -416,7 +425,7 @@ focalMult = function(
 
   # if outer, smooths every layer of x with every focal in w
   if(edgeCorrect) {
-    firstFile = tempfile("forEdge",tempdir(), '.grd')
+    firstFile = tempfile("forEdge", tempdir(), '.grd')
   } else {
     firstFile = filename
   }
