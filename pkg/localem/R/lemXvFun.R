@@ -234,7 +234,7 @@ lemXv = function(
   )
   colnames(xvRes) = gsub("^x[.]", "", colnames(xvRes))
   xvRes = xvRes[,c('bw',countcol)]
-  minXvScore = apply(xvRes[,countcol, drop=FALSE],2,min)
+  minXvScore = apply(xvRes[,countcol, drop=FALSE],2,min, na.rm=TRUE)
   xvRes[,countcol] = xvRes[,countcol] -
       matrix(minXvScore, nrow=nrow(xvRes), ncol=length(minXvScore), byrow=TRUE)
 

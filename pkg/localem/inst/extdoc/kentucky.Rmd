@@ -62,7 +62,6 @@ nxv = 6
 Sbw = seq(2.5, 40, by = 2.5) * 1000
 threshold = c(1.1, 1.25, 1.5, 2)
 Nboot = 100 
-# on unix systems results will be saved in /tmp/localEMusername
 path = '/store/highResLocalem/'
 cacheDir = 'highResCache/'
 figDir = 'highResFigure/'
@@ -259,14 +258,28 @@ To automatic the selection of the optimal bandwidth, the `lemXv()` function of t
 The CV scores with 4-fold sampling are provided for the first simulated dataset. 
 
 ```{r cvOne, warning = FALSE, results='hide'}
-
 library('localEM')
 
 fileHere = file.path(path, 'xvKentucky.rds')
 
-
 if(!file.exists(fileHere)) {
   
+  if(FALSE) {
+    xvKentucky = lemXv(
+      cases = kentuckyCounty[,c('id','count1')], 
+      population = kentuckyTract, 
+      cellsCoarse = cellsCoarse,  
+      cellsFine = cellsFine, 
+      bw = Sbw, 
+      xv = nxv, 
+      ncores = ncores, 
+      path = path, 
+      lemObjects = readRDS(file.path(
+        path, 'smoothingMatrix.rds')),
+      verbose = TRUE)
+
+  }
+
   xvKentucky = lemXv(
       cases = kentuckyCounty[,c('id','count1')], 
       population = kentuckyTract, 
