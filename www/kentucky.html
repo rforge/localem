@@ -163,7 +163,7 @@ kentuckyCounty =<span class="st"> </span><span class="kw">merge</span>(kentuckyC
 fileHere =<span class="st"> </span><span class="kw">file.path</span>(path, <span class="st">&#39;xvKentucky.rds&#39;</span>)
 
 <span class="cf">if</span>(<span class="op">!</span><span class="kw">file.exists</span>(fileHere)) {
-  
+
   xvKentucky =<span class="st"> </span><span class="kw">lemXv</span>(
       <span class="dt">cases =</span> kentuckyCounty[,<span class="kw">c</span>(<span class="st">&#39;id&#39;</span>,<span class="st">&#39;count1&#39;</span>)], 
       <span class="dt">population =</span> kentuckyTract, 
@@ -245,9 +245,9 @@ fileHere =<span class="st"> </span><span class="kw">file.path</span>(path, <span
     <span class="dt">lemObjects =</span> xvKentucky, 
     <span class="dt">threshold =</span> threshold, 
     <span class="dt">Nboot =</span> Nboot, 
-    <span class="dt">ncores =</span> <span class="kw">pmin</span>(<span class="dv">4</span>,ncores),  <span class="co"># no more than 4 cores because the memory requirement is large</span>
+    <span class="dt">ncores =</span> <span class="dv">1</span>,  <span class="co"># because the memory requirement is large</span>
     <span class="dt">path =</span> path,
-    <span class="dt">verbose=</span><span class="ot">FALSE</span>)</code></pre></div>
+    <span class="dt">verbose=</span><span class="ot">TRUE</span>)</code></pre></div>
 <div id="fig:plotExcProbOne" class="subfigures">
 <table style="width:90%;">
 <colgroup>

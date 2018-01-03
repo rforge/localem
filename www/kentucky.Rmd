@@ -60,9 +60,8 @@ cellsCoarse = 12
 nsim = 12
 nxv = 6
 Sbw = seq(2.5, 40, by = 2.5) * 1000
-threshold = c(1.1, 1.25, 1.5, 2)
+threshold = c(1.1, 1.25, 1.5)
 Nboot = 100 
-# on unix systems results will be saved in /tmp/localEMusername
 path = '/store/highResLocalem/'
 cacheDir = 'highResCache/'
 figDir = 'highResFigure/'
@@ -264,22 +263,6 @@ library('localEM')
 fileHere = file.path(path, 'xvKentucky.rds')
 
 if(!file.exists(fileHere)) {
-  
-  if(FALSE) {
-    xvKentucky = lemXv(
-      cases = kentuckyCounty[,c('id','count1')], 
-      population = kentuckyTract, 
-      cellsCoarse = cellsCoarse,  
-      cellsFine = cellsFine, 
-      bw = Sbw, 
-      xv = nxv, 
-      ncores = ncores, 
-      path = path, 
-      lemObjects = readRDS(file.path(
-        path, 'smoothingMatrix.rds')),
-      verbose = TRUE)
-
-  }
 
   xvKentucky = lemXv(
       cases = kentuckyCounty[,c('id','count1')], 
@@ -303,7 +286,7 @@ if(!file.exists(fileHere)) {
 
 plot(xvKentucky$xv[,1]/1000, xvKentucky$xv[,2], 
     xlab = 'km', ylab = '-log p', 
-    type = 'o', xlim = c(6, 30), ylim = c(0, 20))
+    type = 'o', xlim = c(9, 40), ylim = c(0, 20))
 ```
 
 
@@ -370,14 +353,14 @@ Large exceedance probabilities are consistent with the risk being greater than
 the specified threshold. 
 
 
-```{r excProbOne, warning = FALSE, cache=TRUE}
+```{r excProbOne, warning = FALSE, cache=TRUE, results='hide'}
 excProbKentucky = excProb(
     lemObjects = xvKentucky, 
     threshold = threshold, 
     Nboot = Nboot, 
-    ncores = pmin(4,ncores),  # no more than 4 cores because the memory requirement is large
+    ncores = 1,  # because the memory requirement is large
     path = path,
-    verbose=FALSE)
+    verbose=TRUE)
 ```
 
 ```{r plotExcProbOne, echo = FALSE, fig.cap = 'Exceedance Probabilities for Simulation 1', fig.subcap = c(paste('Threshold ', threshold, sep = ''),'truth','estimate'), fig.height = 3, fig.width = 6, out.width = theWidth, fig.ncol = 2}
@@ -457,7 +440,6 @@ matplot(xvAllKentucky$xv[,'bw']/1000, xvAllKentucky$xv[,-1],
     xlab = 'km', ylab = '-log p', 
     type = 'l', lty = 1, 
     col = ScolFull,
-    xlim = c(6, 36),
     ylim = c(0, 12), log='x')
 
 legend('topright', paste('Simulation ', 1:4, sep = ''), 

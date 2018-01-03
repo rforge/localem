@@ -59,7 +59,9 @@ cellsFine = 300
 cellsCoarse = 12
 nsim = 12
 nxv = 6
-Sbw = seq(2.5, 40, by = 2.5) * 1000
+Sbw = unique(round(
+  exp(seq(log(4), log(35), len=20)) 
+  )) * 1000
 threshold = c(1.1, 1.25, 1.5)
 Nboot = 100 
 path = '/store/highResLocalem/'
@@ -440,7 +442,6 @@ matplot(xvAllKentucky$xv[,'bw']/1000, xvAllKentucky$xv[,-1],
     xlab = 'km', ylab = '-log p', 
     type = 'l', lty = 1, 
     col = ScolFull,
-    xlim = c(6, 36),
     ylim = c(0, 12), log='x')
 
 legend('topright', paste('Simulation ', 1:4, sep = ''), 
