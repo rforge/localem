@@ -56,11 +56,11 @@ The methodology of this package is demonstrated on simulated lung cancer cases f
 
 ncores = round(parallel::detectCores()/2)
 cellsFine = 500
-cellsCoarse = 15
+cellsCoarse = 20
 nsim = 12
 nxv = 6
 Sbw = unique(round(
-  exp(seq(log(4), log(35), len=20)) 
+  exp(seq(log(4), log(35), len=15)) 
   )) * 1000
 threshold = c(1.1, 1.25, 1.5)
 Nboot = 100 
