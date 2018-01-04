@@ -56,7 +56,7 @@ The methodology of this package is demonstrated on simulated lung cancer cases f
 
 ncores = round(parallel::detectCores()/2)
 cellsFine = 500
-cellsCoarse = 15
+cellsCoarse = 20
 nsim = 12
 nxv = 6
 Sbw = unique(round(
