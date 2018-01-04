@@ -5,8 +5,8 @@
 \title{Generates the partitions by overlaying rasters of spatial polygons}
 \usage{
 rasterPartition(polyCoarse, polyFine, cellsCoarse, cellsFine, bw,
-  focalSize = NULL, xv = NULL, ncores = 1, path = getwd(), idFile = 'lemId.grd',
-  offsetFile = 'lemOffsets.grd', verbose = FALSE)
+  focalSize = NULL, xv = NULL, ncores = 1, path = getwd(),
+  idFile = "lemId.grd", offsetFile = "lemOffsets.grd", verbose = FALSE)
 }
 \arguments{
 \item{polyCoarse}{Spatial polygons of case data}
@@ -43,7 +43,7 @@ The \code{rasterPartition} function first rasterizes the spatial polygons of the
 After using the \code{rasterPartition} function, the partition raster is a raster stack containing the IDs for the partitions created by overlaying the rasterizations of the spatial polygons of case and population data. The offset raster is a raster stack containing the offsets of the partitions smoothed with the specified bandwidths. These values represent the denominator of the kernel smoothing matrix.
 }
 \examples{
-\dontrun{ 
+\dontrun{
 # case and population data
 data('kentuckyCounty')
 data('kentuckyTract')
@@ -56,15 +56,15 @@ bw = c(10, 15, 17.5, 20) * 1000
 path = 'example'
 
 # rasters of case and population data
-lemRaster = rasterPartition(polyCoarse = kentuckyCounty, 
-							polyFine = kentuckyTract, 
-							cellsCoarse = cellsCoarse, 
-							cellsFine = cellsFine, 
-							bw = bw, 
-							ncores = ncores, 
-							path = path, 
-							idFile = 'lemId.grd', 
-							offsetFile = 'lemOffsets.grd', 
+lemRaster = rasterPartition(polyCoarse = kentuckyCounty,
+							polyFine = kentuckyTract,
+							cellsCoarse = cellsCoarse,
+							cellsFine = cellsFine,
+							bw = bw,
+							ncores = ncores,
+							path = path,
+							idFile = 'lemId.grd',
+							offsetFile = 'lemOffsets.grd',
 							verbose = TRUE)
 }
 

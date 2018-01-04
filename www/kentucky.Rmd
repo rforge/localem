@@ -54,12 +54,14 @@ The methodology of this package is demonstrated on simulated lung cancer cases f
 
 ```{r setupHighRes, eval=highRes, purl=highRes, echo = highRes}
 
-ncores = parallel::detectCores()
-cellsFine = 300
-cellsCoarse = 12
+ncores = round(parallel::detectCores()/2)
+cellsFine = 500
+cellsCoarse = 15
 nsim = 12
 nxv = 6
-Sbw = seq(2.5, 40, by = 2.5) * 1000
+Sbw = unique(round(
+  exp(seq(log(4), log(35), len=20)) 
+  )) * 1000
 threshold = c(1.1, 1.25, 1.5)
 Nboot = 100 
 path = '/store/highResLocalem/'
@@ -358,7 +360,8 @@ excProbKentucky = excProb(
     lemObjects = xvKentucky, 
     threshold = threshold, 
     Nboot = Nboot, 
-    ncores = 1,  # because the memory requirement is large
+    fact = 2,
+    ncores = pmin(4, ncores),  # because the memory requirement can be large
     path = path,
     verbose=TRUE)
 ```

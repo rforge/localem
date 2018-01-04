@@ -270,9 +270,10 @@ oneBlockFun = function(Dcell1,
       
       
       if(TRUE) {
-        .Call("mmapReplaceReal", as.double(cell_position), 
+        .Call("mmapReplaceReal", 
+          as.double(cell_position), 
             as.double(thisBlock[theOrder,theOrder,]), 
-            out)#, PACKAGE='localEM') 
+            out, PACKAGE='localEM') 
       } else {
         out[cell_position] = as.numeric(thisBlock[theOrder,theOrder,])        
       }
@@ -350,7 +351,7 @@ oneBlockOffdiagFun = function(
           if(TRUE) {
             .Call("mmapReplaceReal", as.double(cell_position), 
                 as.double(partHere[theOrder[[1]], theOrder[[2]],,] ),
-                out)#, PACKAGE='localEM') 
+                out, PACKAGE='localEM') 
           } else {
             out[cell_position] = as.double(partHere[theOrder[[1]], theOrder[[2]],,] )      
           }
@@ -394,7 +395,7 @@ oneBlockOffdiagFun = function(
           if(TRUE) {
             .Call("mmapReplaceReal", as.double(cell_position), 
                 as.double(partHere[theOrder[[1]], theOrder[[2]],,] ),
-                out)#, PACKAGE='localEM') 
+                out, PACKAGE='localEM') 
           } else {
             out[cell_position] = as.double(partHere[theOrder[[1]], theOrder[[2]],,] )      
           }

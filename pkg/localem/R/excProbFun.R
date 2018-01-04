@@ -5,11 +5,11 @@
 #' @param lemObjects List of arrays for the smoothing matrix, and raster stacks for the partition, smoothed offsets and risk estimation
 #' @param threshold Vector of risk thresholds
 #' @param Nboot Number of bootstraps
-#' @param ncores Number of cores/threads for parallel processing
-#' @param iterations List of convergence tolerance, number of iterations, and use of gpuR package for running local-EM recursions
+#' @param bw bandwidth for smoothing bootstrap samples
 #' @param path Folder for storing rasters
 #' @param filename Filename (must have .grd extension) of the exceedance probabilities
 #' @param verbose Verbose output
+#' @param ... additional arguments for riskEst
 #'
 #' @details After using the \code{excProb} function, the exceedance probabilities are computed on a fine resolution based on the rasterization of the spatial polygons of population data.
 #'
@@ -89,11 +89,11 @@ excProb = function(
     lemObjects,
     threshold = 1,
     Nboot = 100,
-    ncores = 1,
-    iterations = list(tol = 1e-5, maxIter = 1000, gpu = FALSE),
+    bw = lemObjects$bw[1],
     path = getwd(),
     filename = 'lemExcProb.grd',
-    verbose = FALSE
+    verbose = FALSE, 
+    ...
 ){
 
   dir.create(path, showWarnings = FALSE, recursive = TRUE)
@@ -114,8 +114,11 @@ excProb = function(
   }
 
   # bandwidths of interest
-  bwString = lemObjects$bw
-  bw = as.numeric(gsub('^bw', '', bwString))
+  bwString = grep(
+    paste0("^(bw)?",bw[1],"$"), 
+    names(lemObjects$smoothingMatrix$smoothingArray), 
+    value=TRUE)[1]
+  bw = as.numeric(gsub('^bw|xv[[:digit:]]+', '', bwString))
 
   # risk estimate of interest
   theEstRisk = lemObjects$riskEst
@@ -157,35 +160,39 @@ excProb = function(
   # estimate risk from bootstrap cases
   if(verbose) {
     cat(date(), "\n")
-    cat("running local-EM estimation for bootstrap cases with original bw\n")
+    cat("running local-EM estimation for bootstrap cases\n")
   }
 
   theBootRiskList = list()
-  for(inB in 1:length(bw)) {
+#  for(inB in 1:length(bw)) 
+  inB = 1
+#  {
 
-	indexBw = which(bw[1:inB] %in% bw[inB])
+#	indexBw = which(bw[1:inB] %in% bw[inB])
 
 	# generate results for input bw
-    if(length(indexBw) == 1) {
+ #   if(length(indexBw) == 1) {
 
       bootLemRisk = riskEst(
 			      cases = bootCountsDf,
-            lemObjects = lemObjects$smoothingMatrix,
+            lemObjects = lemObjects,
             bw = bw[inB],
-            ncores = ncores,
-            iterations = iterations,
             path = path,
-            filename = paste('riskBootTempBw', bw[inB], '.grd', sep = ''),
-            verbose = verbose)
+            filename = tempfile(
+              paste0('riskBoot', bwString),
+              path, '.grd'),
+            verbose = verbose, 
+            ...)
+
         bootEstRisk = bootLemRisk$riskEst
 
         theBootRiskList[[inB]] = bootEstRisk
 
     # use previous results if same bw was used before
-    } else {
-       theBootRiskList[[inB]] = theBootRiskList[[indexBw[1]]]
-    }
-  }
+ #   } else {
+ #      theBootRiskList[[inB]] = theBootRiskList[[indexBw[1]]]
+ #   }
+ # }
 
     # # first bw
     # if(inB == 1) {

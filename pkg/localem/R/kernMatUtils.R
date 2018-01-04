@@ -410,7 +410,7 @@ focalMult = function(
   x,
   w,
   bw = NULL,
-  filename = tempfile(fileext= '.grd'),
+  filename = tempfile('focalMult', tempdir(), fileext= '.grd'),
   edgeCorrect=FALSE,
   cl = NULL
 ) {
@@ -547,17 +547,22 @@ focalMult = function(
 
     resInd = match(Sresult, names(outBrick))
     edgeInd = match(Sones, names(outBrick))
+    if(length(unique(edgeInd))==1)
+      edgeInd = edgeInd[1]
 
     if(any(is.na(resInd)) | any(is.na(edgeInd))) {
       warning('cant find bw for edge correction')
     }
 
-    res = raster::calc(
-      outBrick,
-      function(xx) {
-        res = xx[resInd]/xx[edgeInd]
-        res
-      },
+    res = raster::overlay(
+      x=outBrick[[resInd]],
+      y=outBrick[[edgeInd]],
+      fun = '/'
+      )
+    names(res) = names(outBrick)[resInd]
+
+    res = raster::writeRaster(
+      res,
       filename= filename,
       overwrite = file.exists(filename)
     )

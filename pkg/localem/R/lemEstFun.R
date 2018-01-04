@@ -5,6 +5,7 @@
 #' @param cases Spatial polygons, data frame or vector of case data
 #' @param lemObjects List of arrays for the smoothing matrix, and raster stacks for the partition and smoothed offsets
 #' @param bw Vector of bandwidths specifying which smoothing matrix in \code{lemObjects} to use
+#' @param fact aggregation factor prior to 'final step' smoothing, set to zero to skip final step.
 #' @param ncores Number of cores/threads for parallel processing
 #' @param iterations List of convergence tolerance, number of iterations, and use of gpuR package for running local-EM recursions
 #' @param path Folder for storing rasters
@@ -76,10 +77,11 @@ riskEst = function(
   cases,
   lemObjects,
   bw,
+  fact=1,
   ncores = 1,
   iterations = list(tol = 1e-5, maxIter = 1000, gpu = FALSE),
   path = getwd(),
-  filename = 'lemRisk.grd',
+  filename = tempfile('lemRisk',path, '.grd'),
   verbose = FALSE
 ) {
 
@@ -99,14 +101,28 @@ riskEst = function(
   if(missing(lemObjects)) {
 	stop("smoothing matrix not supplied")
   }
+  if(any(names(lemObjects) == 'smoothingMatrix'))
+        lemObjects = lemObjects$smoothingMatrix
 
   if(missing(bw)) {
 	cat("using bw from smoothing array\n")
 
-	bwString = sort(unique(gsub("xv[[:digit:]]+$", "", lemObjects$bw)))
+  bwString = sort(unique(grep(
+    "^(bw)?[[:digit:]]+$",
+    lemObjects$bw,
+    value=TRUE
+    )))
   } else {
-	  bwString = paste('bw', bw, sep = '')
-	  bwMatch = match(bwString, lemObjects$bw)
+    bwString = mapply(
+      grep,
+      pattern = paste0("^(bw)?",bw,"$"),
+      MoreArgs = list(
+            x= names(lemObjects$smoothingArray), 
+            value=TRUE)
+      )
+    names(bwString) = bwString
+	  bwMatch = match(bwString, 
+      names(lemObjects$smoothingArray))
 
 	  if(any(is.na(bwMatch))) {
 
@@ -230,11 +246,14 @@ riskEst = function(
     cat("final smoothing step\n")
   }
 	# final smoothing step
+  if(fact > 0) {
 	result$riskEst = finalSmooth(
 						x = result,
 						Slayers = dimnames(newDf)[[2]],
+            fact = fact,
 						filename = filename,
 						ncores = theCluster)
+  }
 	# names(result$riskEst) = dimnames(newDf)[[2]]
 
 	result$bw = bwString

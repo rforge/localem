@@ -4,9 +4,8 @@
 \alias{excProb}
 \title{Computes the exceedance probabilities}
 \usage{
-excProb(lemObjects, threshold = 1, Nboot = 100, ncores = 1,
-  iterations = list(tol = 1e-05, maxIter = 1000, gpu = FALSE),
-  path = getwd(), filename = 'lemExcProb.grd', verbose = FALSE)
+excProb(lemObjects, threshold = 1, Nboot = 100, bw = lemObjects$bw[1],
+  path = getwd(), filename = "lemExcProb.grd", verbose = FALSE, ...)
 }
 \arguments{
 \item{lemObjects}{List of arrays for the smoothing matrix, and raster stacks for the partition, smoothed offsets and risk estimation}
@@ -15,15 +14,15 @@ excProb(lemObjects, threshold = 1, Nboot = 100, ncores = 1,
 
 \item{Nboot}{Number of bootstraps}
 
-\item{ncores}{Number of cores/threads for parallel processing}
-
-\item{iterations}{List of convergence tolerance, number of iterations, and use of gpuR package for running local-EM recursions}
+\item{bw}{bandwidth for smoothing bootstrap samples}
 
 \item{path}{Folder for storing rasters}
 
 \item{filename}{Filename (must have .grd extension) of the exceedance probabilities}
 
 \item{verbose}{Verbose output}
+
+\item{...}{additional arguments for riskEst}
 }
 \value{
 The \code{excProb} function returns a raster brick of exceedance probabilities of input risk thresholds.
@@ -35,7 +34,7 @@ The \code{excProb} function first bootstraps cases with the input risk threshold
 After using the \code{excProb} function, the exceedance probabilities are computed on a fine resolution based on the rasterization of the spatial polygons of population data.
 }
 \examples{
-\dontrun{ 
+\dontrun{
 # case and population data
 data('kentuckyCounty')
 data('kentuckyTract')
@@ -50,54 +49,54 @@ threshold = c(1, 1.1, 1.25, 1.5)
 Nboot = 100
 
 # rasters of case and population data
-lemRaster = rasterPartition(polyCoarse = kentuckyCounty, 
-							polyFine = kentuckyTract, 
-							cellsCoarse = cellsCoarse, 
-							cellsFine = cellsFine, 
-							bw = bw, 
-							ncores = ncores, 
-							path = path, 
-							idFile = 'lemId.grd', 
-							offsetFile = 'lemOffsets.grd', 
+lemRaster = rasterPartition(polyCoarse = kentuckyCounty,
+							polyFine = kentuckyTract,
+							cellsCoarse = cellsCoarse,
+							cellsFine = cellsFine,
+							bw = bw,
+							ncores = ncores,
+							path = path,
+							idFile = 'lemId.grd',
+							offsetFile = 'lemOffsets.grd',
 							verbose = TRUE)
 
 # smoothing matrix
-lemSmoothMat = smoothingMatrix(rasterObjects = lemRaster, 
-								ncores = ncores, 
-								path = path, 
-								filename = 'lemSmoothMat.grd', 
+lemSmoothMat = smoothingMatrix(rasterObjects = lemRaster,
+								ncores = ncores,
+								path = path,
+								filename = 'lemSmoothMat.grd',
 								verbose = TRUE)
 
 # risk estimation for bandwidth of 10km
-lemRisk = riskEst(cases = kentuckyCounty[,c('id','count')], 
-					lemObjects = lemSmoothMat, 
-					bw = bw[1],  
-					ncores = ncores, 
-					path = path, 
-					filename = 'lemRisk.grd', 
+lemRisk = riskEst(cases = kentuckyCounty[,c('id','count')],
+					lemObjects = lemSmoothMat,
+					bw = bw[1],
+					ncores = ncores,
+					path = path,
+					filename = 'lemRisk.grd',
 					verbose = TRUE)
 
 # exceedance probabilities for bandwidth of 10km
-lemExcProb = excProb(lemObjects = lemRisk, 
-				  	threshold = threshold, 
-				  	Nboot = Nboot, 
-                   	ncores = ncores, 
-                   	path = path, 
-				  	filename = 'lemExcProb.grd', 
-                   	verbose = TRUE)
+lemExcProb = excProb(lemObjects = lemRisk,
+				  	threshold = threshold,
+				  	Nboot = Nboot,
+             ncores = ncores,
+             path = path,
+				  	filename = 'lemExcProb.grd',
+             verbose = TRUE)
 
 # plot exceedance probabilities
-pCol = mapmisc::colourScale(lemExcProb$excProb, 
-					breaks = c(0,0.2,0.8,0.95,1), 
-					style = 'fixed', dec = 2, 
+pCol = mapmisc::colourScale(lemExcProb$excProb,
+					breaks = c(0,0.2,0.8,0.95,1),
+					style = 'fixed', dec = 2,
 					col = c('green','yellow','orange','red'))
 
 par(mfrow = c(2,2), mar = c(0.5,0.5,3,0.5))
 for(inT in 1:length(threshold)) {
-	plot(lemExcProb$excProb[[inT]], 
-		main = paste('Exc Prob, t=', threshold[inT], ' (bw=10km)', sep = ''), 
-		col = pCol$col, breaks = pCol$breaks, 
-		axes = FALSE, box = FALSE, legend = FALSE, 
+	plot(lemExcProb$excProb[[inT]],
+		main = paste('Exc Prob, t=', threshold[inT], ' (bw=10km)', sep = ''),
+		col = pCol$col, breaks = pCol$breaks,
+		axes = FALSE, box = FALSE, legend = FALSE,
 		add = FALSE)
 }
 mapmisc::legendBreaks('topright', pCol)

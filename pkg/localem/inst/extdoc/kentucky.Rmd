@@ -54,9 +54,9 @@ The methodology of this package is demonstrated on simulated lung cancer cases f
 
 ```{r setupHighRes, eval=highRes, purl=highRes, echo = highRes}
 
-ncores = parallel::detectCores()
-cellsFine = 300
-cellsCoarse = 12
+ncores = round(parallel::detectCores()/2)
+cellsFine = 500
+cellsCoarse = 15
 nsim = 12
 nxv = 6
 Sbw = unique(round(
@@ -360,7 +360,8 @@ excProbKentucky = excProb(
     lemObjects = xvKentucky, 
     threshold = threshold, 
     Nboot = Nboot, 
-    ncores = 1,  # because the memory requirement is large
+    fact = 2,
+    ncores = pmin(4, ncores),  # because the memory requirement can be large
     path = path,
     verbose=TRUE)
 ```
