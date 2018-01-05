@@ -309,15 +309,21 @@ south of Frankfurt decreasing as the bandwidth increases.
 riskKentucky = riskEst(
     cases = kentuckyCounty[,c('id','count1')], 
     lemObjects = xvKentucky$smoothingMatrix, 
-    bw = Sbw, 
-    ncores = ncores, 
+    bw = Sbw,
+    ncores = ncores,
     path = cacheDir)
 ```
 
-```{r plotRiskOne, echo = FALSE, warning = FALSE, fig.cap = 'Risk Estimation for Simulation 1', fig.subcap = paste('Risk, bw=', Sbw / 1000, ' km', sep = ''), fig.height = 3, fig.width = 6, out.width = theWidth, fig.ncol = 2}
+```{r plotRiskOneSetup}
 
 # estimated risk maps
-toPlot = brick(filename(riskKentucky$riskEst))
+toPlot = brick(filename(riskKentucky$riskEst))[[
+  round(seq(1, nlayers(riskKentucky$riskEst), len=6))
+  ]]
+SbwShort = as.numeric(gsub("^bw|_[[:alnum:]]+$", "", names(toPlot)))
+```
+
+```{r plotRiskOne, echo = FALSE, warning = FALSE, fig.cap = 'Risk Estimation for Simulation 1', fig.subcap = paste(SbwShort / 1000, ' km', sep = ''), fig.height = 3, fig.width = 6, out.width = theWidth, fig.ncol = 2}
 
 rCol = colourScale(
     c(0, maxValue(toPlot)), 
@@ -361,7 +367,7 @@ excProbKentucky = excProb(
     threshold = threshold, 
     Nboot = Nboot, 
     fact = 2,
-    ncores = pmin(4, ncores),  # because the memory requirement can be large
+    ncores = ncores,
     path = path,
     verbose=TRUE)
 ```
@@ -423,8 +429,8 @@ Using the R objects created from the `lemXv()` function for the first simulated 
 xvAllKentucky = lemXv(
     cases = kentuckyCounty@data[,
         grep('^count[[:digit:]]', names(kentuckyCounty))], 
-    lemObjects = xvKentucky$smoothingMatrix, 
-    ncores = ncores, 
+    lemObjects = xvKentucky$smoothingMatrix,
+    ncores = ncores,
     path = cacheDir, verbose=TRUE)
 ```
 

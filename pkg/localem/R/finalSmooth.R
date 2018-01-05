@@ -69,9 +69,9 @@ finalSmooth = function(
     parallel::stopCluster(theCluster)
 
   if(fact > 1) {
-    result = raster::disaggregate(
+    result = raster::projectRaster(
       theFinalEst,
-      fact = fact,
+      x$riskAll,
       method = 'bilinear',
       filename = filename,
       overwrite = file.exists(filename)
@@ -82,6 +82,8 @@ finalSmooth = function(
 			overwrite = file.exists(filename)
 		)
   }
+  # remove temporary raster files
+  unlink(gsub("[[:alpha:]]$", "*", filename(theFinalEst)))
 
   return(result)
 }

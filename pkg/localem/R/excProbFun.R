@@ -182,11 +182,12 @@ excProb = function(
               paste0('riskBoot', bwString),
               path, '.grd'),
             verbose = verbose, 
+#            fact=fact, ncores=ncores)
             ...)
 
         bootEstRisk = bootLemRisk$riskEst
 
-        theBootRiskList[[inB]] = bootEstRisk
+#        theBootRiskList[[inB]] = bootEstRisk
 
     # use previous results if same bw was used before
  #   } else {
@@ -243,38 +244,70 @@ excProb = function(
     cat("computing exceedance probabilities with input thresholds\n")
   }
 
-  theExcProbList = list()
-  for(inB in 1:length(bw)) {
+#  theExcProbList = list()
+#  for(inB in 1:length(bw)) {
 
-    theBootEstRisk = theBootRiskList[[inB]]
+ #   theBootEstRisk = theBootRiskList[[inB]]
+#stuff1 <<- bootEstRisk
+#stuff2 <<- inB
 
-    theProbEstRisk = raster::overlay(x = theBootEstRisk, y = theEstRisk[[inB]],
-        fun = function(x,y) return(x < y),
-        filename = paste(tempfile('probBootTemp', path), '.grd', sep = ''),
-        overwrite = TRUE)
+bwHere = grep(
+  paste0(bwString, '_'), 
+  names(lemObjects$riskEst), value=TRUE)
 
-    indexT = gsub('count[[:digit:]]+_', '', names(theBootEstRisk))
+Sthreshold = factor(
+  gsub("bw[[:digit:]]+_|count[[:digit:]]+_", "", names(bootEstRisk))
+  )
+thresholdMat = outer(
+  Sthreshold, levels(Sthreshold), '=='
+  ) / Nboot
+colnames(thresholdMat) = levels(Sthreshold)
 
-    theExcProb = raster::stackApply(theProbEstRisk,
-        indices = indexT,
-        fun = mean,
-        filename = paste(tempfile('excProbTemp', path), '.grd', sep = ''),
-        overwrite = TRUE)
+theExcProbList = parallel::mcmapply(
+  function(Dy) {
+    raster::overlay(
+        x = bootEstRisk, 
+        y = lemObjects$riskEst[[Dy]],
+        fun = function(x,y) {
+          (x<y) %*% thresholdMat
+#          bob <<- x<y
+#        apply(x < y,1,function(xx) {
+#            tapply(xx, Sthreshold, mean)
+          },
+        filename = tempfile(
+          paste0('probBoot', Dy), 
+          tmpdir=tempdir(), fileext='.grd')
+        )
+  },
+  Dy = bwHere,
+  mc.cores=ncores,
+  SIMPLIFY=FALSE
+  )
 
-    theExcProbList[[inB]] = theExcProb
-  }
+#    indexT = gsub('count[[:digit:]]+_', '', names(theBootEstRisk))
 
-  theExcProbStack = raster::writeRaster(
-      raster::stack(theExcProbList),
+ #   theExcProb = raster::stackApply(theProbEstRisk,
+ #       indices = indexT,
+ #       fun = mean,
+ #       filename = paste(tempfile('excProbTemp', path), '.grd', sep = ''),
+ #       overwrite = TRUE)
+
+#    theExcProbList[[inB]] = theExcProb
+#  }
+theExcProbStack = raster::stack(theExcProbList)
+names(theExcProbStack) = as.vector(t(outer(
+  names(theExcProbList), levels(Sthreshold), paste, sep='_'
+  )))
+
+  theExcProbBrick = raster::writeRaster(
+      theExcProbStack,
       filename = filename,
       overwrite = file.exists(filename))
-  names(theExcProbStack) = paste(rep(theEstNames, each = length(threshold)),
-      '_threshold', rep(threshold, length(theEstNames)),
-      sep = '')
+
 
   result = list(
-      riskEst = theEstRisk,
-      excProb = theExcProbStack
+      bootEst = bootEstRisk,
+      excProb = theExcProbBrick
   )
 
   if(verbose) {
@@ -283,9 +316,9 @@ excProb = function(
   }
 
   # remove temporary raster files
-  unlink(file.path(path, 'riskBootTempBw*'))
-  unlink(file.path(path, 'probBootTemp*'))
-  unlink(file.path(path, 'excProbTemp*'))
+#  unlink(file.path(path, 'riskBootTempBw*'))
+#  unlink(file.path(path, 'probBootTemp*'))
+#  unlink(file.path(path, 'excProbTemp*'))
 
   return(result)
 }
