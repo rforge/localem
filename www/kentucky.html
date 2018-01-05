@@ -56,7 +56,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <header>
 <h1 class="title">Local-EM Example with Kentucky</h1>
 <p class="author">Patrick Brown, Paul Nguyen</p>
-<p class="date">Thursday 4 January 2018</p>
+<p class="date">Friday 5 January 2018</p>
 </header>
 <h2 id="introduction">Introduction</h2>
 <p>The <code>localEM</code> package contains functions to implement the kernel smoothing local-EM algorithm<span class="math inline"><em></em><sup>1</sup></span> of disease data aggregated to geographical regions. This algorithm provides an nonparametric alternative to the standard geospatial models, such as the Besag-York-Mollie (BYM) model<span class="math inline"><em></em><sup>2</sup></span>, for estimating spatial risk of areal disease data. With disease cases typically aggregated to highly coarse geographical regions (e.g., census counties, or census subdivisions), the local-EM method creates a tessellation of distinct regions by overlaying the map of these coarse regions with another map containing fine geographical regions (e.g., census tracts, census blocks, or census dissemination areas) of population data. This allows for the spatial risk to be estimated at a better resolution with the fine regions.</p>
@@ -200,9 +200,14 @@ fileHere =<span class="st"> </span><span class="kw">file.path</span>(path, <span
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">riskKentucky =<span class="st"> </span><span class="kw">riskEst</span>(
     <span class="dt">cases =</span> kentuckyCounty[,<span class="kw">c</span>(<span class="st">&#39;id&#39;</span>,<span class="st">&#39;count1&#39;</span>)], 
     <span class="dt">lemObjects =</span> xvKentucky<span class="op">$</span>smoothingMatrix, 
-    <span class="dt">bw =</span> Sbw, 
-    <span class="dt">ncores =</span> ncores, 
+    <span class="dt">bw =</span> Sbw,
+    <span class="dt">ncores =</span> ncores,
     <span class="dt">path =</span> cacheDir)</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># estimated risk maps</span>
+toPlot =<span class="st"> </span><span class="kw">brick</span>(<span class="kw">filename</span>(riskKentucky<span class="op">$</span>riskEst))[[
+  <span class="kw">round</span>(<span class="kw">seq</span>(<span class="dv">1</span>, <span class="kw">nlayers</span>(riskKentucky<span class="op">$</span>riskEst), <span class="dt">len=</span><span class="dv">6</span>))
+  ]]
+SbwShort =<span class="st"> </span><span class="kw">as.numeric</span>(<span class="kw">gsub</span>(<span class="st">&quot;^bw|_[[:alnum:]]+$&quot;</span>, <span class="st">&quot;&quot;</span>, <span class="kw">names</span>(toPlot)))</code></pre></div>
 <div id="fig:plotRiskOne" class="subfigures">
 <table style="width:90%;">
 <colgroup>
@@ -212,26 +217,26 @@ fileHere =<span class="st"> </span><span class="kw">file.path</span>(path, <span
 <tbody>
 <tr class="odd">
 <td style="text-align: center;"><figure>
-<img src="figure/plotRiskOne-1.png" alt="a) Risk, bw=10 km" style="width:100.0%" /><figcaption>a) Risk, bw=10 km</figcaption>
+<img src="figure/plotRiskOne-1.png" alt="a) 10 km" style="width:100.0%" /><figcaption>a) 10 km</figcaption>
 </figure></td>
 <td style="text-align: center;"><figure>
-<img src="figure/plotRiskOne-2.png" alt="b) Risk, bw=15 km" style="width:100.0%" /><figcaption>b) Risk, bw=15 km</figcaption>
+<img src="figure/plotRiskOne-2.png" alt="b) 15 km" style="width:100.0%" /><figcaption>b) 15 km</figcaption>
 </figure></td>
 </tr>
 <tr class="even">
 <td style="text-align: center;"><figure>
-<img src="figure/plotRiskOne-3.png" alt="c) Risk, bw=20 km" style="width:100.0%" /><figcaption>c) Risk, bw=20 km</figcaption>
+<img src="figure/plotRiskOne-3.png" alt="c) 20 km" style="width:100.0%" /><figcaption>c) 20 km</figcaption>
 </figure></td>
 <td style="text-align: center;"><figure>
-<img src="figure/plotRiskOne-4.png" alt="d) Risk, bw=25 km" style="width:100.0%" /><figcaption>d) Risk, bw=25 km</figcaption>
+<img src="figure/plotRiskOne-4.png" alt="d) 25 km" style="width:100.0%" /><figcaption>d) 25 km</figcaption>
 </figure></td>
 </tr>
 <tr class="odd">
 <td style="text-align: center;"><figure>
-<img src="figure/plotRiskOne-5.png" alt="e) Risk, bw=30 km" style="width:100.0%" /><figcaption>e) Risk, bw=30 km</figcaption>
+<img src="figure/plotRiskOne-5.png" alt="e) 30 km" style="width:100.0%" /><figcaption>e) 30 km</figcaption>
 </figure></td>
 <td style="text-align: center;"><figure>
-<img src="figure/plotRiskOne-6.png" alt="f) Risk, bw=35 km" style="width:100.0%" /><figcaption>f) Risk, bw=35 km</figcaption>
+<img src="figure/plotRiskOne-6.png" alt="f) 35 km" style="width:100.0%" /><figcaption>f) 35 km</figcaption>
 </figure></td>
 </tr>
 </tbody>
@@ -246,7 +251,7 @@ fileHere =<span class="st"> </span><span class="kw">file.path</span>(path, <span
     <span class="dt">threshold =</span> threshold, 
     <span class="dt">Nboot =</span> Nboot, 
     <span class="dt">fact =</span> <span class="dv">2</span>,
-    <span class="dt">ncores =</span> <span class="kw">pmin</span>(<span class="dv">4</span>, ncores),  <span class="co"># because the memory requirement can be large</span>
+    <span class="dt">ncores =</span> ncores, 
     <span class="dt">path =</span> path,
     <span class="dt">verbose=</span><span class="ot">TRUE</span>)</code></pre></div>
 <div id="fig:plotExcProbOne" class="subfigures">
@@ -281,8 +286,8 @@ fileHere =<span class="st"> </span><span class="kw">file.path</span>(path, <span
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">xvAllKentucky =<span class="st"> </span><span class="kw">lemXv</span>(
     <span class="dt">cases =</span> kentuckyCounty<span class="op">@</span>data[,
         <span class="kw">grep</span>(<span class="st">&#39;^count[[:digit:]]&#39;</span>, <span class="kw">names</span>(kentuckyCounty))], 
-    <span class="dt">lemObjects =</span> xvKentucky<span class="op">$</span>smoothingMatrix, 
-    <span class="dt">ncores =</span> ncores, 
+    <span class="dt">lemObjects =</span> xvKentucky<span class="op">$</span>smoothingMatrix,
+    <span class="dt">ncores =</span> ncores,
     <span class="dt">path =</span> cacheDir, <span class="dt">verbose=</span><span class="ot">TRUE</span>)</code></pre></div>
 <div id="fig:cvPlotAll" class="subfigures">
 <table style="width:80%;">
