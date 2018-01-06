@@ -5,7 +5,7 @@
 \title{Computes the exceedance probabilities}
 \usage{
 excProb(lemObjects, threshold = 1, Nboot = 100, bw = lemObjects$bw[1],
-  path = getwd(), filename = "lemExcProb.grd", verbose = FALSE, ...)
+  fact = 1, path = getwd(), filename = "lemExcProb.grd", verbose = FALSE)
 }
 \arguments{
 \item{lemObjects}{List of arrays for the smoothing matrix, and raster stacks for the partition, smoothed offsets and risk estimation}
@@ -14,21 +14,21 @@ excProb(lemObjects, threshold = 1, Nboot = 100, bw = lemObjects$bw[1],
 
 \item{Nboot}{Number of bootstraps}
 
-\item{bw}{bandwidth for smoothing bootstrap samples}
+\item{bw}{Bandwidth for smoothing bootstrap samples}
+
+\item{fact}{Aggregation factor prior to 'final step' smoothing (set to zero to skip final step)}
 
 \item{path}{Folder for storing rasters}
 
 \item{filename}{Filename (must have .grd extension) of the exceedance probabilities}
 
 \item{verbose}{Verbose output}
-
-\item{...}{additional arguments for riskEst}
 }
 \value{
 The \code{excProb} function returns a raster brick of exceedance probabilities of input risk thresholds.
 }
 \description{
-The \code{excProb} function first bootstraps cases with the input risk thresholds and expected counts from the rasterization of the spatial polygons of population data, and then, computes the exceedance probablities with the same bandwidths as the risk estimation on the same raster resolution.
+The \code{excProb} function first bootstraps cases with the input risk thresholds and expected counts from the rasterization of the spatial polygons of population data, and then, computes the exceedance probabilities with the same bandwidth as the risk estimation.
 }
 \details{
 After using the \code{excProb} function, the exceedance probabilities are computed on a fine resolution based on the rasterization of the spatial polygons of population data.
@@ -71,6 +71,7 @@ lemSmoothMat = smoothingMatrix(rasterObjects = lemRaster,
 lemRisk = riskEst(cases = kentuckyCounty[,c('id','count')],
 					lemObjects = lemSmoothMat,
 					bw = bw[1],
+					fact = 1,
 					ncores = ncores,
 					path = path,
 					filename = 'lemRisk.grd',
@@ -80,10 +81,12 @@ lemRisk = riskEst(cases = kentuckyCounty[,c('id','count')],
 lemExcProb = excProb(lemObjects = lemRisk,
 				  	threshold = threshold,
 				  	Nboot = Nboot,
-             ncores = ncores,
-             path = path,
+					bw = bw[1],
+					fact = 1,
+					ncores = ncores,
+					path = path,
 				  	filename = 'lemExcProb.grd',
-             verbose = TRUE)
+					verbose = TRUE)
 
 # plot exceedance probabilities
 pCol = mapmisc::colourScale(lemExcProb$excProb,

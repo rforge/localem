@@ -4,9 +4,9 @@
 \alias{riskEst}
 \title{Computes the relative risk estimation}
 \usage{
-riskEst(cases, lemObjects, bw, fact = 1, ncores = 1, iterations = list(tol
-  = 1e-05, maxIter = 1000, gpu = FALSE), path = getwd(),
-  filename = tempfile("lemRisk", path, ".grd"), verbose = FALSE)
+riskEst(cases, lemObjects, bw, fact = 1, ncores = 1, 
+  iterations = list(tol = 1e-05, maxIter = 1000, gpu = FALSE), 
+  path = getwd(), filename = "lemRisk.grd", verbose = FALSE)
 }
 \arguments{
 \item{cases}{Spatial polygons, data frame or vector of case data}
@@ -15,7 +15,7 @@ riskEst(cases, lemObjects, bw, fact = 1, ncores = 1, iterations = list(tol
 
 \item{bw}{Vector of bandwidths specifying which smoothing matrix in \code{lemObjects} to use}
 
-\item{fact}{aggregation factor prior to 'final step' smoothing, set to zero to skip final step.}
+\item{fact}{Aggregation factor prior to 'final step' smoothing (set to zero to skip final step)}
 
 \item{ncores}{Number of cores/threads for parallel processing}
 
