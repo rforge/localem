@@ -156,7 +156,7 @@ kentuckyCounty =<span class="st"> </span><span class="kw">merge</span>(kentuckyC
 <h2 id="cross-validation">Cross-validation</h2>
 <p>The local-EM algorithm requires a smoothing parameter called the bandwidth to estimate the spatial risk. Small values of the bandwidth yield estimates similar to standardized incidence ratios of each areal regions, while large values yield estimates to the overall mean incidence ratio of the entire study area (i.e., [total counts]/[total offsets]). The preferred or optimal bandwidth for the disease data is one that minimizes the trade-off between the bias and variance of the estimator.</p>
 <p>To automatic the selection of the optimal bandwidth, the <code>lemXv()</code> function of this package implements a likelihood cross-validation (CV) approach with the set of specified bandwidths. CV scores are computed with <span class="math inline"><em>k</em></span>-fold sampling without replacement of the dataset. The optimal bandwidth is the one that yields the smallest CV score.</p>
-<p>The CV scores with 4-fold sampling are provided for the first simulated dataset.</p>
+<p>The CV scores with 6-fold sampling are provided for the first simulated dataset.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(<span class="st">&#39;localEM&#39;</span>)
 
 fileHere =<span class="st"> </span><span class="kw">file.path</span>(path, <span class="st">&#39;xvKentucky.rds&#39;</span>)
