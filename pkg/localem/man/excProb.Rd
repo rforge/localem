@@ -5,7 +5,7 @@
 \title{Computes the exceedance probabilities}
 \usage{
 excProb(lemObjects, threshold = 1, Nboot = 100, bw = lemObjects$bw[1],
-  ncores = 1, fact = 1, path = getwd(), filename = "lemExcProb.grd", 
+  fact = 1, ncores = 1, path = getwd(), filename = "lemExcProb.grd", 
   verbose = FALSE)
 }
 \arguments{

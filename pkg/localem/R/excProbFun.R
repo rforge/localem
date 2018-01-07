@@ -90,14 +90,14 @@
 #'
 #' @export
 excProb = function(
-    lemObjects, 
-    threshold = 1, 
-    Nboot = 100, 
-    bw = lemObjects$bw[1], 
-	fact = 1, 
-	ncores = 1, 
-    path = getwd(), 
-    filename = 'lemExcProb.grd', 
+    lemObjects,
+    threshold = 1,
+    Nboot = 100,
+    bw = lemObjects$bw[1],
+  	fact = 1,
+	  ncores = 1,
+    path = getwd(),
+    filename = 'lemExcProb.grd',
     verbose = FALSE
 ){
 
@@ -120,8 +120,8 @@ excProb = function(
 
   # bandwidths of interest
   bwString = grep(
-    paste0("^(bw)?",bw[1],"$"), 
-    names(lemObjects$smoothingMatrix$smoothingArray), 
+    paste0("^(bw)?",bw[1],"$"),
+    names(lemObjects$smoothingMatrix$smoothingArray),
     value=TRUE)[1]
   bw = as.numeric(gsub('^bw|xv[[:digit:]]+', '', bwString))
 
@@ -169,7 +169,7 @@ excProb = function(
   }
 
   theBootRiskList = list()
-#  for(inB in 1:length(bw)) 
+#  for(inB in 1:length(bw))
   inB = 1
 #  {
 
@@ -182,13 +182,13 @@ excProb = function(
 			cases = bootCountsDf,
             lemObjects = lemObjects,
             bw = bw[inB],
-			fact=fact, 
-			ncores=ncores, 
+			fact=fact,
+			ncores=ncores,
             path = path,
             filename = tempfile(
 				paste0('riskBoot', bwString),
 				path, '.grd'),
-            verbose = verbose) 
+            verbose = verbose)
 
 
         bootEstRisk = bootLemRisk$riskEst
@@ -258,7 +258,7 @@ excProb = function(
 #stuff2 <<- inB
 
 bwHere = grep(
-  paste0(bwString, '_'), 
+  paste0(bwString, '_'),
   names(lemObjects$riskEst), value=TRUE)
 
 Sthreshold = factor(
@@ -272,7 +272,7 @@ colnames(thresholdMat) = levels(Sthreshold)
 theExcProbList = parallel::mcmapply(
   function(Dy) {
     raster::overlay(
-        x = bootEstRisk, 
+        x = bootEstRisk,
         y = lemObjects$riskEst[[Dy]],
         fun = function(x,y) {
           (x<y) %*% thresholdMat
@@ -281,7 +281,7 @@ theExcProbList = parallel::mcmapply(
 #            tapply(xx, Sthreshold, mean)
           },
         filename = tempfile(
-          paste0('probBoot', Dy), 
+          paste0('probBoot', Dy),
           tmpdir=tempdir(), fileext='.grd')
         )
   },
