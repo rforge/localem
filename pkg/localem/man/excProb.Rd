@@ -5,7 +5,8 @@
 \title{Computes the exceedance probabilities}
 \usage{
 excProb(lemObjects, threshold = 1, Nboot = 100, bw = lemObjects$bw[1],
-  fact = 1, ncores = 1, path = getwd(), filename = "lemExcProb.grd", 
+  fact = 1, ncores = 1, iterations = list(tol = 1e-05, maxIter = 1000, 
+  gpu = FALSE), path = getwd(), filename = "lemExcProb.grd", 
   verbose = FALSE)
 }
 \arguments{
@@ -20,6 +21,8 @@ excProb(lemObjects, threshold = 1, Nboot = 100, bw = lemObjects$bw[1],
 \item{fact}{Aggregation factor prior to 'final step' smoothing (set to zero to skip final step)}
 
 \item{ncores}{Number of cores/threads for parallel processing}
+
+\item{iterations}{List of convergence tolerance, number of iterations, and use of gpuR package for running local-EM recursions}
 
 \item{path}{Folder for storing rasters}
 

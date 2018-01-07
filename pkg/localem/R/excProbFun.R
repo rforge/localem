@@ -8,6 +8,7 @@
 #' @param bw Bandwidth for smoothing bootstrap samples
 #' @param fact Aggregation factor prior to 'final step' smoothing (set to zero to skip final step)
 #' @param ncores Number of cores/threads for parallel processing
+#' @param iterations List of convergence tolerance, number of iterations, and use of gpuR package for running local-EM recursions
 #' @param path Folder for storing rasters
 #' @param filename Filename (must have .grd extension) of the exceedance probabilities
 #' @param verbose Verbose output
@@ -95,7 +96,8 @@ excProb = function(
     Nboot = 100,
     bw = lemObjects$bw[1],
   	fact = 1,
-	  ncores = 1,
+	ncores = 1,
+	iterations = list(tol = 1e-5, maxIter = 1000, gpu = FALSE),
     path = getwd(),
     filename = 'lemExcProb.grd',
     verbose = FALSE
