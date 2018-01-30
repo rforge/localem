@@ -29,8 +29,8 @@ lemXv = function(
     population,
     cellsCoarse,
     cellsFine,
-    bw, 
-	fact = 1, 
+    bw,
+	fact = 1,
     xv = 4,
     lemObjects,
     ncores = 1,
@@ -46,7 +46,7 @@ lemXv = function(
 	if(!(length(grep("\\.gr[id]$", filename)))){
 		warning("filename should have .grd extension")
 	}
-  
+
 	if(!length(grep('/', filename))) {
 		riskFile = file.path(path, filename)
 	}
@@ -208,7 +208,7 @@ lemXv = function(
 
   # expected counts in left out regions
   xvEst = estDf[,grep("xv[[:digit:]]+", colnames(estDf))]
-  Sxv = gsub("^bw[[:digit:]]+xv|_count[[:digit:]]+?$|_$", "", colnames(xvEst))
+  Sxv = gsub("^bw[[:digit:]]+xv|_(count|cases|count[[:digit:]]|cases[[:digit:]])+?$|_$", "", colnames(xvEst))
   Scount = gsub("bw[[:digit:]]+xv[[:digit:]]+_", "", colnames(xvEst))
   if(all(nchar(Scount)==0)) Scount = rep_len(countcol, length(Scount))
   Sbw = gsub('^bw|xv.*', "", colnames(xvEst))
