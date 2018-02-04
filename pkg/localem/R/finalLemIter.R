@@ -95,9 +95,9 @@ finalLemIter = function(
 
       } else if(nNeighNotMatch > 1) {
 
-        obsNeighNotMatch = rmultinom(n = 1,
-                                     size = x[inD,],
-                                     prob = rep(1/nNeighNotMatch, nNeighNotMatch))
+        obsNeighNotMatch = stats::rmultinom(n = 1,
+                                            size = x[inD,],
+                                            prob = rep(1/nNeighNotMatch, nNeighNotMatch))
         obsCounts[idMatch %in% idNeighNotMatch,] =
           obsCounts[idMatch %in% idNeighNotMatch,] + obsNeighNotMatch
 
@@ -293,6 +293,7 @@ finalLemIter = function(
     em = roCprod * oldLambda
 
     Lambda = crossprodFun(smoothingMat, em)
+    Lambda@x[is.na(Lambda@x)] = 0
 
     lDiff = oldLambda - Lambda
 
