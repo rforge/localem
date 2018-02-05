@@ -231,7 +231,8 @@ lemXv = function(
   xvRes = stats::aggregate(
       logProbFull[,'minusLogProb'],
       as.list(logProbFull[,c('bw','cases')]),
-      sum
+      sum,
+      na.rm = TRUE
   )
   xvRes = stats::reshape(
       xvRes, direction = 'wide',

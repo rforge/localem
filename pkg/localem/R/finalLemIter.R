@@ -291,9 +291,6 @@ finalLemIter = function(
     em = roCprod * oldLambda
 
     Lambda = crossprodFun(smoothingMat, em)
-    if(any(is.na(Lambda))) {
-      Lambda = replace(Lambda, list = is.na(Lambda), values = 0)
-    }
 
     lDiff = oldLambda - Lambda
 
