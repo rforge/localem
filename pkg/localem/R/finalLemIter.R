@@ -82,25 +82,24 @@ finalLemIter = function(
     idNotMatch = idCoarse[!(idCoarse %in% idMatch)]
     obsCounts[idNotMatch,] = 0
 
-    for(inD in idNotMatch) {
+    for(inM in idNotMatch) {
 
-      idNeighNotMatch = polyNeigh[[inD]]
+      idNeighNotMatch = polyNeigh[[inM]]
+      idNeighNotMatch = idNeighNotMatch[!(idNeighNotMatch %in% idNotMatch)]
+
       nNeighNotMatch = length(idNeighNotMatch)
 
       #re-assign counts
-      if(nNeighNotMatch == 1) {
+      if(nNeighNotMatch > 0) {
 
-        obsCounts[idMatch == idNeighNotMatch,] =
-          obsCounts[idMatch == idNeighNotMatch,] + x[inD,]
+        for(inN in 1:ncol(obsCounts)) {
 
-      } else if(nNeighNotMatch > 1) {
-
-        obsNeighNotMatch = stats::rmultinom(n = 1,
-                                            size = x[inD,],
-                                            prob = rep(1/nNeighNotMatch, nNeighNotMatch))
-        obsCounts[idMatch %in% idNeighNotMatch,] =
-          obsCounts[idMatch %in% idNeighNotMatch,] + obsNeighNotMatch
-
+          obsNeighNotMatch = stats::rmultinom(n = 1,
+                                              size = x[inM,inN],
+                                              prob = rep(1/nNeighNotMatch, nNeighNotMatch))
+          obsCounts[idMatch %in% idNeighNotMatch,inN] =
+            obsCounts[idMatch %in% idNeighNotMatch,inN] + obsNeighNotMatch
+        }
       }
     }
   }
@@ -279,7 +278,6 @@ finalLemIter = function(
 
   if(verbose) cat("starting lem, bandwidth", bwString, '\n')
 
-
   while((absdiff > tol) && (Diter < maxIter) ) {
     # to do: use gpuR's cpp_gpuMatrix_custom_igemm to reuse memory
 
@@ -293,7 +291,9 @@ finalLemIter = function(
     em = roCprod * oldLambda
 
     Lambda = crossprodFun(smoothingMat, em)
-    Lambda@x[is.na(Lambda@x)] = 0
+    if(any(is.na(Lambda))) {
+      Lambda = replace(Lambda, list = is.na(Lambda), values = 0)
+    }
 
     lDiff = oldLambda - Lambda
 
