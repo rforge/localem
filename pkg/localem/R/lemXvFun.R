@@ -208,7 +208,8 @@ lemXv = function(
 
   # expected counts in left out regions
   xvEst = estDf[,grep("xv[[:digit:]]+", colnames(estDf))]
-  Sxv = gsub("^bw[[:digit:]]+xv|_(count|cases|count[[:digit:]]|cases[[:digit:]])+?$|_$", "", colnames(xvEst))
+  #Sxv = gsub("^bw[[:digit:]]+xv|_(count|cases|count[[:digit:]]|cases[[:digit:]])+?$|_$", "", colnames(xvEst))
+  Sxv = substr(colnames(xvEst) , regexpr("xv",colnames(xvEst))+2, regexpr("_",colnames(xvEst))-1)
   Scount = gsub("bw[[:digit:]]+xv[[:digit:]]+_", "", colnames(xvEst))
   if(all(nchar(Scount)==0)) Scount = rep_len(countcol, length(Scount))
   Sbw = gsub('^bw|xv.*', "", colnames(xvEst))
