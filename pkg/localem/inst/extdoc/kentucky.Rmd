@@ -174,6 +174,11 @@ names(countyCounts) = gsub('^events', 'count', names(countyCounts))
 rownames(countyCounts) = as.character(kentuckyCounty$id)
 kentuckyCounty = merge(kentuckyCounty, countyCounts, by.x = 'id', by.y = 'row.names')
 
+temp = aggregate(list(logExpected = kentuckyTract$expected), list(id = kentuckyTract$id2),FUN = function(x){log(sum(x))})
+kentuckyCounty = merge(kentuckyCounty, temp) #for plot
+kentuckyCounty$expected = exp(kentuckyCounty$logExpected)
+
+
 ```
 
 ```{r plotOffset, echo = FALSE, warning = FALSE, fig.cap = 'Events for Simulation 1', fig.subcap = c('Offset', 'Relative Intensity', 'Events', 'Counts'), fig.height = 3, fig.width = 6, out.width = theWidth, fig.ncol = 2}
@@ -235,6 +240,45 @@ scaleBar(kentuckyCounty,
 cCol = colourScale(
     kentuckyCounty$count1, 
     breaks = 10, style = 'quantile', dec = -1)
+
+map.new(kentuckyTract#, 
+#    mar = c(0, 0, 1, 0), 
+#    main = 'Aggregated Counts'
+)
+plot(kentuckyCounty, col = cCol$plot, add = TRUE)
+plot(kMap, add = TRUE)
+legendBreaks('topleft', cCol)
+scaleBar(kentuckyCounty, 
+    pos = 'topleft', 
+    inset = c(0.2, 0), 
+    bg = 'white')
+
+
+
+
+# offset by county
+cCol = colourScale(
+    kentuckyCounty$expected, 
+    breaks = 10, style = 'quantile', dec = -1)
+
+map.new(kentuckyTract#, 
+#    mar = c(0, 0, 1, 0), 
+#    main = 'Aggregated Counts'
+)
+plot(kentuckyCounty, col = cCol$plot, add = TRUE)
+plot(kMap, add = TRUE)
+legendBreaks('topleft', cCol)
+scaleBar(kentuckyCounty, 
+    pos = 'topleft', 
+    inset = c(0.2, 0), 
+    bg = 'white')
+
+#SIR
+kentuckyCounty$SIR1 = kentuckyCounty$count1/kentuckyCounty$expected
+
+cCol = colourScale(
+    kentuckyCounty$SIR1, 
+    breaks = 8, style = 'equal', dec = -log10(0.5))
 
 map.new(kentuckyTract#, 
 #    mar = c(0, 0, 1, 0), 
