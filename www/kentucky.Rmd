@@ -729,13 +729,8 @@ for (i in 1:length(myLemRoc)){
   
 roc2Plot = aggregate(Sensitivity ~ onemspec + model + threshold, data = roc2Plot,mean,na.rm = T)
   
-  rocP = data.frame(rbind(myLemRoc[[i]], myBymRoc[[i]]))
-  rocP$model = c(rep("LEM",length(theSpec)),rep("BYM",length(theSpec)))
-  rocPlong = reshape(rocP,varying = list(2:4),idvar = c("onemspec", "model"), direction = "long", 
-                   v.names = "Sensitivity",timevar = "threshold",times =as.character(gsub("^X","",names(rocP)[2:4])))
-
-  p = ggplot(data = roc2Plot,aes(x = onemspec, y = Sensitivity, color = model, linetype = threshold, group = interaction(model, threshold)))  +   geom_line() + xlab("1-Specificity")
-  print(p)
+p = ggplot(data = roc2Plot,aes(x = onemspec, y = Sensitivity, color = model, linetype = threshold, group = interaction(model, threshold)))  +   geom_line() + xlab("1-Specificity")
+print(p)
 
 ```
 
