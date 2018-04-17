@@ -53,7 +53,6 @@ The `localEM` package contains functions to implement the kernel smoothing local
 The methodology of this package is demonstrated on simulated lung cancer cases for the state of Kentucky, USA. The spatial polygons for the census counties and tracts of Kentucky are included with this package. 
 
 ```{r setupHighRes, eval=highRes, purl=highRes, echo = highRes}
-
 ncores = round(parallel::detectCores()/2)
 cellsFine = 500
 cellsCoarse = 20
@@ -70,7 +69,6 @@ figDir = 'highResFigure/'
 ```
 
 ```{r setupLowRes, eval=!highRes, purl=!highRes, echo = !highRes}
-
 # specify number of grid cells and number of cores for computations in parallel
 ncores = 2
 cellsFine = 80
@@ -544,6 +542,193 @@ legendBreaks('topleft',
 ```
 
 
+Compute exceedance probabilities for both LocalEM and BYM model:
+
+```{r bym, echo=F,warning = FALSE, cache=TRUE, results='hide',message = F}
+library(INLA)
+cat('Computing risk estimation and exceedance probabilities using BYM model...', '\n')
+theBymRiskList = theBymExcProbList = as.list(1:nsim)
+names(theBymRiskList) = names(theBymExcProbList) = paste("count",1:nsim,sep="")
+
+  for (i in 1:nsim){
+    cat("Fitting BYM model for simulation:", i,"...\n")
+    formula = as.formula(paste('count', i, ' ~ offset(logExpected)', sep = ''))
+    kBYM = diseasemapping::bym(formula, data = kentuckyCounty,priorCI = list(sd = c(1, 0.05), propSpatial = c(0.2, 0.95)))
+    
+    #raster bym estimate
+    kBYMRaster = raster::rasterize(kBYM$data, y = toPlot[[i]], field = 'fitted.exp')
+    names(kBYMRaster) = 'fitted.exp'
+    theBymRiskList[[i]] = kBYMRaster
+   
+    #compute exceedance probs
+    theBymMarg =kBYM$inla$marginals.fitted.bym
+    for(inT in 1:length(threshold)) {
+      
+      kBYM$data$excProb = geostatsp::excProb(theBymMarg, threshold = log(threshold[inT]))
+      theBymExcProb = raster::rasterize( kBYM$data, y = toPlot[[i]], field = 'excProb')
+      
+      if(inT == 1) {
+        bymExcProbRaster = theBymExcProb
+      } else {
+        bymExcProbRaster = raster::addLayer(bymExcProbRaster, theBymExcProb)
+      }
+    }
+    names(bymExcProbRaster) = paste('count', i, '_threshold', threshold, sep = '')
+    theBymExcProbList[[i]] = bymExcProbRaster
+    
+}
+
+##output results to external file
+myBymRisk = raster::writeRaster(
+  raster::stack(theBymRiskList), 
+  filename = file.path(path, 'bymRiskR.grd'), 
+  overwrite = file.exists(file.path(path, 'bymRiskR.grd')))
+myBymExcProb = raster::writeRaster(
+  raster::stack(theBymExcProbList), 
+  filename = file.path(path, 'bymExcProbR.grd'), 
+  overwrite = file.exists(file.path(path, 'bymExcProbR.grd')))
+
+
+#Compute excProb for localEM
+
+theFileExcProb = file.path(path, paste('lemExcProbR.grd', sep = ''))
+
+
+
+if(!file.exists(fileHere)) {
+
+  myLemXv = xvAllKentucky$xv
+  myLemRisk = xvAllKentucky$riskEst
+
+
+  for(inS in 1:nsim) {
+  
+    bw = xvAllKentucky$bw[inS]
+    xvAllKentucky$riskEst = myLemRisk[[inS]]
+    
+    cat('Computing localEM exceedance probabilities for simulation:',inS, '\n')
+    excProb = localEM::excProb(
+        lemObjects =  xvAllKentucky,
+        threshold = threshold,
+        Nboot = Nboot,
+        bw = bw,
+        fact = fact,
+        ncores = min(ncores, 2),
+        iterations = list(tol = 1e-7, maxIter = 3000, gpu = FALSE),
+        path = path,
+        filename = paste('lemExcProbR', inS, '.grd', sep = ''),
+        verbose = TRUE)
+    
+    theLemExcProb = excProb$excProb
+    
+    if(inS == 1) {
+    theLemExcProbStack = theLemExcProb * 1
+    } else {
+     theLemExcProbStack = raster::addLayer(theLemExcProbStack, theLemExcProb * 1)
+    }
+  }
+
+  myLemExcProb = raster::writeRaster(
+    theLemExcProbStack, 
+    filename = theFileExcProb,
+    overwrite = file.exists(theFileExcProb))
+  
+} else {
+   myLemExcProb = stack(theFileExcProb)
+}
+  
+
+
+```
+
+
+
+Compute ROC curves for both LocalEM and BYM model:
+
+
+```{r rocPlot, echo = FALSE, message = F, warning = F, fig.cap = 'Average ROC acroess all simulations', fig.height = 4, fig.width = 8, out.width = '80%', fig.ncol = 1, results = 'hide'}
+
+theSpec = seq(0, 1, by = 1/Nboot)
+
+myLemRoc = list()
+myBymRoc = list()
+mySimSurface = kCases$raster[[grep("^relativeIntensity[[:digit:]]", names(kCases$raster))]]
+
+  for(inS in 1:nsim) {
+
+    ##simulation surface
+    theSimSurface = mySimSurface[[inS]]
+    names(theSimSurface) = 'relativeIntensity'
+    
+    ##ROC from local-EM analysis
+    cat("Computing ROC curves for simulation:",inS,"...\n")
+    
+    cat("localEM...\n")
+    lemExcProb = myLemExcProb[[grep(paste('(count|case)', inS, '_', sep = ''), names(myLemExcProb))]]
+    names(lemExcProb) = gsub('^bw[[:digit:]]+\\_(count|case)[[:digit:]]+\\_', '', names(lemExcProb))
+    names(lemExcProb) = gsub('^threshold', 'threshold.', names(lemExcProb))
+    
+    
+    lemRoc = try(
+      geostatsp::spatialRoc(
+        fit = lemExcProb, 
+        rr = threshold, 
+        truth = theSimSurface, 
+        random = FALSE, 
+        spec = theSpec), 
+      silent = TRUE)
+    
+    if(class(lemRoc) != 'try-error') {
+      myLemRoc[[inS]] = lemRoc[,]
+    }
+
+    
+    cat("BYM...\n")
+    ##ROC from BYM analysis
+    bymExcProb = myBymExcProb[[grep(paste('(count|case)', inS, '_', sep = ''), names(myBymExcProb))]]
+    names(bymExcProb) = gsub('^(count|case)[[:digit:]]+\\_', '', names(bymExcProb))
+    names(bymExcProb) = gsub('^threshold', 'threshold.', names(bymExcProb))
+    
+    bymRoc = try(
+      geostatsp::spatialRoc(
+        fit = bymExcProb, 
+        rr = threshold, 
+        truth = theSimSurface, 
+        random = FALSE, 
+        spec = theSpec), 
+      silent = TRUE)
+    
+    if(class(bymRoc) != 'try-error') {
+      myBymRoc[[inS]] = bymRoc[,]
+    }
+  }    
+
+save(myLemRoc, myBymRoc, file = paste(path,"rocEstRKentucky.RData", sep = "")) 
+  
+  
+cat(date(), '\n')
+cat('done', '\n')
+
+
+
+require(ggplot2)
+###Plot
+roc2Plot = data.frame()
+for (i in 1:length(myLemRoc)){
+   rocP = data.frame(rbind(myLemRoc[[i]], myBymRoc[[i]]))
+  rocP$model = c(rep("LEM",length(theSpec)),rep("BYM",length(theSpec)))
+  rocPlong = reshape(rocP,varying = list(2:4),idvar = c("onemspec", "model"), direction = "long", 
+                   v.names = "Sensitivity",timevar = "threshold",times =as.character(gsub("^X","",names(rocP)[2:4])))
+  rocPlong$sim = i
+  roc2Plot = rbind(roc2Plot,rocPlong)
+}
+  
+roc2Plot = aggregate(Sensitivity ~ onemspec + model + threshold, data = roc2Plot,mean,na.rm = T)
+  
+p = ggplot(data = roc2Plot,aes(x = onemspec, y = Sensitivity, color = model, linetype = threshold, group = interaction(model, threshold)))  +   geom_line() + xlab("1-Specificity")
+print(p)
+
+```
   
 
 
