@@ -1,3 +1,4 @@
+
 ```{r vignetteHeader, eval = FALSE, purl = FALSE, include = FALSE}
 '
     %\VignetteEngine{knitr::docco_linear} 
@@ -5,7 +6,7 @@
     '
 #devtools::load_all("../pkg/localem")
 #knitr::knit("../pkg/localem/inst/doc/kentucky.Rmd", 'kentucky.md')
-#highRes=TRUE;knitr::knit("../pkg/localem/inst/doc/kentucky.Rmd", 'kentuckyHighRes.md')
+
 ```
 
 
@@ -44,6 +45,7 @@ if(requireNamespace('Pmisc', quietly = TRUE)) {
   theWidth = '80%'
 }
 
+highRes = T
 ```
 	
 ## Introduction 
@@ -53,36 +55,38 @@ The `localEM` package contains functions to implement the kernel smoothing local
 The methodology of this package is demonstrated on simulated lung cancer cases for the state of Kentucky, USA. The spatial polygons for the census counties and tracts of Kentucky are included with this package. 
 
 ```{r setupHighRes, eval=highRes, purl=highRes, echo = highRes}
-ncores = round(parallel::detectCores()/2)
+
+ncores = 12
 cellsFine = 500
 cellsCoarse = 20
 nsim = 12
 nxv = 6
+fact = 3
 Sbw = unique(round(
   exp(seq(log(4), log(35), len=15)) 
   )) * 1000
 threshold = c(1.1, 1.25, 1.5)
 Nboot = 100 
-path = '/store/highResLocalem/'
+path = 'highResLocalem/'
 cacheDir = 'highResCache/'
 figDir = 'highResFigure/'
 ```
 
 ```{r setupLowRes, eval=!highRes, purl=!highRes, echo = !highRes}
+
 # specify number of grid cells and number of cores for computations in parallel
 ncores = 2
 cellsFine = 80
 cellsCoarse = 8
 nsim = 4
 nxv = 4
+fact = 2
 Sbw = seq(10, 35, by = 5) * 1000
 threshold = c(1, 1.5)
 Nboot = 20 
-# on unix systems results will be saved in /tmp/localEMusername
-path = file.path(dirname(tempdir()),  
-  paste('localEM', Sys.info()['user'], sep = ''))
-cacheDir = 'cache/'
-figDir = 'figure/'
+path = 'lowResLocalem/'
+cacheDir = 'lowResCache/'
+figDir = 'lowResFigure/'
 ```  
 
 
@@ -177,9 +181,10 @@ kentuckyCounty = merge(kentuckyCounty, temp) #for plot
 kentuckyCounty$expected = exp(kentuckyCounty$logExpected)
 
 
+
 ```
 
-```{r plotOffset, echo = FALSE, warning = FALSE, fig.cap = 'Events for Simulation 1', fig.subcap = c('Offset', 'Relative Intensity', 'Events', 'Counts'), fig.height = 3, fig.width = 6, out.width = theWidth, fig.ncol = 2}
+```{r plotOffset, echo = FALSE, warning = FALSE, fig.cap = 'Events for Simulation 1', fig.subcap = c('Offset', 'Relative Intensity', 'Events', 'Counts','Offset by County', 'SIR by County'), fig.height = 3, fig.width = 6, out.width = theWidth, fig.ncol = 2}
 
 # offset map
 oCol = colourScale(
@@ -252,8 +257,6 @@ scaleBar(kentuckyCounty,
     bg = 'white')
 
 
-
-
 # offset by county
 cCol = colourScale(
     kentuckyCounty$expected, 
@@ -289,6 +292,7 @@ scaleBar(kentuckyCounty,
     pos = 'topleft', 
     inset = c(0.2, 0), 
     bg = 'white')
+
 
 ```
 
@@ -474,6 +478,7 @@ xvAllKentucky = lemXv(
     lemObjects = xvKentucky$smoothingMatrix,
     ncores = ncores,
     path = cacheDir, verbose=TRUE)
+
 ```
 
 ```{r cvPlotAll, echo = FALSE, fig.cap = 'Cross-validation Scores for All Simulations', fig.height = 4, fig.width = 8, out.width = '80%', fig.ncol = 1}
@@ -541,7 +546,6 @@ legendBreaks('topleft',
 
 ```
 
-
 Compute exceedance probabilities for both LocalEM and BYM model:
 
 ```{r bym, echo=F,warning = FALSE, cache=TRUE, results='hide',message = F}
@@ -595,7 +599,7 @@ theFileExcProb = file.path(path, paste('lemExcProbR.grd', sep = ''))
 
 
 
-if(!file.exists(fileHere)) {
+if(!file.exists(theFileExcProb)) {
 
   myLemXv = xvAllKentucky$xv
   myLemRisk = xvAllKentucky$riskEst
@@ -678,9 +682,9 @@ mySimSurface = kCases$raster[[grep("^relativeIntensity[[:digit:]]", names(kCases
         spec = theSpec), 
       silent = TRUE)
     
-    if(class(lemRoc) != 'try-error') {
-      myLemRoc[[inS]] = lemRoc[,]
-    }
+  	if(class(lemRoc) != 'try-error') {
+  	  myLemRoc[[inS]] = lemRoc[,]
+  	}
 
     
     cat("BYM...\n")
@@ -698,9 +702,9 @@ mySimSurface = kCases$raster[[grep("^relativeIntensity[[:digit:]]", names(kCases
         spec = theSpec), 
       silent = TRUE)
     
-    if(class(bymRoc) != 'try-error') {
-      myBymRoc[[inS]] = bymRoc[,]
-    }
+  	if(class(bymRoc) != 'try-error') {
+  	  myBymRoc[[inS]] = bymRoc[,]
+  	}
   }    
 
 save(myLemRoc, myBymRoc, file = paste(path,"rocEstRKentucky.RData", sep = "")) 
@@ -717,8 +721,8 @@ roc2Plot = data.frame()
 for (i in 1:length(myLemRoc)){
    rocP = data.frame(rbind(myLemRoc[[i]], myBymRoc[[i]]))
   rocP$model = c(rep("LEM",length(theSpec)),rep("BYM",length(theSpec)))
-  rocPlong = reshape(rocP,varying = list(2:4),idvar = c("onemspec", "model"), direction = "long", 
-                   v.names = "Sensitivity",timevar = "threshold",times =as.character(gsub("^X","",names(rocP)[2:4])))
+  rocPlong = reshape(rocP,varying = list(grep("^X",names(rocP))),idvar = c("onemspec", "model"), direction = "long", 
+                   v.names = "Sensitivity",timevar = "threshold",times =as.character(gsub("^X","",names(rocP)[grep("^X",names(rocP))])))
   rocPlong$sim = i
   roc2Plot = rbind(roc2Plot,rocPlong)
 }
@@ -729,8 +733,6 @@ p = ggplot(data = roc2Plot,aes(x = onemspec, y = Sensitivity, color = model, lin
 print(p)
 
 ```
-  
-
 
 ## References
 
