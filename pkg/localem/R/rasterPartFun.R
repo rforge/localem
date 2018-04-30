@@ -180,7 +180,7 @@ rasterPartition = function(
     filename = offsetTempFile,
 	  overwrite = file.exists(offsetTempFile))
 
-  rasterFineId = brick(rasterIdCoarse, rasterIdFine, rasterFine)
+  rasterFineId = raster::brick(rasterIdCoarse, rasterIdFine, rasterFine)
   rasterFineId = writeRaster(rasterFineId,
     filename = idFile,
     overwrite=file.exists(idFile))
