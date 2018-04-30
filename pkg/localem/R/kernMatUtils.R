@@ -282,7 +282,7 @@ focalFunction = function(x, focalArray, Scvsets)  {
 
 focalMultOneRowOuter = function(x, focalMat, focalDim, out, row, mmap = FALSE) {
 
-  x = brick(raster::filename(x))
+  x = raster::brick(raster::filename(x))
 
   valuesHere = raster::getValuesFocal(x, row, 1L, focalDim, array=FALSE, padValue = NA)
   valuesNa = is.na(valuesHere[[1]])
@@ -346,13 +346,13 @@ focalMultOneRowOuter = function(x, focalMat, focalDim, out, row, mmap = FALSE) {
 }
 
 
-focalMultOneRow = function(x, focalMat, focalDim, 
+focalMultOneRow = function(x, focalMat, focalDim,
   out, row, bw, uniqueBw=NULL, mmap = FALSE) {
 
-  x = brick(raster::filename(x))
+  x = raster::brick(raster::filename(x))
 #  return(list(x, row, focalDim))
   valuesHere = raster::getValuesFocal(
-    x, row, 1L, focalDim, 
+    x, row, 1L, focalDim,
     array=FALSE, padValue = NA)
 
   if(is.matrix(valuesHere)) valuesHere = list(valuesHere)
@@ -379,7 +379,7 @@ focalMultOneRow = function(x, focalMat, focalDim,
 
     outMap = mmap::mmap(
       gsub("[.]grd$", ".gri", raster::filename(out)),
-      mode=structure(numeric(0), bytes = 8L, signed = 1L, 
+      mode=structure(numeric(0), bytes = 8L, signed = 1L,
         class = c("Ctype", "double"))
     )
 
@@ -449,7 +449,7 @@ focalMult = function(
       1, FUN=paste, collapse='')
   }
 
-  outBrick = brick(raster(x), nl = length(outNames))
+  outBrick = raster::brick(raster(x), nl = length(outNames))
   names(outBrick) = outNames
 
   # get rid of outer parts of the focal array
