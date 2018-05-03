@@ -1,0 +1,627 @@
+
+```{r vignetteHeader, eval = FALSE, purl = FALSE, include = FALSE}
+#devtools::load_all("../pkg/localem")
+#knitr::knit("../pkg/localem/inst/doc/toronto.Rmd", 'toronto.md')
+```
+
+
+
+
+
+
+```{r setup, echo = FALSE, message = FALSE}
+
+baseDir = file.path('/store',Sys.info()['user'],'localem/toronto')
+
+mapDir = file.path(baseDir, 'mapCache')
+path = file.path(baseDir, 'highResLocalem/')
+cacheDir = file.path(baseDir, 'highResCache/')
+figDir = file.path(baseDir, 'highResFigure/')
+
+dir.create(mapDir, showWarnings = FALSE, recursive = TRUE)
+dir.create(path, showWarnings = FALSE, recursive = TRUE)
+dir.create(cacheDir, showWarnings = FALSE, recursive = TRUE)
+dir.create(figDir, showWarnings = FALSE, recursive = TRUE)
+
+options(mapmiscCachePath = mapDir)
+```
+
+
+```{r knitrSetup, echo = FALSE, purl = FALSE, results = 'asis'}
+
+knitr::opts_chunk$set(
+    dev = 'png',
+    fig.width = 4, fig.height = 2.5,
+    dpi = 100, out.width = '45%', fig.ncol = 2,
+    fig.path=figDir, cache.path=cacheDir
+)
+
+if(requireNamespace('Pmisc', quietly = TRUE)) {
+  file.copy(system.file('src','webpage.css', package='Pmisc')
+        , 'webpage.css')
+    cat(Pmisc::markdownHeader(
+            title = 'High Resolution Local-EM Example for Toronto', 
+            author = 'Lennon Li, Patrick Brown',
+            css = 'webpage.css'))
+  }
+  knitr::knit_hooks$set(plot = Pmisc::hook_plot_mdsubfig)
+  theWidth = '45%'
+} else {
+  knitr::knit_hooks$set(plot = knitr::hook_plot_html)
+  cat('\n# Local-EM Example for Toronto\n')
+  theWidth = '80%'
+}
+
+
+```
+
+
+```{r packages, message=FALSE}
+library('rgdal')
+library('raster')
+library('mapmisc')
+```
+
+
+```{r theData, echo=FALSE, message=FALSE}
+
+load('gtaFsaCt2007.RData') 
+
+gtaOrigFsa = mapmisc::omerc(gtaOrigFsa, angle = -17)
+
+gtaSelectFsa = spTransform(gtaSelectFsa, gtaOrigFsa)
+gtaSelectFsa = gtaSelectFsa[substr(gtaSelectFsa$id, 1, 1) == 'M',]
+
+gtaOrigCt = spTransform(gtaOrigCt, gtaOrigFsa)
+gtaOrigCt$expected = 8 * gtaOrigCt$expected
+
+```
+
+
+```{r kMap, cache=TRUE}
+kMap = mapmisc::tonerToTrans(
+  mapmisc::openmap(gtaSelectFsa, fact=1.6, path='stamen-toner'))
+```
+
+	
+## Introduction 
+
+The `localEM` package contains functions to implement the kernel smoothing local-EM algorithm$^1$ of disease data aggregated to geographical regions. This algorithm provides an nonparametric alternative to the standard geospatial models, such as the Besag-York-Mollie (BYM) model$^2$, for estimating spatial risk of areal disease data. With disease cases typically aggregated to highly coarse geographical regions (e.g., census counties, or census subdivisions), the local-EM method creates a tessellation of distinct regions by overlaying the map of these coarse regions with another map containing fine geographical regions (e.g., census tracts, census blocks, or census dissemination areas) of population data. This allows for the spatial risk to be estimated at a better resolution with the fine regions. 
+
+
+
+The local-EM kernel smoothing algorithm of the `localEM` package was tested on lupus diagnoses in the City of Toronto of the GTA (i.e., forward sortation areas (FSAs) starting with 'M'). Lupus cases were simulated using the population data (i.e., the expected lupus cases) at the census tract level (see Figure 1) with a total expectation of 1849 cases for the study area
+
+```{r setupHighRes}
+
+ncores = 16
+cellsFine = 800
+cellsCoarse = 20
+nsim = 12
+nxv = 6
+Sbw = unique(round(
+  exp(seq(log(1/2), log(5), len=15)) 
+  )) * 1000
+threshold = c(1.1, 1.25, 1.5)
+Nboot = 100 
+range = 10000
+```
+
+
+specify number of grid cells for simulation
+
+```{r setupSim, message=FALSE}
+if(requireNamespace('RandomFields', quietly = TRUE)) {
+  cellsSimulate = 600
+} else {
+  cellsSimulate = 100  
+}
+
+```
+
+
+## Simulate Cases
+
+Using the `simLgcp()` function from the `geostatsp` package, case locations are simulated with the log Gaussian Cox process (LGCP) and following parameters: 
+
+* mean: 0
+* variance: 0.16
+* shape: 2
+* range: 10 km
+* offsets: log of expected cases/m$^2$ of the census tracts
+
+```{r simcases, message = FALSE, warning = FALSE, cache = TRUE, results='hide'}
+
+theLogExpectedRaster = geostatsp::spdfToBrick(
+  gtaOrigCt, 
+  geostatsp::squareRaster(gtaOrigCt, cellsSimulate), 
+  pattern = '^expected$',
+  logSumExpected = TRUE)
+theLogExpectedRaster = raster::trim(raster::mask(theLogExpectedRaster, gtaSelectFsa))
+
+
+set.seed(0)
+
+theSimData  = geostatsp::simLgcp(
+    param = c(mean = 0, variance = 0.4^2, range = 10 * 1000, shape = 2),
+    covariates = list(logExpected = theLogExpectedRaster) , 
+    offset = 'logExpected', n = nsim)
+
+```
+
+
+The simulated cases are then aggregated to the appropriate FSAs Plots of the relative intensity, event locations and aggregated data are provided for the first simulated dataset. 
+
+```{r aggregateCases}
+
+
+##relative intensity surfaces
+theRasterNames = names(theSimData$raster)
+  
+mySimSurfaceGTA = theSimData$raster[[grep('^relativeIntensity', theRasterNames)]]
+  
+  ##case locations
+mySimSpGTA = theSimData[grep('^events[[:digit:]]+?', names(theSimData))]
+
+theSimCases = lapply(
+    theSimData[grep('^events[[:digit:]]+?', names(theSimData))], 
+    function(qq) over(qq, gtaSelectFsa)[,'id'])
+
+mySimCasesGTA = as.data.frame(lapply(
+    theSimCases, 
+    function(xx) as.vector(table(xx, exclude = NULL)[as.character(gtaSelectFsa$id)])))
+
+mySimCasesGTA[is.na(mySimCasesGTA)] = 0
+colnames(mySimCasesGTA) = gsub('^events', 'count', colnames(mySimCasesGTA))
+rownames(mySimCasesGTA) = as.character(gtaSelectFsa$id)
+gtaSelectFsa= merge(gtaSelectFsa, mySimCasesGTA, by.x = 'id', by.y = 'row.names')
+  
+##log-offsets
+myLogExpectedGTA = theSimData$raster[['logExpected']]
+  
+save(myLogExpectedGTA, 
+       mySimSurfaceGTA, mySimSpGTA, mySimCasesGTA, 
+       file = file.path(path, paste('simCasesR', range, 'mGTA.RData', sep = ''))
+  )
+
+```
+
+```{r plotOffset, echo = FALSE, warning = FALSE, fig.cap = 'Events for Simulation 1', fig.subcap = c('Offset', 'Relative Intensity', 'Events', 'Counts'), fig.height = 3, fig.width = 6, out.width = theWidth, fig.ncol = 2}
+
+# theOffsets
+oCol = colourScale(myLogExpectedGTA, 
+                   breaks = 6, style = 'equal', dec = 1, 
+                   revCol = FALSE)
+
+map.new(gtaSelectFsa, 
+        mar = c(0, 0, 0, 0), xaxt = 'n', yaxt = 'n')
+plot(myLogExpectedGTA, 
+     col = oCol$col, breaks = oCol$breaks, legend = FALSE, 
+     add = TRUE)
+plot(kMap, add = TRUE)
+legendBreaks('bottomright', 
+             breaks = oCol$breaks, col = oCol$col, 
+             cex = 0.7, 
+             bg = 'white')
+
+# simulated risk map
+iCol = colourScale(
+   theSimData$raster$relativeIntensity1, 
+    breaks = 8, style = 'equal', dec = -log10(0.5))
+
+map.new(gtaSelectFsa#, 
+#    mar = c(0, 0, 1, 0), 
+#    main = 'Simulated Risk'
+)
+plot(theSimData$raster$relativeIntensity1, 
+    col = iCol$col, breaks = iCol$breaks, 
+    legend = FALSE, 
+    add = TRUE)
+plot(kMap, add = TRUE)
+legendBreaks('bottomright', 
+    col = iCol$col, breaks = iCol$breaks, 
+    title = 'RR', 
+    bg = 'white')
+
+
+
+# simulated events map
+map.new(gtaSelectFsa#, 
+#    mar = c(0, 0, 1, 0), 
+#    main = 'Simulated Events'
+)
+plot(kMap, add = TRUE)
+points(theSimData$events1, col = '#FF000030', pch = 20, cex = 0.5)
+scaleBar(gtaSelectFsa, 
+    pos = 'bottomright', 
+    bg = 'white')
+
+
+# simulated counts
+cCol = colourScale(
+    gtaSelectFsa$count1, 
+    breaks = 10, style = 'quantile', dec = -1)
+
+map.new(gtaSelectFsa#, 
+#    mar = c(0, 0, 1, 0), 
+#    main = 'Aggregated Counts'
+)
+plot(gtaSelectFsa, col = cCol$plot, add = TRUE)
+plot(kMap, add = TRUE)
+legendBreaks('bottomright', cCol)
+scaleBar(gtaSelectFsa, 
+    pos = 'bottomright', 
+    inset = c(0.2, 0), 
+    bg = 'white')
+
+
+
+```
+## Cross-validation
+
+The local-EM algorithm requires a smoothing parameter called the bandwidth to estimate the spatial risk. Small values of the bandwidth yield estimates similar to standardized incidence ratios of each areal regions, while large values yield estimates to the overall mean incidence ratio of the entire study area (i.e., [total counts]/[total offsets]). The preferred or optimal bandwidth for the disease data is one that minimizes the trade-off between the bias and variance of the estimator. 
+
+To automatic the selection of the optimal bandwidth, the `lemXv()` function of this package implements a likelihood cross-validation (CV) approach with the set of specified bandwidths. CV scores are computed with $k$-fold sampling without replacement of the dataset. The optimal bandwidth is the one that yields the smallest CV score. 
+
+The CV scores with 4-fold sampling are provided for the first simulated dataset. 
+
+```{r cvOneRaster, warning = FALSE, results='hide', cache=TRUE}
+library('localEM')
+
+lemRasterGTA = localEM::rasterPartition(
+  polyCoarse = gtaSelectFsa, 
+  polyFine = gtaOrigCt, 
+  cellsCoarse = cellsCoarse, 
+  cellsFine = cellsFine, 
+  bw = Sbw, 
+  ncores = ceiling(ncores/2), 
+  focalSize = min(c(15*1000, max(Sbw))),
+  xv = nxv, 
+  path = path, 
+  idFile = 'lemId.grd', 
+  offsetFile = 'lemOffsets.grd', 
+  verbose = TRUE)
+```
+
+```{r cvOneSmoothingMatrix, warning = FALSE, results='hide', cache=TRUE}
+lemSmoothMatGTA = localEM::smoothingMatrix(
+  rasterObjects = lemRasterGTA, 
+  ncores = ncores, 
+  path = path, 
+  filename = 'lemSmoothMat.grd', 
+  verbose = TRUE)
+
+save(lemSmoothMatGTA, 
+     file = file.path(path,'lemSetupGTA.RData')
+     )
+```
+
+```{r cvOneXv, warning = FALSE, results='hide', cache=TRUE}
+  ##CV scores
+   lemXvGTA = localEM::lemXv(
+    cases = gtaSelectFsa@data[,grep('^count[[:digit:]]', names(gtaSelectFsa))], 
+    lemObjects = lemSmoothMatGTA, 
+    ncores = ncores, 
+    iterations = list(tol = 1e-7, maxIter = 3000, gpu = FALSE), 
+    randomSeed = range , 
+    path = path, 
+    filename = paste('lemRiskR', range , 'm.grd', sep = ''), 
+    verbose = FALSE)
+
+  myLemXvGTA = lemXvGTA$xv
+  myLemRiskGTA = lemXvGTA$riskEst
+
+  save(lemXvGTA, 
+    file = file.path(path,paste('lemEstR', range , 'mGTA.RData', sep = ''))) 
+```
+
+
+
+
+
+```{r cvPlotAll, echo = FALSE, fig.cap = 'Cross-validation Scores for All Simulations', fig.height = 4, fig.width = 8, out.width = '80%', fig.ncol = 1}
+
+maxY = min(max(lemXvGTA$xv[,-1]), 30)
+
+Scol = RColorBrewer::brewer.pal(4, "Dark2")
+ScolFull = c(Scol,
+    rep(mapmisc::col2html('grey', 0.5), 
+        nrow(lemXvGTA$xv) - length(Scol) )
+)
+
+matplot(lemXvGTA$xv[,'bw']/1000, lemXvGTA$xv[,-1], 
+    main = 'CV Scores for All Simulations', 
+    xlab = 'km', ylab = '-log p', 
+    type = 'l', lty = 1, 
+    col = ScolFull,
+    ylim = c(0, 12), log='x')
+
+legend('topright', paste('Simulation ', 1:nsim, sep = ''), 
+    lty = 1, col = Scol, 
+    cex = 0.6)
+```
+
+
+
+```{r plotRiskAll, echo = FALSE, warning = FALSE, fig.cap = 'Estimated and True Relative Risk', fig.subcap = as.vector(rbind(paste('est ', 1:length(lemXvGTA$bw), ', bw=', as.numeric(gsub("^bw", "", lemXvGTA$bw)) / 1000, ' km', sep = ''), paste('truth ', 1:length(lemXvGTA$bw), sep = ''))), fig.height = 3, fig.width = 6, out.width = theWidth, fig.ncol = 2}
+
+toPlot = brick(filename(lemXvGTA$riskEst))
+
+rCol = colourScale(
+    breaks = c(seq(0,3, by=0.5), 4),
+    style = 'fixed')
+
+#bw = as.numeric(gsub('^bw', '', xvAllKentucky$bw))
+
+for(inR in 1:nlayers(toPlot)) {
+  
+  map.new(gtaSelectFsa)#, 
+#      mar = c(0, 0, 1, 0), 
+#      main = paste('Simulation ', inR, ': Estimated Risk, bw=', bw[inR] / 1000, ' km', sep = ''))
+  plot(toPlot[[inR]], 
+      col = rCol$col, breaks = rCol$breaks, 
+      legend = FALSE, 
+      add = TRUE)
+  plot(kMap, add = TRUE)
+  legendBreaks('topleft', rCol, bg = 'white')
+
+map.new(gtaSelectFsa#, 
+#    mar = c(0, 0, 1, 0), 
+#    main = 'Simulated Risk'
+)
+
+plot(theSimData$raster[[paste('relativeIntensity',inR, sep='')]], 
+    col = rCol$col, breaks = rCol$breaks, 
+    legend = FALSE, 
+    add = TRUE)
+plot(kMap, add = TRUE)
+legendBreaks('topleft', 
+    col = rCol$col, breaks = rCol$breaks, 
+    title = 'RR', 
+    bg = 'white')
+}
+
+
+```
+
+## Uncertainty Estimation
+
+To measure the uncertainty of the local-EM algorithm, the `excProb()` function
+computes the exceedance probabilities with the same bandwidth parameter used in
+the risk estimation. Bootstrapping from a Poisson process is used to simulate
+the events for calculating these exceedance probabilities. 
+
+Specifically, under the assumption that disease events are a realisation from
+the background population and constant risk threshold, cases are bootstrapped
+and randomly aggregated to the areal regions. Using the same bandwidth as the
+observed data, the local-EM risk is then estimated for each of the bootstrapped
+data. Afterwards, exceedance probabilities are computed as the proportion of the
+observed risk estimate at least as large as the ones of the bootstrap data.
+Large exceedance probabilities are consistent with the risk being greater than
+the specified threshold. 
+
+
+
+```{r excProbLEM, warning = FALSE, cache=TRUE, results='hide'}
+#Compute excProb for localEM
+
+theFileExcProb = file.path(path, paste('lemExcProbR.grd', sep = ''))
+
+
+
+if(!file.exists(theFileExcProb)) {
+
+  myLemXv = lemXvGTA$xv
+  myLemRisk = lemXvGTA$riskEst
+
+
+  for(inS in 1:nsim) {
+  
+    bw = lemXvGTA$bw[inS]
+    lemXvGTA$riskEst = myLemRisk[[inS]]
+    
+    cat('Computing localEM exceedance probabilities for simulation:',inS, '\n')
+    excProb = localEM::excProb(
+        lemObjects =  lemXvGTA,
+        threshold = threshold,
+        Nboot = Nboot,
+        bw = bw,
+        fact = fact,
+        ncores = min(ncores, 2),
+        iterations = list(tol = 1e-7, maxIter = 3000, gpu = FALSE),
+        path = path,
+        filename = paste('lemExcProbR', inS, '.grd', sep = ''),
+        verbose = TRUE)
+    
+    theLemExcProb = excProb$excProb
+    
+    if(inS == 1) {
+    theLemExcProbStack = theLemExcProb * 1
+    } else {
+     theLemExcProbStack = raster::addLayer(theLemExcProbStack, theLemExcProb * 1)
+    }
+  }
+
+  myLemExcProb = raster::writeRaster(
+    theLemExcProbStack, 
+    filename = theFileExcProb,
+    overwrite = file.exists(theFileExcProb))
+  
+} else {
+   myLemExcProb = stack(theFileExcProb)
+}
+  
+```
+
+
+
+Compute exceedance probabilities using BYM model:
+
+```{r bym, echo=F,warning = FALSE, cache=TRUE, results='hide',message = F}
+library(INLA)
+
+#calculate offset
+idCoarse = 1:length(lemSmoothMatGTA$polyCoarse)
+
+offsetRaster = raster::stack(lemSmoothMatGTA$offset$offset, 
+                             raster::deratify(lemSmoothMatGTA$rasterFine))
+offsetDf = stats::aggregate(x = values(offsetRaster$offset), 
+                            by = list(idCoarse = values(offsetRaster$idCoarse)), 
+                            FUN = sum)
+colnames(offsetDf) = c('idCoarse','offset')
+offsetDf = merge(data.frame(idCoarse = idCoarse), offsetDf, by = 'idCoarse', all = TRUE)
+offsetDf$offset[is.na(offsetDf$offset)] = 0
+offsetDf$expected = offsetDf$offset * prod(res(offsetRaster$offset))
+offsetDf$logExpected = log(offsetDf$expected)
+offsetDf$logExpected[is.infinite(offsetDf$logExpected)] = NA
+offsetDf$id = lemSmoothMatGTA$polyCoarse$id
+
+gtaSelectFsa = merge(gtaSelectFsa, 
+                     offsetDf, 
+                     by = 'id')
+
+
+
+
+cat('Computing risk estimation and exceedance probabilities using BYM model...', '\n')
+theBymRiskList = theBymExcProbList = as.list(1:nsim)
+names(theBymRiskList) = names(theBymExcProbList) = paste("count",1:nsim,sep="")
+
+  for (i in 1:nsim){
+    cat("Fitting BYM model for simulation:", i,"...\n")
+    formula = as.formula(paste('count', i, ' ~ offset(logExpected)', sep = ''))
+    kBYM = diseasemapping::bym(formula, data = gtaSelectFsa,priorCI = list(sd = c(1, 0.05), propSpatial = c(0.2, 0.95)))
+    
+    #raster bym estimate
+    kBYMRaster = raster::rasterize(kBYM$data, y = toPlot[[i]], field = 'fitted.exp')
+    names(kBYMRaster) = 'fitted.exp'
+    theBymRiskList[[i]] = kBYMRaster
+   
+    #compute exceedance probs
+    theBymMarg =kBYM$inla$marginals.fitted.bym
+    for(inT in 1:length(threshold)) {
+      
+      kBYM$data$excProb = geostatsp::excProb(theBymMarg, threshold = log(threshold[inT]))
+      theBymExcProb = raster::rasterize( kBYM$data, y = toPlot[[i]], field = 'excProb')
+      
+      if(inT == 1) {
+        bymExcProbRaster = theBymExcProb
+      } else {
+        bymExcProbRaster = raster::addLayer(bymExcProbRaster, theBymExcProb)
+      }
+    }
+    names(bymExcProbRaster) = paste('count', i, '_threshold', threshold, sep = '')
+    theBymExcProbList[[i]] = bymExcProbRaster
+    
+}
+
+##output results to external file
+myBymRisk = raster::writeRaster(
+  raster::stack(theBymRiskList), 
+  filename = file.path(path, 'bymRiskR.grd'), 
+  overwrite = file.exists(file.path(path, 'bymRiskR.grd')))
+myBymExcProb = raster::writeRaster(
+  raster::stack(theBymExcProbList), 
+  filename = file.path(path, 'bymExcProbR.grd'), 
+  overwrite = file.exists(file.path(path, 'bymExcProbR.grd')))
+
+
+
+
+
+```
+
+
+
+Compute ROC curves for both LocalEM and BYM model:
+
+
+```{r rocPlot, echo = FALSE, message = F, warning = F, fig.cap = 'Average ROC acroess all simulations', fig.height = 4, fig.width = 8, out.width = '80%', fig.ncol = 1, results = 'hide'}
+
+theSpec = seq(0, 1, by = 1/Nboot)
+
+myLemRoc = list()
+myBymRoc = list()
+mySimSurface =theSimData$raster[[grep("^relativeIntensity[[:digit:]]", names(theSimData$raster))]]
+
+  for(inS in 1:nsim) {
+
+    ##simulation surface
+    theSimSurface = mySimSurface[[inS]]
+    names(theSimSurface) = 'relativeIntensity'
+    
+    ##ROC from local-EM analysis
+    cat("Computing ROC curves for simulation:",inS,"...\n")
+    
+    cat("localEM...\n")
+    lemExcProb = myLemExcProb[[grep(paste('(count|case)', inS, '_', sep = ''), names(myLemExcProb))]]
+    names(lemExcProb) = gsub('^bw[[:digit:]]+\\_(count|case)[[:digit:]]+\\_', '', names(lemExcProb))
+    names(lemExcProb) = gsub('^threshold', 'threshold.', names(lemExcProb))
+    
+    
+    lemRoc = try(
+      geostatsp::spatialRoc(
+        fit = lemExcProb, 
+        rr = threshold, 
+        truth = theSimSurface, 
+        random = FALSE, 
+        spec = theSpec), 
+      silent = TRUE)
+    
+  	if(class(lemRoc) != 'try-error') {
+  	  myLemRoc[[inS]] = lemRoc[,]
+  	}
+
+    
+    cat("BYM...\n")
+    ##ROC from BYM analysis
+    bymExcProb = myBymExcProb[[grep(paste('(count|case)', inS, '_', sep = ''), names(myBymExcProb))]]
+    names(bymExcProb) = gsub('^(count|case)[[:digit:]]+\\_', '', names(bymExcProb))
+    names(bymExcProb) = gsub('^threshold', 'threshold.', names(bymExcProb))
+    
+    bymRoc = try(
+      geostatsp::spatialRoc(
+        fit = bymExcProb, 
+        rr = threshold, 
+        truth = theSimSurface, 
+        random = FALSE, 
+        spec = theSpec), 
+      silent = TRUE)
+    
+  	if(class(bymRoc) != 'try-error') {
+  	  myBymRoc[[inS]] = bymRoc[,]
+  	}
+  }    
+
+save(myLemRoc, myBymRoc, file = paste(path,"rocEstRKentucky.RData", sep = "")) 
+  
+  
+cat(date(), '\n')
+cat('done', '\n')
+
+
+
+require(ggplot2)
+###Plot
+roc2Plot = data.frame()
+for (i in 1:length(myLemRoc)){
+   rocP = data.frame(rbind(myLemRoc[[i]], myBymRoc[[i]]))
+  rocP$model = c(rep("LEM",length(theSpec)),rep("BYM",length(theSpec)))
+  rocPlong = reshape(rocP,varying = list(grep("^X",names(rocP))),idvar = c("onemspec", "model"), direction = "long", 
+                   v.names = "Sensitivity",timevar = "threshold",times =as.character(gsub("^X","",names(rocP)[grep("^X",names(rocP))])))
+  rocPlong$sim = i
+  roc2Plot = rbind(roc2Plot,rocPlong)
+}
+  
+roc2Plot = aggregate(Sensitivity ~ onemspec + model + threshold, data = roc2Plot,mean,na.rm = T)
+  
+p = ggplot(data = roc2Plot,aes(x = onemspec, y = Sensitivity, color = model, linetype = threshold, group = interaction(model, threshold)))  +   geom_line() + xlab("1-Specificity")
+print(p)
+
+```
+
+## References
+
+1. Nguyen P, Brown PE, Stafford J. Mapping cancer risk in southwestern Ontario with changing census boundaries. Biometrics. 2012; 68(4): 1229-37. 
+
+2. Besag J, York J, Mollie A. Bayesian image restoration, with two applications in spatial statistics. Ann Inst Statist Math. 1991; 43(1): 1-59. 
