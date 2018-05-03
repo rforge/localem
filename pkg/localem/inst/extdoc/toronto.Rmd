@@ -98,9 +98,7 @@ cellsFine = 800
 cellsCoarse = 20
 nsim = 12
 nxv = 6
-Sbw = unique(round(
-  exp(seq(log(1/2), log(5), len=15)) 
-  )) * 1000
+Sbw = c(seq(0.5, 4, by=0.5), 5) *1000
 threshold = c(1.1, 1.25, 1.5)
 Nboot = 100 
 range = 10000
@@ -267,7 +265,7 @@ The CV scores with 4-fold sampling are provided for the first simulated dataset.
 ```{r cvOneRaster, warning = FALSE, results='hide', cache=TRUE}
 library('localEM')
 
-lemRasterGTA = localEM::rasterPartition(
+lemRasterGTA = rasterPartition(
   polyCoarse = gtaSelectFsa, 
   polyFine = gtaOrigCt, 
   cellsCoarse = cellsCoarse, 
@@ -301,7 +299,7 @@ lemSmoothMatGTA = localEM::smoothingMatrix(
     randomSeed = range , 
     path = path, 
     filename = paste('lemRiskR', range , 'm.grd', sep = ''), 
-    verbose = FALSE)
+    verbose = TRUE)
 
   myLemXvGTA = lemXvGTA$xv
   myLemRiskGTA = lemXvGTA$riskEst
