@@ -13,20 +13,15 @@
 
 baseDir = file.path('/store',Sys.info()['user'],'localem/toronto')
 
-mapDir = file.path(baseDir, 'mapCache')
-path = file.path(baseDir, 'highResLocalem/')
-cacheDir = file.path(baseDir, 'highResCache/')
-figDir = file.path(baseDir, 'highResFigure/')
+mapDir = file.path(baseDir, 'mapCache', '')
+path = file.path(baseDir, 'highResLocalem', '')
+cacheDir = file.path(baseDir, 'highResCache', '')
+figDir = file.path(baseDir, 'highResFigure', '')
 
 dir.create(mapDir, showWarnings = FALSE, recursive = TRUE)
 dir.create(path, showWarnings = FALSE, recursive = TRUE)
 dir.create(cacheDir, showWarnings = FALSE, recursive = TRUE)
 dir.create(figDir, showWarnings = FALSE, recursive = TRUE)
-
-```
-
-
-```{r knitrSetup, echo = FALSE, purl = FALSE, results = 'asis'}
 
 knitr::opts_chunk$set(
     dev = 'png',
@@ -34,7 +29,10 @@ knitr::opts_chunk$set(
     dpi = 100, out.width = '45%', fig.ncol = 2,
     fig.path=figDir, cache.path=cacheDir
 )
+```
 
+
+```{r knitrSetup, echo = FALSE, purl = FALSE, results = 'asis'}
 if(requireNamespace('Pmisc', quietly = TRUE)) {
   file.copy(system.file('src','webpage.css', package='Pmisc')
         , 'webpage.css')
