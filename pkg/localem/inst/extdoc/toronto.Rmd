@@ -45,11 +45,10 @@ if(requireNamespace('Pmisc', quietly = TRUE)) {
             css = 'webpage.css'))
   }
   knitr::knit_hooks$set(plot = Pmisc::hook_plot_mdsubfig)
-  theWidth = '45%'
 } else {
   knitr::knit_hooks$set(plot = knitr::hook_plot_html)
   cat('\n# Local-EM Example for Toronto\n')
-  theWidth = '80%'
+  knitr::opts_chunk$set(out.width = '80%')
 }
 
 
@@ -186,7 +185,7 @@ save(myLogExpectedGTA,
 
 ```
 
-```{r plotOffset, echo = FALSE, warning = FALSE, fig.cap = 'Events for Simulation 1', fig.subcap = c('Offset', 'Relative Intensity', 'Events', 'Counts'), fig.height = 3, fig.width = 6, out.width = theWidth, fig.ncol = 2}
+```{r plotOffset, echo = FALSE, warning = FALSE, fig.cap = 'Events for Simulation 1', fig.subcap = c('Offset', 'Relative Intensity', 'Events', 'Counts'), fig.height = 3, fig.width = 6, out.width = '45%', fig.ncol = 2}
 
 # theOffsets
 oCol = colourScale(myLogExpectedGTA, 
@@ -343,7 +342,7 @@ legend('topright', paste('Simulation ', 1:nsim, sep = ''),
 
 
 
-```{r plotRiskAll, echo = FALSE, warning = FALSE, fig.cap = 'Estimated and True Relative Risk', fig.subcap = as.vector(rbind(paste('est ', 1:length(lemXvGTA$bw), ', bw=', as.numeric(gsub("^bw", "", lemXvGTA$bw)) / 1000, ' km', sep = ''), paste('truth ', 1:length(lemXvGTA$bw), sep = ''))), fig.height = 3, fig.width = 6, out.width = theWidth, fig.ncol = 2}
+```{r plotRiskAll, echo = FALSE, warning = FALSE, fig.cap = 'Estimated and True Relative Risk', fig.subcap = as.vector(rbind(paste('est ', 1:length(lemXvGTA$bw), ', bw=', as.numeric(gsub("^bw", "", lemXvGTA$bw)) / 1000, ' km', sep = ''), paste('truth ', 1:length(lemXvGTA$bw), sep = ''))), fig.height = 3, fig.width = 6,fig.ncol = 2}
 
 toPlot = brick(filename(lemXvGTA$riskEst))
 
