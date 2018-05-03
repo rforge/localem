@@ -57,6 +57,9 @@ if(requireNamespace('Pmisc', quietly = TRUE)) {
 ```{r packages, message=FALSE}
 library('rgdal')
 library('raster')
+library('localEM')
+
+
 library('mapmisc')
 options(mapmiscCachePath = mapDir)
 
@@ -264,8 +267,6 @@ To automatic the selection of the optimal bandwidth, the `lemXv()` function of t
 The CV scores with 4-fold sampling are provided for the first simulated dataset. 
 
 ```{r cvOneRaster, warning = FALSE, results='hide', cache=TRUE}
-library('localEM')
-
 lemRasterGTA = rasterPartition(
   polyCoarse = gtaSelectFsa, 
   polyFine = gtaOrigCt, 
@@ -282,7 +283,7 @@ lemRasterGTA = rasterPartition(
 ```
 
 ```{r cvOneSmoothingMatrix, warning = FALSE, results='hide', cache=TRUE}
-lemSmoothMatGTA = localEM::smoothingMatrix(
+lemSmoothMatGTA = smoothingMatrix(
   rasterObjects = lemRasterGTA, 
   ncores = ncores, 
   path = path, 
@@ -292,7 +293,7 @@ lemSmoothMatGTA = localEM::smoothingMatrix(
 
 ```{r cvOneXv, warning = FALSE, results='hide', cache=TRUE}
   ##CV scores
-   lemXvGTA = localEM::lemXv(
+   lemXvGTA = lemXv(
     cases = gtaSelectFsa@data[,grep('^count[[:digit:]]', names(gtaSelectFsa))], 
     lemObjects = lemSmoothMatGTA, 
     ncores = ncores, 
