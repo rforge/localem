@@ -289,10 +289,6 @@ lemSmoothMatGTA = localEM::smoothingMatrix(
   path = path, 
   filename = 'lemSmoothMat.grd', 
   verbose = TRUE)
-
-save(lemSmoothMatGTA, 
-     file = file.path(path,'lemSetupGTA.RData')
-     )
 ```
 
 ```{r cvOneXv, warning = FALSE, results='hide', cache=TRUE}
@@ -309,9 +305,6 @@ save(lemSmoothMatGTA,
 
   myLemXvGTA = lemXvGTA$xv
   myLemRiskGTA = lemXvGTA$riskEst
-
-  save(lemXvGTA, 
-    file = file.path(path,paste('lemEstR', range , 'mGTA.RData', sep = ''))) 
 ```
 
 
