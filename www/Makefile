@@ -3,15 +3,17 @@ PANDOC = pandoc
 
 all: kentucky.html kentuckyHighRes.html
 
+toronto: toronto.html
+
 .PRECIOUS: *.md
 
-kentucky.Rmd: ../pkg/localem/inst/extdoc/kentucky.Rmd
+%.Rmd: ../pkg/localem/inst/extdoc/%.Rmd
 	cp $< $@
 	
 kentuckyHighRes.md: kentucky.Rmd
 	$(REXE) -e "knitr::knit('$<', '$@', encoding='UTF-8')" highRes
 
-kentucky.md: kentucky.Rmd
+%.md: %.Rmd
 	$(REXE) -e "knitr::knit('$<', '$@', encoding='UTF-8')"
 
 %.html: %.md
