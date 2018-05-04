@@ -16,7 +16,7 @@ baseDir = file.path('/store',Sys.info()['user'],'localem/toronto')
 mapDir = file.path(baseDir, 'mapCache', '')
 path = file.path(baseDir, 'highResLocalem', '')
 cacheDir = file.path(baseDir, 'highResCache', '')
-figDir = file.path(baseDir, 'highResFigure', '')
+figDir = file.path('figureToronto', '')
 
 dir.create(mapDir, showWarnings = FALSE, recursive = TRUE)
 dir.create(path, showWarnings = FALSE, recursive = TRUE)
@@ -27,7 +27,7 @@ knitr::opts_chunk$set(
     dev = 'png',
     fig.width = 4, fig.height = 2.5,
     dpi = 100, out.width = '45%', fig.ncol = 2,
-    fig.path=figDir, cache.path=cacheDir
+    fig.path=figDir, cache.path=cacheDir, margins=1
 )
 ```
 
@@ -42,10 +42,13 @@ if(requireNamespace('Pmisc', quietly = TRUE)) {
             css = 'webpage.css'))
   }
   knitr::knit_hooks$set(plot = Pmisc::hook_plot_mdsubfig)
+  knitr::knit_hooks$set(margins = Pmisc::hook_plot_margins)
+
 } else {
   knitr::knit_hooks$set(plot = knitr::hook_plot_html)
-  cat('\n# Local-EM Example for Toronto\n')
   knitr::opts_chunk$set(out.width = '80%')
+
+  cat('\n# Local-EM Example for Toronto\n')
 }
 
 
@@ -94,10 +97,10 @@ The local-EM kernel smoothing algorithm of the `localEM` package was tested on l
 ```{r setupHighRes}
 ncores = 16
 cellsFine = 800
-cellsCoarse = 20
+cellsCoarse = 40
 nsim = 12
 nxv = 6
-Sbw = c(seq(0.5, 4, by=0.5), 5) *1000
+Sbw = c(seq(0.5, 3, by=0.5), 4:6, 8) *1000
 threshold = c(1.1, 1.25, 1.5)
 Nboot = 100 
 range = 10000
@@ -108,7 +111,7 @@ specify number of grid cells for simulation
 
 ```{r setupSim, message=FALSE}
 if(requireNamespace('RandomFields', quietly = TRUE)) {
-  cellsSimulate = 600
+  cellsSimulate = 800
 } else {
   cellsSimulate = 100  
 }
@@ -268,7 +271,7 @@ lemRasterGTA = rasterPartition(
   cellsFine = cellsFine, 
   bw = Sbw, 
   ncores = ceiling(ncores/2), 
-  focalSize = min(c(15*1000, max(Sbw))),
+  focalSize = min(c(15*1000, max(Sbw)*1.5)),
   xv = nxv, 
   path = path, 
   idFile = 'lemId.grd', 
