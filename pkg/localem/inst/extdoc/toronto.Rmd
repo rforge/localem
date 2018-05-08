@@ -136,7 +136,7 @@ theLogExpectedRaster = raster::trim(raster::mask(theLogExpectedRaster, gtaSelect
 set.seed(0)
 
 theSimData  = geostatsp::simLgcp(
-    param = c(mean = 0, variance = 0.4^2, range = 10 * 1000, shape = 2),
+    param = c(mean = 0, variance = 0.4^2, range = range, shape = 2),
     covariates = list(logExpected = theLogExpectedRaster) , 
     offset = 'logExpected', n = nsim)
 ```
