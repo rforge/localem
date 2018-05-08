@@ -180,8 +180,6 @@ temp = aggregate(list(logExpected = kentuckyTract$expected), list(id = kentuckyT
 kentuckyCounty = merge(kentuckyCounty, temp) #for plot
 kentuckyCounty$expected = exp(kentuckyCounty$logExpected)
 
-
-
 ```
 
 ```{r plotOffset, echo = FALSE, warning = FALSE, fig.cap = 'Events for Simulation 1', fig.subcap = c('Offset', 'Relative Intensity', 'Events', 'Counts','Offset by County', 'SIR by County'), fig.height = 3, fig.width = 6, out.width = theWidth, fig.ncol = 2}
@@ -292,8 +290,6 @@ scaleBar(kentuckyCounty,
     pos = 'topleft', 
     inset = c(0.2, 0), 
     bg = 'white')
-
-
 ```
 
 
