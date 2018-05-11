@@ -21,7 +21,7 @@
 #'
 #' @return The \code{lemXv} function returns a data frame of specified bandwidths and their cross-validation scores, and if specified, a raster of the risk estimation of the bandwidth with the lowest cross-validation score.
 #'
-#' @import raster sp
+#' @import raster sp Matrix
 #' @useDynLib localEM
 #' @export
 lemXv = function(

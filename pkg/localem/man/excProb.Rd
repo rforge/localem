@@ -5,9 +5,8 @@
 \title{Computes the exceedance probabilities}
 \usage{
 excProb(lemObjects, threshold = 1, Nboot = 100, bw = lemObjects$bw[1],
-  fact = 1, ncores = 1, iterations = list(tol = 1e-05, maxIter = 1000, 
-  gpu = FALSE), path = getwd(), filename = "lemExcProb.grd", 
-  verbose = FALSE)
+  fact = 1, ncores = 1, iterations = list(tol = 1e-05, maxIter = 1000, gpu
+  = FALSE), path = getwd(), filename = "lemExcProb.grd", verbose = FALSE)
 }
 \arguments{
 \item{lemObjects}{List of arrays for the smoothing matrix, and raster stacks for the partition, smoothed offsets and risk estimation}
@@ -89,10 +88,10 @@ lemExcProb = excProb(lemObjects = lemRisk,
 				  	Nboot = Nboot,
 					bw = bw[1],
 					fact = 1,
-					ncores = ncores,
-					path = path,
+             		ncores = ncores,
+             		path = path,
 				  	filename = 'lemExcProb.grd',
-					verbose = TRUE)
+             		verbose = TRUE)
 
 # plot exceedance probabilities
 pCol = mapmisc::colourScale(lemExcProb$excProb,
