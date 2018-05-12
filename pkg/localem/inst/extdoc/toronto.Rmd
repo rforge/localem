@@ -94,7 +94,7 @@ cellsFine = 800
 cellsCoarse = 40
 nsim = 12
 nxv = 6
-Sbw = c(seq(0.5, 3, by=0.5), 4:6) *1000
+Sbw = c(0.5, 0.75, 1, 1.25, 2, 2.5, 3,4,6) *1000
 threshold = c(1.1, 1.25, 1.5)
 Nboot = 100 
 range = 10000
