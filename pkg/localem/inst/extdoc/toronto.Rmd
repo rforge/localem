@@ -263,7 +263,7 @@ if(!file.exists(rasterFile)) {
     cellsCoarse = cellsCoarse, 
     cellsFine = cellsFine, 
     bw = Sbw, 
-    ncores = ceiling(ncores/2), 
+    ncores = ceiling(ncores/4), 
     focalSize = min(c(15*1000, max(Sbw)*1.5)),
     xv = nxv, 
     path = path, 
@@ -297,7 +297,7 @@ if(!file.exists(lemXvFile)) {
  lemXvGTA = lemXv(
   cases = gtaSelectFsa@data[,grep('^count[[:digit:]]', names(gtaSelectFsa))], 
   lemObjects = lemSmoothMatGTA, 
-  ncores = ceiling(ncores/2), 
+  ncores = ceiling(ncores/4), 
   iterations = list(tol = 1e-7, maxIter = 3000, gpu = FALSE), 
   randomSeed = range, 
   path = path, 
