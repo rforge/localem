@@ -95,6 +95,7 @@ cellsCoarse = 40
 nsim = 12
 nxv = 6
 Sbw = c(0.5, 0.75, 1, 1.25, 2, 2.5, 3,4,6) *1000
+focalSize = min(c(15*1000, max(Sbw)*1.5))
 Sthreshold = c(1.1, 1.25, 1.5)
 Nboot = 100 
 range = 10000
@@ -264,7 +265,7 @@ if(!file.exists(rasterFile)) {
     cellsFine = cellsFine, 
     bw = Sbw, 
     ncores = ceiling(ncores/4), 
-    focalSize = min(c(15*1000, max(Sbw)*1.5)),
+    focalSize = focalSize,
     xv = nxv, 
     path = path, 
     idFile = 'lemId.grd', 
@@ -391,7 +392,7 @@ the specified threshold.
 
 
 
-```{r excProbLEM, warning = FALSE, results='hide'}
+```{r excProbLEM, warning = FALSE, results='hide', eval=FALSE}
 #Compute excProb for localEM
 
 theFileExcProb = file.path(path, paste('lemExcProbR.grd', sep = ''))
@@ -399,35 +400,28 @@ theFileExcProb = file.path(path, paste('lemExcProbR.grd', sep = ''))
 
 if(!file.exists(theFileExcProb)) {
 
-  myLemXv = lemXvGTA$xv
-  myLemRisk = lemXvGTA$riskEst
+  Sbw = unique(lemXvGTA$bw)
+  theLemExcProbStack = raster(lemXvGTA$riskEst)
 
-
-  for(inS in 1:nsim) {
+  for(Dbw in Sbw) {
   
-    bw = lemXvGTA$bw[inS]
-    lemXvGTA$riskEst = myLemRisk[[inS]]
     
-    cat('Computing localEM exceedance probabilities for simulation:',inS, '\n')
+    cat('Computing localEM exceedance probabilities for simulation:',Dbw, '\n')
     excProb = localEM::excProb(
         lemObjects =  lemXvGTA,
         threshold = Sthreshold,
         Nboot = Nboot,
-        bw = bw,
-        fact = 2,
-        ncores = min(ncores/4, 2),
+        bw = Dbw,
+        fact = 4,
+        ncores = 1,
         iterations = list(tol = 1e-7, maxIter = 3000, gpu = FALSE),
         path = path,
-        filename = paste('lemExcProbR', inS, '.grd', sep = ''),
+        filename = paste('lemExcProbR', Dbw, '.grd', sep = ''),
         verbose = TRUE)
     
-    theLemExcProb = excProb$excProb
-    
-    if(inS == 1) {
-    theLemExcProbStack = theLemExcProb
-    } else {
-     theLemExcProbStack = raster::addLayer(theLemExcProbStack, theLemExcProb)
-    }
+     theLemExcProbStack = raster::addLayer(
+      theLemExcProbStack, 
+      excProb$excProb)
   }
 
   myLemExcProb = raster::writeRaster(
@@ -534,7 +528,7 @@ if(!file.exists(rocFile)) {
 
   myLemRoc = list()
   myBymRoc = list()
-  mySimSurface =theSimData$raster[[grep("^relativeIntensity[[:digit:]]", names(theSimData$raster))]]
+  mySimSurface = theSimData$raster[[grep("^relativeIntensity[[:digit:]]", names(theSimData$raster))]]
   for(inS in 1:nsim) {
 
     ##simulation surface
@@ -545,7 +539,9 @@ if(!file.exists(rocFile)) {
     cat("Computing ROC curves for simulation:",inS,"...\n")
     
     cat("localEM...\n")
-    lemExcProb = myLemExcProb[[grep(paste('(count|case)', inS, '_', sep = ''), names(myLemExcProb))]]
+    lemExcProb = myLemExcProb[[
+      grep(paste0('(count|case)', inS, '_'), names(myLemExcProb))
+    ]]
     names(lemExcProb) = gsub('^bw[[:digit:]]+\\_(count|case)[[:digit:]]+\\_', '', names(lemExcProb))
     names(lemExcProb) = gsub('^threshold', 'threshold.', names(lemExcProb))
     
@@ -573,7 +569,7 @@ if(!file.exists(rocFile)) {
     bymRoc = try(
       geostatsp::spatialRoc(
         fit = bymExcProb, 
-        rr = threshold, 
+        rr = Sthreshold, 
         truth = theSimSurface, 
         random = FALSE, 
         spec = theSpec), 

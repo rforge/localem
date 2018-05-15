@@ -61,6 +61,9 @@ finalSmooth = function(
         tempdir(), '.grd'),
       cl = theCluster
   )
+  if(any(grepl("deratify", filename(toSmooth)))) {
+      unlink(gsub("[[:alpha:]]$", "*", filename(toSmooth)))
+    }
 
   names(theFinalEst) = Slayers
 

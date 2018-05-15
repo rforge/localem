@@ -5,8 +5,9 @@
 \title{Computes the exceedance probabilities}
 \usage{
 excProb(lemObjects, threshold = 1, Nboot = 100, bw = lemObjects$bw[1],
-  fact = 1, ncores = 1, iterations = list(tol = 1e-05, maxIter = 1000, gpu
-  = FALSE), path = getwd(), filename = "lemExcProb.grd", verbose = FALSE)
+  est, fact = 1, ncores = 1, iterations = list(tol = 1e-05, maxIter =
+  1000, gpu = FALSE), path = getwd(), filename = "lemExcProb.grd",
+  verbose = FALSE)
 }
 \arguments{
 \item{lemObjects}{List of arrays for the smoothing matrix, and raster stacks for the partition, smoothed offsets and risk estimation}
@@ -16,6 +17,8 @@ excProb(lemObjects, threshold = 1, Nboot = 100, bw = lemObjects$bw[1],
 \item{Nboot}{Number of bootstraps}
 
 \item{bw}{Bandwidth for smoothing bootstrap samples}
+
+\item{est}{raster of risk surfaces to assess, defaults to layers of \code{lemObjects$riskEst} having the specified bandwidth.}
 
 \item{fact}{Aggregation factor prior to 'final step' smoothing (set to zero to skip final step)}
 

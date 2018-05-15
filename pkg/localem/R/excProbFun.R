@@ -3,6 +3,7 @@
 #' @description The \code{excProb} function first bootstraps cases with the input risk thresholds and expected counts from the rasterization of the spatial polygons of population data, and then, computes the exceedance probabilities with the same bandwidth as the risk estimation.
 #'
 #' @param lemObjects List of arrays for the smoothing matrix, and raster stacks for the partition, smoothed offsets and risk estimation
+#' @param est raster of risk surfaces to assess, defaults to layers of \code{lemObjects$riskEst} having the specified bandwidth.
 #' @param threshold Vector of risk thresholds
 #' @param Nboot Number of bootstraps
 #' @param bw Bandwidth for smoothing bootstrap samples
@@ -91,17 +92,18 @@
 #'
 #' @export
 excProb = function(
-    lemObjects,
-    threshold = 1,
-    Nboot = 100,
-    bw = lemObjects$bw[1],
-  	fact = 1,
-	ncores = 1,
-	iterations = list(tol = 1e-5, maxIter = 1000, gpu = FALSE),
-    path = getwd(),
-    filename = 'lemExcProb.grd',
-    verbose = FALSE
-){
+  lemObjects,
+  threshold = 1,
+  Nboot = 100,
+  bw = lemObjects$bw[1],
+  est,
+  fact = 1,
+  ncores = 1,
+  iterations = list(tol = 1e-5, maxIter = 1000, gpu = FALSE),
+  path = getwd(),
+  filename = 'lemExcProb.grd',
+  verbose = FALSE
+  ){
 
   dir.create(path, showWarnings = FALSE, recursive = TRUE)
 
@@ -128,7 +130,13 @@ excProb = function(
   bw = as.numeric(gsub('^bw|xv[[:digit:]]+', '', bwString))
 
   # risk estimate of interest
-  theEstRisk = lemObjects$riskEst
+  if(missing(est)) {
+    theEstRisk = lemObjects$riskEst[[
+      grep(paste0('^',bwString, '(_|$)'), names(lemObjects$riskEst))
+    ]]
+  } else {
+    theEstRisk = est
+  }
   theEstNames = names(theEstRisk)
 
   if(verbose) {
@@ -140,10 +148,10 @@ excProb = function(
   idCoarse = 1:length(lemObjects$smoothingMatrix$polyCoarse)
 
   offsetRaster = raster::stack(lemObjects$smoothingMatrix$offset$offset,
-      raster::deratify(lemObjects$smoothingMatrix$rasterFine))
+    raster::deratify(lemObjects$smoothingMatrix$rasterFine))
   offsetDf = stats::aggregate(x = values(offsetRaster$offset) * prod(res(offsetRaster)),
-      by = list(idCoarse = values(offsetRaster$idCoarse)),
-      FUN = sum)
+    by = list(idCoarse = values(offsetRaster$idCoarse)),
+    FUN = sum)
   colnames(offsetDf) = c('idCoarse','offset')
   offsetDf = merge(data.frame(idCoarse = idCoarse), offsetDf, by = 'idCoarse', all = TRUE)
   offsetDf$offset[is.na(offsetDf$offset)] = 0
@@ -152,17 +160,17 @@ excProb = function(
   offsetT = outer(offsetDf$offset, threshold)
 
   bootCountsDf = matrix(
-      data = stats::rpois(
-          length(offsetT) * Nboot,
-          rep(offsetT, Nboot)),
-      nrow = nrow(offsetDf),
-      ncol = length(threshold) * Nboot,
-      dimnames = list(rownames(offsetDf),
-          paste('count', rep(1:Nboot, rep(length(threshold), Nboot)),
-              '_threshold', rep(threshold, Nboot),
-              sep = '')
+    data = stats::rpois(
+      length(offsetT) * Nboot,
+      rep(offsetT, Nboot)),
+    nrow = nrow(offsetDf),
+    ncol = length(threshold) * Nboot,
+    dimnames = list(rownames(offsetDf),
+      paste('count', rep(1:Nboot, rep(length(threshold), Nboot)),
+        '_threshold', rep(threshold, Nboot),
+        sep = '')
       )
-  )
+    )
 
   # estimate risk from bootstrap cases
   if(verbose) {
@@ -171,80 +179,22 @@ excProb = function(
   }
 
   theBootRiskList = list()
-#  for(inB in 1:length(bw))
-  inB = 1
-#  {
 
-#	indexBw = which(bw[1:inB] %in% bw[inB])
-
-	# generate results for input bw
- #   if(length(indexBw) == 1) {
-
-      bootLemRisk = riskEst(
-			cases = bootCountsDf,
-            lemObjects = lemObjects,
-            bw = bw[inB],
-			fact=fact,
-			ncores=ncores,
-            path = path,
-            filename = tempfile(
-				paste0('riskBoot', bwString),
-				path, '.grd'),
-            verbose = verbose)
+  bootLemRisk = riskEst(
+   cases = bootCountsDf,
+   lemObjects = lemObjects,
+   bw = bw,
+   fact=fact,
+   ncores=ncores,
+   path = path,
+   filename = tempfile(
+    paste0('riskBoot', bwString),
+    path, '.grd'),
+   verbose = verbose)
 
 
-        bootEstRisk = bootLemRisk$riskEst
+  bootEstRisk = bootLemRisk$riskEst
 
-#        theBootRiskList[[inB]] = bootEstRisk
-
-    # use previous results if same bw was used before
- #   } else {
- #      theBootRiskList[[inB]] = theBootRiskList[[indexBw[1]]]
- #   }
- # }
-
-    # # first bw
-    # if(inB == 1) {
-
-      # bootLemRisk = riskEst(
-          # cases = bootCountsDf,
-          # lemObjects = lemObjects$smoothingMatrix,
-          # bw = bw[inB],
-          # ncores = ncores,
-          # iterations = iterations,
-          # path = path,
-          # filename = paste('riskBootTempBw', bw[inB], '.grd', sep = ''),
-          # verbose = verbose)
-      # bootEstRisk = bootLemRisk$riskEst
-
-      # theBootRiskList[[inB]] = bootEstRisk
-
-      # # additional bw
-    # } else {
-
-      # indexBw = which(bw[1:inB] %in% bw[inB])
-
-      # if(length(indexBw) == 1){
-
-        # bootLemRisk = riskEst(
-            # cases = bootCountsDf,
-            # lemObjects = lemObjects$smoothingMatrix,
-            # bw = bw[inB],
-            # ncores = ncores,
-            # iterations = iterations,
-            # path = path,
-            # filename = paste('riskBootTempBw', bw[inB], '.grd', sep = ''),
-            # verbose = FALSE)
-        # bootEstRisk = bootLemRisk$riskEst
-
-        # theBootRiskList[[inB]] = bootEstRisk
-
-        # # use previous results if same bw was used before
-      # } else {
-        # theBootRiskList[[inB]] = theBootRiskList[[indexBw[1]]]
-      # }
-    # }
-  # }
 
   # exceedance probabilities
   if(verbose) {
@@ -257,66 +207,54 @@ excProb = function(
 
  #   theBootEstRisk = theBootRiskList[[inB]]
 #stuff1 <<- bootEstRisk
-#stuff2 <<- inB
 
-bwHere = grep(
-  paste0(bwString, '_'),
-  names(lemObjects$riskEst), value=TRUE)
 
-Sthreshold = factor(
-  gsub("bw[[:digit:]]+_|count[[:digit:]]+_", "", names(bootEstRisk))
-  )
-thresholdMat = outer(
-  Sthreshold, levels(Sthreshold), '=='
-  ) / Nboot
-colnames(thresholdMat) = levels(Sthreshold)
+  Fthreshold = factor(
+    gsub("bw[[:digit:]]+_|count[[:digit:]]+_", "", names(bootEstRisk))
+    )
 
-theExcProbList = parallel::mcmapply(
-  function(Dy) {
-    raster::overlay(
+  thresholdMat = outer(
+    Fthreshold, levels(Fthreshold), '=='
+    ) / Nboot
+  colnames(thresholdMat) = levels(Fthreshold)
+
+  theExcProbList = parallel::mcmapply(
+    function(Dy) {
+      raster::overlay(
         x = bootEstRisk,
-        y = lemObjects$riskEst[[Dy]],
+        y = theEstRisk[[Dy]],
         fun = function(x,y) {
           (x<y) %*% thresholdMat
-#          bob <<- x<y
-#        apply(x < y,1,function(xx) {
-#            tapply(xx, Sthreshold, mean)
-          },
+        },
         filename = tempfile(
           paste0('probBoot', Dy),
           tmpdir=tempdir(), fileext='.grd')
         )
-  },
-  Dy = bwHere,
-  mc.cores=ncores,
-  SIMPLIFY=FALSE
-  )
+    },
+    Dy = names(theEstRisk),
+    mc.cores=ncores,
+    SIMPLIFY=FALSE
+    )
 
-#    indexT = gsub('count[[:digit:]]+_', '', names(theBootEstRisk))
 
- #   theExcProb = raster::stackApply(theProbEstRisk,
- #       indices = indexT,
- #       fun = mean,
- #       filename = paste(tempfile('excProbTemp', path), '.grd', sep = ''),
- #       overwrite = TRUE)
-
-#    theExcProbList[[inB]] = theExcProb
-#  }
-theExcProbStack = raster::stack(theExcProbList)
-names(theExcProbStack) = as.vector(t(outer(
-  names(theExcProbList), levels(Sthreshold), paste, sep='_'
-  )))
+  theExcProbStack = raster::stack(theExcProbList)
+  names(theExcProbStack) = as.vector(t(outer(
+    names(theExcProbList), levels(Fthreshold), paste, sep='_'
+    )))
 
   theExcProbBrick = raster::writeRaster(
-      theExcProbStack,
-      filename = filename,
-      overwrite = file.exists(filename))
+    theExcProbStack,
+    filename = filename,
+    overwrite = file.exists(filename))
 
+  theFiles = unlist(lapply(theExcProbList, raster::filename))
+  if(any(nchar(theFiles)))
+    unlink(gsub("grd$", "gri", theFiles))
 
   result = list(
-      bootEst = bootEstRisk,
-      excProb = theExcProbBrick
-  )
+    bootEst = bootEstRisk,
+    excProb = theExcProbBrick
+    )
 
   if(verbose) {
     cat(date(), "\n")
