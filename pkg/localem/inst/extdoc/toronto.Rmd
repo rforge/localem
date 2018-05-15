@@ -436,7 +436,7 @@ if(!file.exists(theFileExcProb)) {
     overwrite = file.exists(theFileExcProb))
   
 } else {
-   myLemExcProb = stack(theFileExcProb)
+   myLemExcProb = brick(theFileExcProb)
 }
 ```
 
@@ -461,7 +461,8 @@ offsetDf$logExpected = log(offsetDf$expected)
 offsetDf$logExpected[is.infinite(offsetDf$logExpected)] = NA
 offsetDf$id = lemSmoothMatGTA$polyCoarse$id
 
-gtaSelectFsa = merge(gtaSelectFsa, 
+gtaSelectFsaForBYM = merge(
+                    gtaSelectFsa[,setdiff(names(gtaSelectFsa), 'logExpected')], 
                      offsetDf, 
                      by = 'id')
 theBymRiskList = theBymExcProbList = as.list(1:nsim)
@@ -478,20 +479,23 @@ library('INLA')
 #    cat("Fitting BYM model for simulation:", i,"...\n")
     formula = as.formula(paste('count', i, ' ~ offset(logExpected)', sep = ''))
     kBYM = diseasemapping::bym(formula, 
-      data = gtaSelectFsa,
+      data = gtaSelectFsaForBYM,
       priorCI = list(sd = c(1, 0.05), propSpatial = c(0.2, 0.95)))
     
     #raster bym estimate
-    kBYMRaster = raster::rasterize(kBYM$data, y = toPlot[[i]], field = 'fitted.exp')
+    kBYMRaster = raster::rasterize(kBYM$data, y = toPlot[[i]], 
+      field = 'fitted.exp')
     names(kBYMRaster) = 'fitted.exp'
     theBymRiskList[[i]] = kBYMRaster
    
     #compute exceedance probs
     theBymMarg =kBYM$inla$marginals.fitted.bym
-    for(inT in 1:length(threshold)) {
+    for(inT in 1:length(Sthreshold)) {
       
-      kBYM$data$excProb = geostatsp::excProb(theBymMarg, threshold = log(threshold[inT]))
-      theBymExcProb = raster::rasterize( kBYM$data, y = toPlot[[i]], field = 'excProb')
+      kBYM$data$excProb = geostatsp::excProb(theBymMarg, 
+        threshold = log(Sthreshold[inT]))
+      theBymExcProb = raster::rasterize(kBYM$data, 
+        y = toPlot[[i]], field = 'excProb')
       
       if(inT == 1) {
         bymExcProbRaster = theBymExcProb
@@ -499,7 +503,7 @@ library('INLA')
         bymExcProbRaster = raster::addLayer(bymExcProbRaster, theBymExcProb)
       }
     }
-    names(bymExcProbRaster) = paste('count', i, '_threshold', threshold, sep = '')
+    names(bymExcProbRaster) = paste('count', i, '_threshold', Sthreshold, sep = '')
     theBymExcProbList[[i]] = bymExcProbRaster
     
 }
@@ -549,7 +553,7 @@ if(!file.exists(rocFile)) {
     lemRoc = try(
       geostatsp::spatialRoc(
         fit = lemExcProb, 
-        rr = threshold, 
+        rr = Sthreshold, 
         truth = theSimSurface, 
         random = FALSE, 
         spec = theSpec), 
