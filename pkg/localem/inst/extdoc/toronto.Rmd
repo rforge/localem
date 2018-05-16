@@ -99,6 +99,7 @@ focalSize = min(c(15*1000, max(Sbw)*1.5))
 Sthreshold = c(1.1, 1.25, 1.5)
 Nboot = 100 
 range = 10000
+set.seed(100)
 ```
 
 

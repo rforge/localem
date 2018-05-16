@@ -70,6 +70,7 @@ Nboot = 100
 path = 'highResLocalem/'
 cacheDir = 'highResCache/'
 figDir = 'highResFigure/'
+set.seed(100)
 ```
 
 ```{r setupLowRes, eval=!highRes, purl=!highRes, echo = !highRes}
@@ -87,6 +88,7 @@ Nboot = 20
 path = 'lowResLocalem/'
 cacheDir = 'lowResCache/'
 figDir = 'lowResFigure/'
+set.seed(100)
 ```  
 
 
