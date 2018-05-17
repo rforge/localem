@@ -393,7 +393,7 @@ the specified threshold.
 
 
 
-```{r excProbLEM, warning = FALSE, results='hide', eval=FALSE}
+```{r excProbLEM, warning = FALSE, results='hide'}
 #Compute excProb for localEM
 
 theFileExcProb = file.path(path, paste('lemExcProbR.grd', sep = ''))
