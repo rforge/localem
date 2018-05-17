@@ -614,7 +614,7 @@ Scol = c("BYM"='blue',"LEM"='red')
 ```
 
 
-```{r rocPlot, echo = FALSE, message = FALSE, warning = FALSE, fig.cap = 'Average ROC acroess all simulations', fig.height = 4, fig.width = 4, fig.ncol = length(Sthreshold), results = 'hide', fig.subcap = paste('threshold',Sthreshold)}
+```{r rocPlot, echo = FALSE, message = FALSE, warning = FALSE, fig.cap = 'Average ROC acroess all simulations', fig.height = 4, fig.width = 4, fig.ncol = 2, results = 'hide', fig.subcap = paste('threshold',Sthreshold)}
 
 for(D in Sthreshold) {
   Shere = which(roc2reshape$threshold == D)
