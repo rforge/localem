@@ -273,7 +273,7 @@ lemXv = function(
     }
 
     bwMin = result$xv[apply(result$xv[,colnames(result$xv)[-1]],2,which.min),'bw']
-    Slayers = paste('bw', bwMin, '_', countcol, sep = '')
+    Slayers = paste('bw', format(bwMin,scientific = FALSE), '_', countcol, sep = '')
 
     result$riskEst = finalSmooth(
         x = result,

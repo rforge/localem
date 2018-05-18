@@ -109,13 +109,13 @@ riskEst = function(
 
   bwString = sort(unique(grep(
     "^(bw)?[[:digit:]]+$",
-    lemObjects$bw,
+    format(lemObjects$bw,scientific=FALSE),
     value=TRUE
     )))
   } else {
     bwString = mapply(
       grep,
-      pattern = paste0("^(bw)?",bw,"$"),
+      pattern = paste0("^(bw)?",format(bw,scientific=FALSE), "$"),
       MoreArgs = list(
             x= names(lemObjects$smoothingArray), 
             value=TRUE)
@@ -125,7 +125,6 @@ riskEst = function(
       names(lemObjects$smoothingArray))
 
 	  if(any(is.na(bwMatch))) {
-
 		cat("cant match: ", bw[!is.na(bwMatch)], "\n")
 		stop("cant match all bw to smoothing array")
 	  }
