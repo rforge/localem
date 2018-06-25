@@ -222,6 +222,11 @@ lemXv = function(
   logProbCoarse[is.infinite(logProbCoarse)] = 0
   logProb = apply(logProbCoarse, 2, sum)
 
+  xvFullMat = list(
+    logProb = logProbCoarse, obs = xvObs, exp = xvEstMat,
+    xvMat = xvMat, Sxv = Sxv, xvEst = xvEst, cases = cases, Scount = Scount
+  )
+  
   logProbFull = data.frame(
       bw = as.numeric(Sbw),
       cases = Scount,
@@ -261,7 +266,8 @@ lemXv = function(
       riskAll = riskRaster,
       smoothingMatrix = xvSmoothMat,
       expected = polyCoarse,
-      folds = xvMat
+      folds = xvMat,
+      extra = xvFullMat
   )
 
   # estimate continuous risk at high resolution (if specified)
