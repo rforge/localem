@@ -223,7 +223,7 @@ lemXv = function(
   logProb = apply(logProbCoarse, 2, sum)
 
   xvFullMat = list(
-    logProb = logProbCoarse, obs = xvObs, exp = xvEstMat,
+    logProb = logProbCoarse, obs = xvObs, exp = xvEstMask,
     xvMat = xvMat, Sxv = Sxv, xvEst = xvEst, cases = cases, Scount = Scount
   )
   
