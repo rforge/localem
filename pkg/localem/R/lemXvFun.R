@@ -219,6 +219,22 @@ lemXv = function(
   suppressMessages(xvObs <- xvMat[,Sxv] * as.matrix(cases[,Scount]))
 
   logProbCoarse = stats::dpois(as.matrix(xvObs), as.matrix(xvEstMask), log=TRUE)
+  
+  badVec  = c()
+  i = 0
+  for(i in 1:length(logProbCoarse)){
+    if(is.na(as.vector(logProbCoarse[i])) == "TRUE")
+      badVec = append(badVec, i) 
+  }
+  
+    if(length(badVec)) {
+      
+      warning(paste("values containing NA:", 
+                    paste(badVec, collapse=', ')))
+    }
+
+
+  
   logProbCoarse[is.infinite(logProbCoarse)] = 0
   logProb = apply(logProbCoarse, 2, sum)
 
