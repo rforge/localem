@@ -220,20 +220,21 @@ lemXv = function(
 
   logProbCoarse = stats::dpois(as.matrix(xvObs), as.matrix(xvEstMask), log=TRUE)
   
-  badVec  = c()
+  badVec = which(apply(logProbCoarse, 1, function(xx) any(is.na(xx))))
+    if(length(badVec)) {
+      
+      warning(paste("regions containing NA:", 
+                    paste(badVec, collapse=', ')))
+    }
+  
+  Sbad  = c()
   i = 0
   for(i in 1:length(logProbCoarse)){
     if(is.na(as.vector(logProbCoarse[i])) == "TRUE")
-      badVec = append(badVec, i) 
+      Sbad = append(Sbad, i) 
   }
+  logProbCoarse[Sbad] = 0
   
-    if(length(badVec)) {
-      
-      warning(paste("values containing NA:", 
-                    paste(badVec, collapse=', ')))
-    }
-
-
   
   logProbCoarse[is.infinite(logProbCoarse)] = 0
   logProb = apply(logProbCoarse, 2, sum)
