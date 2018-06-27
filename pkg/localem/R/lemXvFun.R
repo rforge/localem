@@ -223,8 +223,8 @@ lemXv = function(
   badVec = which(apply(logProbCoarse, 1, function(xx) any(is.na(xx))))
     if(length(badVec)) {
       
-      warning(paste("regions containing NA:", 
-                    paste(badVec, collapse=', ')))
+      warning(paste("regions containing NA: ", 
+                    paste(badVec, collapse=', ')), "\ntreating all NA's as 0")
     }
   
   Sbad  = c()
