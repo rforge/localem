@@ -103,7 +103,7 @@ focalFromBw = function(
 
   result = list(focal=focalList,
     extended=bigList,centreCell=bigCentreCell,
-    bw=bw)
+    bw=bw, focalSize = focalSize)
 
   for(D in sort(setdiff(unique(bw$fact),1))){
     fineAgg = raster::aggregate(fine, fact=D)
