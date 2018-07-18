@@ -26,7 +26,7 @@
 #' path = 'example'
 #' 
 #' # rasters of case and population data
-#' lemRaster = rasterPartition(polyCoarse = kentuckyCounty, 
+#' lemRaster = rasterPartitionSingle(polyCoarse = kentuckyCounty, 
 #'								polyFine = kentuckyTract, 
 #'								cellsCoarse = cellsCoarse, 
 #'								cellsFine = cellsFine, 
@@ -38,7 +38,7 @@
 #'								verbose = TRUE)
 #'
 #' # smoothing matrix
-#' lemSmoothMat = smoothingMatrix(rasterObjects = lemRaster, 
+#' lemSmoothMat = smoothingMatrixSingle(rasterObjects = lemRaster, 
 #'									ncores = ncores, 
 #'									path = path, 
 #'									filename = 'lemSmoothMat.grd', 
@@ -195,7 +195,7 @@ smoothingMatrixMulti = function(
   resList = list()
   for(inM in 1:length(rasterObjects)) {
     
-    lemSmoothMatMap = localEM::smoothingMatrix(
+    lemSmoothMatMap = localEM::smoothingMatrixSingle(
       rasterObjects = rasterObjects[[inM]], 
       ncores = ncores, 
       path = path, 

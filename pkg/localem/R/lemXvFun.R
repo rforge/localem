@@ -350,7 +350,7 @@ lemXvMulti = function(
       randomSeed = inM
     }
     
-    lemXvMap = localEM::lemXv(
+    lemXvMap = localEM::lemXvSingle(
       cases = cases[[inM]], 
       fact = 0, 
       lemObjects = lemObjects[[inM]], 

@@ -34,7 +34,7 @@
 #' path = 'example'
 #'
 #' # rasters of case and population data
-#' lemRaster = rasterPartition(polyCoarse = kentuckyCounty,
+#' lemRaster = rasterPartitionSingle(polyCoarse = kentuckyCounty,
 #'								polyFine = kentuckyTract,
 #'								cellsCoarse = cellsCoarse,
 #'								cellsFine = cellsFine,
@@ -385,7 +385,7 @@ rasterPartitionMulti = function(
   for(inM in 1:length(polyCoarse)) {
     
     ## cross-validation set
-    lemXvMat = localEM::rasterPartition(
+    lemXvMat = localEM::rasterPartitionSingle(
       polyCoarse = polyCoarse[[inM]], 
       polyFine = polyFine[[inM]], 
       cellsCoarse = rasterCoarse, 
