@@ -46,7 +46,7 @@
 #'}
 #'
 #' @export
-smoothingMatrix = function(
+smoothingMatrixSingle = function(
     rasterObjects,
     ncores = 1,
     path = getwd(), 
@@ -176,4 +176,42 @@ smoothingMatrix = function(
   
   return(result)
 }
+###################################################################################################################################
+
+smoothingMatrixMulti = function(
+  rasterObjects,
+  ncores = 1,
+  path = getwd(), 
+  filename = 'lemSmoothMat.grd', 
+  verbose = FALSE
+){
+  
+  
+  if(verbose) {
+    cat(date(), '\n')
+    cat('generating smoothing matrix for all maps\n')
+  }
+  
+  resList = list()
+  for(inM in 1:length(rasterObjects)) {
+    
+    lemSmoothMatMap = localEM::smoothingMatrix(
+      rasterObjects = rasterObjects[[inM]], 
+      ncores = ncores, 
+      path = path, 
+      filename = paste0(gsub('.grd', '', filename), inM, '.grd'), 
+      verbose = verbose)
+    
+    resList[[inM]] = lemSmoothMatMap
+  }
+  
+  if(verbose) {
+    cat(date(), '\n')
+    cat('done\n')
+  }
+  
+  return(resList)
+}
+
+
 

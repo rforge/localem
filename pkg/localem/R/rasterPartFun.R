@@ -47,7 +47,7 @@
 #'}
 #'
 #' @export
-rasterPartition = function(
+rasterPartitionSingle = function(
   polyCoarse,
   polyFine,
   cellsCoarse,
@@ -330,4 +330,143 @@ rasterPartition = function(
   return(result)
 
 }
+###################################################################################################################################
 
+rasterPartitionMulti = function(
+  polyCoarse,
+  polyFine,
+  cellsCoarse,
+  cellsFine,
+  bw,
+  focalSize = NULL,
+  xv = NULL,
+  ncores = 1,
+  path = getwd(),
+  idFile = 'lemId.grd',
+  offsetFile = 'lemOffsets.grd',
+  verbose = FALSE
+){
+  
+  ##coarse and fine rasters for both maps
+  if(is.numeric(cellsCoarse)) {
+    crsCoarse = polyCoarse[[1]]@proj4string
+    
+    extentCoarse = matrix(NA, 
+                          nrow = 2, 
+                          ncol = 2, 
+                          dimnames = list(c('x','y'), c('min','max')))
+    extentCoarse[,'min'] = apply(sapply(polyCoarse, function(x) bbox(x)[,'min']), 1, min)
+    extentCoarse[,'max'] = apply(sapply(polyCoarse, function(x) bbox(x)[,'max']), 1, max)
+    
+    rasterCoarse = geostatsp::squareRaster(
+      raster(raster::extent(extentCoarse), crs = crsCoarse), 
+      cellsCoarse)
+    
+    values(rasterCoarse) = seq(1, ncell(rasterCoarse))
+    names(rasterCoarse) = "cellCoarse"
+  } else {
+    rasterCoarse = cellsCoarse
+  }
+  
+  if(is.numeric(cellsFine)) {
+    rasterFine = disaggregate(rasterCoarse, 
+                              ceiling(cellsFine/ncol(rasterCoarse)))
+    names(rasterFine) = 'cellCoarse'
+  } else {
+    rasterFine = cellsFine
+  }
+  
+  if(verbose) {
+    cat(date(), '\n')
+    cat('generating cross-validation set for all maps\n')
+  }
+  
+  xvList = list()
+  for(inM in 1:length(polyCoarse)) {
+    
+    ## cross-validation set
+    lemXvMat = localEM::rasterPartition(
+      polyCoarse = polyCoarse[[inM]], 
+      polyFine = polyFine[[inM]], 
+      cellsCoarse = rasterCoarse, 
+      cellsFine = rasterFine, 
+      bw = bw[1], 
+      ncores = ncores, 
+      xv = NULL, 
+      path = path, 
+      idFile = paste0(gsub('.grd', '', idFile), 'Xv', inM, '.grd'), 
+      offsetFile = paste0(gsub('.grd', '', offsetFile), 'Xv', inM, '.grd'), 
+      verbose = FALSE)
+    
+    xvMatMap = getXvMatOneMap(
+      coarse = lemXvMat$polyCoarse$idCoarse, 
+      coarseRaster = raster::deratify(lemXvMat$rasterFine), 
+      offsetRaster = lemXvMat$offset, 
+      Nxv = Nxv * length(polyCoarse))
+    
+    xvList[[inM]] = xvMatMap
+  }
+  
+  ## re-calibrate matrix of cross-validation sets
+  xvUpdateList = getXvMatUpdate(
+    polyCoarse = polyCoarse, 
+    xvMat = xvList, 
+    Nxv = Nxv)
+  
+  
+  if(verbose) {
+    cat(date(), '\n')
+    cat('obtaining rasters and smoothed offsets for all maps\n')
+  }
+  
+  resList = list()
+  offsetList = list()
+  for(inM in 1:length(polyCoarse)) {
+    
+    ## rasters
+    xvMatMap = xvUpdateList[[inM]]
+    
+    lemRasterMap = localEM::rasterPartition(
+      polyCoarse = polyCoarse[[inM]], 
+      polyFine = polyFine[[inM]], 
+      cellsCoarse = rasterCoarse, 
+      cellsFine = rasterFine, 
+      bw = bw, 
+      ncores = ncores, 
+      xv = xvMatMap, 
+      path = path, 
+      idFile = paste0(gsub('.grd', '', idFile), inM, '.grd'), 
+      offsetFile = paste0(gsub('.grd', '', offsetFile), inM, '.grd'), 
+      verbose = verbose)
+    
+    resList[[inM]] = lemRasterMap
+    
+    offsetRasterMap = lemRasterMap$offset
+    names(offsetRasterMap) = paste0(names(offsetRasterMap), '_', inM)
+    
+    offsetList[[inM]] = offsetRasterMap
+  }
+  
+  ## re-calibrate smoothed offsets
+  offsetFile = file.path(path, offsetFile)
+  
+  rasterOffsets = stack(offsetList)
+  offsetRaster = raster::stackApply(rasterOffsets, 
+                                    indices = gsub('_[[:digit:]]+', '', names(rasterOffsets)), 
+                                    fun = 'sum', na.rm = TRUE, 
+                                    filename = offsetFile, 
+                                    overwrite = file.exists(offsetFile))
+  names(offsetRaster) = gsub('index_', '', names(offsetRaster))
+  
+  for(inM in 1:length(polyCoarse)) {
+    
+    resList[[inM]]$offset = offsetRaster
+  }
+  
+  if(verbose) {
+    cat(date(), '\n')
+    cat('done\n')
+  }
+  
+  return(resList)
+}

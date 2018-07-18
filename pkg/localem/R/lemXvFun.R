@@ -24,7 +24,7 @@
 #' @import raster sp Matrix
 #' @useDynLib localEM
 #' @export
-lemXv = function(
+lemXvSingle = function(
     cases,
     population,
     cellsCoarse,
@@ -319,5 +319,256 @@ lemXv = function(
     cat("done\n")
   }
 
+  return(result)
+}
+###################################################################################################################################
+
+lemXvMulti = function(
+  cases, 
+  population, 
+  fact = 1, 
+  lemObjects, 
+  ncores = 1, 
+  iterations = list(tol = 1e-5, maxIter = 1000, gpu = FALSE), 
+  randomSeed = NULL, 
+  path = getwd(), 
+  filename = 'riskXv.grd', 
+  verbose = FALSE
+){
+  
+  if(verbose) {
+    cat(date(), '\n')
+    cat('running local-EM for validation sets for all maps\n')
+  }
+  
+  resList = list()
+  lambdaList = list()
+  for(inM in 1:length(cases)) {
+    
+    ## partition-level risk estimation
+    if(is.null(randomSeed)) {
+      randomSeed = inM
+    }
+    
+    lemXvMap = localEM::lemXv(
+      cases = cases[[inM]], 
+      fact = 0, 
+      lemObjects = lemObjects[[inM]], 
+      ncores = ncores, 
+      iterations = iterations, 
+      randomSeed = randomSeed, 
+      path = path, 
+      filename = paste0(gsub('.grd', '', filename), inM, '.grd'), 
+      verbose = verbose)
+    
+    resList[[inM]] = lemXvMap
+    
+    lambdaRasterMap = raster::deratify(lemXvMap$riskAll)
+    names(lambdaRasterMap) = paste0(names(lambdaRasterMap), '_', inM)
+    
+    lambdaList[[inM]] = lambdaRasterMap
+  }
+  
+  lambdaRasterStack = stack(lambdaList)
+  lambdaRaster = raster::stackApply(lambdaRasterStack, 
+                                    indices = gsub('_[[:digit:]]+', '', names(lambdaRasterStack)), 
+                                    fun = 'sum', na.rm = TRUE)
+  names(lambdaRaster) = gsub('index_', '', names(lambdaRaster))
+  
+  if(verbose) {
+    cat(date(), '\n')
+    cat('computing cross-validation scores\n')
+  }
+  
+  xvList = list()
+  logProbFull = NULL
+  for(inM in 1:length(cases)) {
+    
+    ## risk estimation for cross-validation regions
+    lemXvMap = resList[[inM]]
+    
+    xvMatMap = lemXvMap$smoothingMatrix$xv
+    
+    xvList[[inM]] = xvMatMap
+    
+    # Nxv = dim(xvMatMap)[2] / length(cases)
+    
+    idMatMap = as.numeric(dimnames(xvMatMap)[[2]]) - 1
+    # idMatMap = (idMatMap %/% Nxv) + 1
+    idMatMap = (idMatMap %% length(cases)) + 1
+    idMatMap = which(idMatMap == inM)
+    
+    regionMatMap = lemXvMap$smoothingMatrix$regionMat
+    
+    offsetMatMap = lemXvMap$smoothingMatrix$offsetMat[['offset']]
+    offsetMatMap = offsetMatMap[colnames(regionMatMap), colnames(regionMatMap)]
+    
+    partitionAreasMatMap = Matrix::Diagonal(
+      length(lemXvMap$smoothingMatrix$partitionAreas),
+      lemXvMap$smoothingMatrix$partitionAreas)
+    dimnames(partitionAreasMatMap) = list(
+      names(lemXvMap$smoothingMatrix$partitionAreas),
+      names(lemXvMap$smoothingMatrix$partitionAreas)
+    )
+    partitionAreasMatMap = partitionAreasMatMap[colnames(regionMatMap), colnames(regionMatMap)]
+    
+    riskRasterMap = stack(
+      raster::deratify(lemXvMap$smoothingMatrix$rasterFine)[['partition']],
+      lambdaRaster[[grep('xv', names(lambdaRaster))]])
+    riskRasterMap = raster::mask(riskRasterMap, lemXvMap$smoothingMatrix$rasterFine)
+    
+    littleLambdaMap = as.data.frame(stats::na.omit(raster::unique(riskRasterMap)))
+    
+    duplLambdaMap = unique(littleLambdaMap$partition[duplicated(littleLambdaMap$partition)])
+    duplLambdaMap = littleLambdaMap$partition %in% duplLambdaMap
+    zeroLambdaMap = apply(littleLambdaMap[,grep('bw', names(littleLambdaMap))] == 0, 1, all)
+    
+    littleLambdaMap = littleLambdaMap[!(duplLambdaMap & zeroLambdaMap),]
+    littleLambdaMap = aggregate(
+      littleLambdaMap[,grep('bw', names(littleLambdaMap))],
+      by = list(partition = littleLambdaMap$partition),
+      FUN = 'mean', na.rm = TRUE)
+    
+    bigLambdaMap = partitionAreasMatMap %*%
+      as.matrix(littleLambdaMap[,grep('bw', names(littleLambdaMap))])
+    
+    ## cross-validation scores    
+    countcol = grep('count', names(cases[[inM]]), value = TRUE)
+    
+    expectedCoarseMap = as.matrix(regionMatMap %*% offsetMatMap %*% bigLambdaMap)
+    
+    obsCountsMap = getObsCounts(
+      x = as.matrix(data.frame(cases[[inM]])[,countcol]), 
+      polyCoarse = cases[[inM]], 
+      regionMat = regionMatMap)
+    obsCountsMap = matrix(obsCountsMap, 
+                          nrow = nrow(expectedCoarseMap), ncol = ncol(expectedCoarseMap), 
+                          dimnames = dimnames(expectedCoarseMap))
+    
+    Sxv = as.numeric(
+      substr(colnames(obsCountsMap), 
+             regexpr('xv', colnames(obsCountsMap)) + 2, regexpr('_', colnames(obsCountsMap)) - 1))
+    
+    expectedCoarseMap = expectedCoarseMap[,Sxv %in% idMatMap]
+    obsCountsMap = obsCountsMap[,Sxv %in% idMatMap]
+    
+    for(inX in idMatMap) {
+      
+      expectedCoarseMap[!xvMatMap[,inX], grep(paste0('xv', inX), colnames(expectedCoarseMap))] = 0
+      obsCountsMap[!xvMatMap[,inX], grep(paste0('xv', inX), colnames(obsCountsMap))] = 0
+    }
+    
+    logProbCoarseMap = stats::dpois(as.matrix(obsCountsMap), 
+                                    as.matrix(expectedCoarseMap), 
+                                    log = TRUE)
+    logProbCoarseMap[is.infinite(logProbCoarseMap)] = 0
+    logProbMap = apply(logProbCoarseMap, 2, sum)
+    
+    Sbw = as.numeric(gsub('^bw|(xv[[:digit:]]+_[[:alnum:]]+$)', '', colnames(obsCountsMap)))
+    Scount = gsub('bw[[:digit:]]+xv[[:digit:]]+_', '', colnames(obsCountsMap))
+    Sxv = paste0(
+      substr(colnames(obsCountsMap), 
+             regexpr('xv', colnames(obsCountsMap)) + 2, regexpr('_', colnames(obsCountsMap)) - 1), 
+      '_', inM)
+    
+    logProbFull = rbind(logProbFull, 
+                        data.frame(bw = Sbw, cases = Scount, fold = Sxv, minusLogProb = -logProbMap))
+  }
+  rownames(logProbFull) = NULL
+  
+  xvRes = stats::aggregate(
+    logProbFull[,'minusLogProb'],
+    as.list(logProbFull[,c('bw','cases')]),
+    sum,
+    na.rm = TRUE)
+  xvRes = stats::reshape(
+    xvRes, direction = 'wide',
+    idvar = 'bw',
+    timevar = 'cases')
+  
+  colnames(xvRes) = gsub('^x[.]', '', colnames(xvRes))
+  xvRes = xvRes[,c('bw',countcol)]
+  minXvScore = apply(xvRes[,countcol, drop=FALSE], 2, min, na.rm = TRUE)
+  xvRes[,countcol] = xvRes[,countcol] -
+    matrix(minXvScore, nrow = nrow(xvRes), ncol = length(minXvScore), byrow = TRUE)
+  
+  lambdaRasterFinal = lambdaRaster[[grep('xv', names(lambdaRaster), invert = TRUE)]]
+  for(inM in 1:length(cases)) {
+    
+    lambdaRasterMask = lambdaList[[inM]][[1]]
+    
+    lambdaRasterFinal = raster::mask(lambdaRasterFinal, lambdaRasterMask)
+  }
+  
+  result = list(
+    xv = xvRes, 
+    xvFull = logProbFull, 
+    riskAll = lambdaRasterFinal, 
+    smoothingMatrix = resList, 
+    folds = xvList)
+  
+  # estimate continuous risk at high resolution (if specified)
+  if(fact > 0) {
+    
+    if(verbose) {
+      cat(date(), '\n')
+      cat('final smoothing step for bw with lowest CV score\n')
+    }
+    
+    bwMin = result$xv[apply(result$xv[,colnames(result$xv)[-1]], 2, which.min),'bw']
+    Slayers = paste('bw', format(bwMin, scientific = FALSE), '_', countcol, sep = '')
+    riskFile = file.path(path, filename)
+    
+    result$riskEst = finalSmooth(
+      x = result$riskAll,
+      focalMat = result$smoothingMatrix[[1]]$smoothingMatrix$focal$focal,
+      Slayers = Slayers,
+      fact = fact,
+      filename = riskFile,
+      ncores = ncores)
+    
+    # 	  finalEstList = list()
+    # 	  for(inM in 1:length(cases)) {
+    # 
+    # 	    lemXvMap = resList[[inM]]
+    # 	    
+    # 	    lambdaRasterMap = lambdaList[[inM]]
+    # 	    lambdaRasterMap = lambdaRasterMap[[grep('xv', names(lambdaRasterMap), invert = TRUE)]]
+    # 	    names(lambdaRasterMap) = gsub('_[[:digit:]]', '', names(lambdaRasterMap))
+    # 
+    # 	    riskFileMap = file.path(path, 
+    # 	                            paste0(gsub('.grd', '', filename), 'Xv', inM, '.grd'))
+    # 	    
+    #       finalEstMap = finalSmooth(
+    #         x = lambdaRasterMap, 
+    #         focalMat = lemXvMap$smoothingMatrix$focal$focal, 
+    #         Slayers = Slayers,
+    #         fact = fact,
+    #         filename = riskFileMap,
+    #         ncores = ncores)
+    #       names(finalEstMap) = paste0(names(finalEstMap), '_', inM)
+    #       
+    #       finalEstList[[inM]] = finalEstMap
+    # 	  }
+    #     
+    # 	  finalEstStack = stack(finalEstList)
+    # 	  finalEst = raster::stackApply(finalEstStack, 
+    # 	                                indices = gsub('_[[:digit:]]+', '', names(finalEstStack)), 
+    # 	                                    fun = 'sum', na.rm = TRUE)
+    # 	  names(finalEst) = gsub('index_', '', names(finalEst))
+    # 	  finalEst = raster::mask(finalEst, lemXvMap$smoothingMatrix$rasterFine)
+    # 	  
+    # 	  result$riskEst = raster::writeRaster(finalEst, 
+    # 	                                       filename = riskFile,
+    # 	                                       overwrite = file.exists(riskFile))
+    
+    result$bw = paste('bw', bwMin, sep = '')
+  }
+  
+  if(verbose) {
+    cat(date(), '\n')
+    cat('done\n')
+  }
+  
   return(result)
 }
