@@ -330,7 +330,7 @@ rasterPartitionSingle = function(
   return(result)
 
 }
-###################################################################################################################################
+
 
 rasterPartitionMulti = function(
   polyCoarse,

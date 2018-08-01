@@ -176,7 +176,7 @@ smoothingMatrixSingle = function(
   
   return(result)
 }
-###################################################################################################################################
+
 
 smoothingMatrixMulti = function(
   rasterObjects,
