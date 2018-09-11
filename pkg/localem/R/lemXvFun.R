@@ -24,7 +24,7 @@
 #' @import raster sp Matrix
 #' @useDynLib localEM
 #' @export
-lemXvSingle = function(
+lemXv = function(
     cases,
     population,
     cellsCoarse,
@@ -107,6 +107,14 @@ lemXvSingle = function(
         offsetFile = 'offsetXv.grd',
         verbose = verbose)
 
+  # restart cluster
+  if(ncores > 1 & !is.null(theCluster)) {
+    parallel::stopCluster(theCluster)
+
+    theCluster = parallel::makeCluster(spec=ncores, type='PSOCK', methods=TRUE)
+    parallel::setDefaultCluster(theCluster)
+    parallel::clusterEvalQ(theCluster, library('raster'))
+  }
     # smoothing matrix
     xvSmoothMat =  smoothingMatrix(
         rasterObjects = xvLemRaster,
@@ -323,6 +331,7 @@ lemXvSingle = function(
 }
 
 
+#' @export
 lemXvMulti = function(
   cases, 
   population, 
@@ -350,7 +359,7 @@ lemXvMulti = function(
       randomSeed = inM
     }
     
-    lemXvMap = localEM::lemXvSingle(
+    lemXvMap = lemXv(
       cases = cases[[inM]], 
       fact = 0, 
       lemObjects = lemObjects[[inM]], 

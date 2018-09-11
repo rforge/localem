@@ -44,8 +44,6 @@ if(requireNamespace('Pmisc', quietly = TRUE)) {
   cat('\n# Local-EM Example with Kentucky\n')
   theWidth = '80%'
 }
-
-highRes = T
 ```
 	
 ## Introduction 

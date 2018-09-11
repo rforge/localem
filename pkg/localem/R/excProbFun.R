@@ -7,6 +7,7 @@
 #' @param threshold Vector of risk thresholds
 #' @param Nboot Number of bootstraps
 #' @param bw Bandwidth for smoothing bootstrap samples
+#' @param est Estimated risk, defaults to \code{lemObjects$riskEst}
 #' @param fact Aggregation factor prior to 'final step' smoothing (set to zero to skip final step)
 #' @param ncores Number of cores/threads for parallel processing
 #' @param iterations List of convergence tolerance, number of iterations, and use of gpuR package for running local-EM recursions

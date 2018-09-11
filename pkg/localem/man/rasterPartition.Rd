@@ -6,7 +6,8 @@
 \usage{
 rasterPartition(polyCoarse, polyFine, cellsCoarse, cellsFine, bw,
   focalSize = NULL, xv = NULL, ncores = 1, path = getwd(),
-  idFile = "lemId.grd", offsetFile = "lemOffsets.grd", verbose = FALSE)
+  idFile = "lemId.grd", offsetFile = "lemOffsets.grd",
+  verbose = FALSE)
 }
 \arguments{
 \item{polyCoarse}{Spatial polygons of case data}
@@ -56,7 +57,7 @@ bw = c(10, 15, 17.5, 20) * 1000
 path = 'example'
 
 # rasters of case and population data
-lemRaster = rasterPartition(polyCoarse = kentuckyCounty,
+lemRaster = rasterPartitionSingle(polyCoarse = kentuckyCounty,
 							polyFine = kentuckyTract,
 							cellsCoarse = cellsCoarse,
 							cellsFine = cellsFine,

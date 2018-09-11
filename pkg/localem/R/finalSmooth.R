@@ -1,12 +1,13 @@
 
 # Computes the risk estimation to the fine raster by smoothing the risk of the partitions at the final iteration
 finalSmooth = function(
-    x,
-    Slayers,
-    fact=1,
-    ncores=1,
-    filename=tempfile("final", tempdir(), ".grd")
-    ) {
+  x,
+  Slayers,
+  fact=1,
+  ncores=1,
+  filename=tempfile("final", tempdir(), ".grd"),
+  focalMat = NULL
+  ) {
 
   toSmooth = x$riskAll
   levels(toSmooth)[[1]] = levels(toSmooth)[[1]][, c("ID", Slayers)]
@@ -14,7 +15,11 @@ finalSmooth = function(
   toSmooth = deratify(toSmooth, 
     filename = tempfile("deratify", tempdir(), ".grd"))
 
-  theFocal = x$smoothingMatrix$focal$focal
+  if(is.null(focalMat)) {
+    theFocal = x$smoothingMatrix$focal$focal
+  } else {
+    theFocal = focalMat
+  }
 
   if(fact > 1) {
     toSmooth = raster::aggregate(
@@ -34,7 +39,7 @@ finalSmooth = function(
           )
         seqHere = apply(seqHere, 2, function(xxx) sort(unique(xxx)))
         seqHere = seqHere + 1 + 
-          matrix(dim1, nrow=nrow(seqHere), ncol=2, byrow=TRUE)
+        matrix(dim1, nrow=nrow(seqHere), ncol=2, byrow=TRUE)
         res = xx[seqHere[,1], seqHere[,2]]  
         res/sum(res)
       })
@@ -54,16 +59,16 @@ finalSmooth = function(
   }
 
   theFinalEst = focalMult(
-      x=toSmooth,
-      w=theFocal,
-      edgeCorrect = TRUE,
-      filename = tempfile('finalsmoothed',
-        tempdir(), '.grd'),
-      cl = theCluster
-  )
+    x=toSmooth,
+    w=theFocal,
+    edgeCorrect = TRUE,
+    filename = tempfile('finalsmoothed',
+      tempdir(), '.grd'),
+    cl = theCluster
+    )
   if(any(grepl("deratify", filename(toSmooth)))) {
-      unlink(gsub("[[:alpha:]]$", "*", filename(toSmooth)))
-    }
+    unlink(gsub("[[:alpha:]]$", "*", filename(toSmooth)))
+  }
 
   names(theFinalEst) = Slayers
 
@@ -78,12 +83,12 @@ finalSmooth = function(
       method = 'bilinear',
       filename = filename,
       overwrite = file.exists(filename)
-    )
+      )
   } else {
     result = raster::writeRaster(theFinalEst,
-			filename = filename,
-			overwrite = file.exists(filename)
-		)
+     filename = filename,
+     overwrite = file.exists(filename)
+     )
   }
   # remove temporary raster files
   unlink(gsub("[[:alpha:]]$", "*", filename(theFinalEst)))
@@ -92,13 +97,13 @@ finalSmooth = function(
 }
 
 # Computes the risk estimation to the fine raster by smoothing the risk of the partitions at the final iteration
-finalSmooth = function(
-    x,
-    Slayers,
-    fact=1,
-    ncores=1,
-    filename=tempfile("final", tempdir(), ".grd")
-    ) {
+finalSmoothOldQuestionmark = function(
+  x,
+  Slayers,
+  fact=1,
+  ncores=1,
+  filename=tempfile("final", tempdir(), ".grd")
+  ) {
 
   toSmooth = x$riskAll
   levels(toSmooth)[[1]] = levels(toSmooth)[[1]][, c("ID", Slayers)]
@@ -126,7 +131,7 @@ finalSmooth = function(
           )
         seqHere = apply(seqHere, 2, function(xxx) sort(unique(xxx)))
         seqHere = seqHere + 1 + 
-          matrix(dim1, nrow=nrow(seqHere), ncol=2, byrow=TRUE)
+        matrix(dim1, nrow=nrow(seqHere), ncol=2, byrow=TRUE)
         res = xx[seqHere[,1], seqHere[,2]]  
         res/sum(res)
       })
@@ -146,14 +151,14 @@ finalSmooth = function(
   }
   
   tempFileFocal = tempfile('finalsmoothed',
-           tempdir(), '.grd')
+   tempdir(), '.grd')
   theFinalEst = focalMult(
-      x=toSmooth,
-      w=theFocal,
-      edgeCorrect = TRUE,
-      filename = tempFileFocal,
-      cl = theCluster
-  )
+    x=toSmooth,
+    w=theFocal,
+    edgeCorrect = TRUE,
+    filename = tempFileFocal,
+    cl = theCluster
+    )
 
   names(theFinalEst) = Slayers
 
@@ -168,12 +173,12 @@ finalSmooth = function(
       method = 'bilinear',
       filename = filename,
       overwrite = file.exists(filename)
-    )
+      )
   } else {
     result = raster::writeRaster(theFinalEst,
-			filename = filename,
-			overwrite = file.exists(filename)
-		)
+     filename = filename,
+     overwrite = file.exists(filename)
+     )
   }
   # remove temporary raster files
   unlink(gsub("[[:alpha:]]$", "*", filename(theFinalEst)))

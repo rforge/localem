@@ -47,7 +47,7 @@
 #'}
 #'
 #' @export
-rasterPartitionSingle = function(
+rasterPartition = function(
   polyCoarse,
   polyFine,
   cellsCoarse,
@@ -385,7 +385,7 @@ rasterPartitionMulti = function(
   for(inM in 1:length(polyCoarse)) {
     
     ## cross-validation set
-    lemXvMat = localEM::rasterPartitionSingle(
+    lemXvMat = rasterPartition(
       polyCoarse = polyCoarse[[inM]], 
       polyFine = polyFine[[inM]], 
       cellsCoarse = rasterCoarse, 

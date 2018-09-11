@@ -41,7 +41,7 @@ bw = c(10, 15, 17.5, 20) * 1000
 path = 'example'
 
 # rasters of case and population data
-lemRaster = rasterPartition(polyCoarse = kentuckyCounty, 
+lemRaster = rasterPartitionSingle(polyCoarse = kentuckyCounty, 
 							polyFine = kentuckyTract, 
 							cellsCoarse = cellsCoarse, 
 							cellsFine = cellsFine, 
@@ -53,7 +53,7 @@ lemRaster = rasterPartition(polyCoarse = kentuckyCounty,
 							verbose = TRUE)
 
 # smoothing matrix
-lemSmoothMat = smoothingMatrix(rasterObjects = lemRaster, 
+lemSmoothMat = smoothingMatrixSingle(rasterObjects = lemRaster, 
 								ncores = ncores, 
 								path = path, 
 								filename = 'lemSmoothMat.grd', 

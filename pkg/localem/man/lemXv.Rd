@@ -5,9 +5,9 @@
 \title{Computes the likelihood cross-validation of the raster partitions}
 \usage{
 lemXv(cases, population, cellsCoarse, cellsFine, bw, fact = 1, xv = 4,
-  lemObjects, ncores = 1, iterations = list(tol = 1e-05, maxIter = 1000, gpu
-  = FALSE), randomSeed = NULL, path = getwd(), filename = "riskXv.grd",
-  verbose = FALSE)
+  lemObjects, ncores = 1, iterations = list(tol = 1e-05, maxIter =
+  1000, gpu = FALSE), randomSeed = NULL, path = getwd(),
+  filename = "riskXv.grd", verbose = FALSE)
 }
 \arguments{
 \item{cases}{Spatial polygons with case data}

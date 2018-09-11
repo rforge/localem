@@ -46,7 +46,7 @@
 #'}
 #'
 #' @export
-smoothingMatrixSingle = function(
+smoothingMatrix = function(
     rasterObjects,
     ncores = 1,
     path = getwd(), 
@@ -195,7 +195,7 @@ smoothingMatrixMulti = function(
   resList = list()
   for(inM in 1:length(rasterObjects)) {
     
-    lemSmoothMatMap = localEM::smoothingMatrixSingle(
+    lemSmoothMatMap = smoothingMatrix(
       rasterObjects = rasterObjects[[inM]], 
       ncores = ncores, 
       path = path, 
