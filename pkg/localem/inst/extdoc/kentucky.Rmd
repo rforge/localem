@@ -357,7 +357,6 @@ riskKentucky = riskEst(
 ```
 
 ```{r plotRiskOneSetup}
-
 # estimated risk maps
 toPlot = brick(filename(riskKentucky$riskEst))[[
   round(seq(1, nlayers(riskKentucky$riskEst), len=6))
