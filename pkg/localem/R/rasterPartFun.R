@@ -119,7 +119,10 @@ rasterPartition = function(
   rasterIdCoarse = rasterize(
     polyCoarse,
     rasterFine,
-    field='idCoarse')
+    field='idCoarse', fun = function(xx, ...) {
+      res = table(xx)
+      as.numeric(names(res)[which.max(res)])
+    })
   names(rasterIdCoarse) = 'idCoarse'
 
   polyFine@data[is.na(polyFine@data[,'expected']),'expected'] = 0
@@ -162,7 +165,7 @@ rasterPartition = function(
   }
   rasterIdFine = deratify(ratifyOffset, 'idFine')
 
-  for(Dxv in 1:ncol(xvMat)) {
+  for(Dxv in seq(1, by=1, len=ncol(xvMat)) ) {
     xvHere = which(xvMat[,Dxv])
     maskHere = raster::calc(rasterIdCoarse,
       function(x) ! x %in% xvHere )
@@ -185,6 +188,7 @@ rasterPartition = function(
     filename = idFile,
     overwrite=file.exists(idFile))
 
+if(length(bw)) {
   if(verbose) {
     cat(date(), "\n")
     cat("computing focal array\n")
@@ -254,6 +258,14 @@ rasterPartition = function(
     filename = offsetFile,
 	  overwrite = file.exists(offsetFile))
 
+}  else {# end loop through bw
+  endCluster = FALSE
+  theFocal = NULL
+  offsetStack = writeRaster(
+    rasterOffset,
+    filename = offsetFile,
+    overwrite = file.exists(offsetFile))
+}
   # create list of partitions
   partitions = as.data.frame(stats::na.omit(raster::unique(rasterFineId)))
   partitions$partition = paste('c', partitions$cellCoarse, 'p', partitions$idCoarse,

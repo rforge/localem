@@ -1,48 +1,81 @@
 <!DOCTYPE html>
-<html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
 <head>
-  <meta charset="utf-8">
-  <meta name="generator" content="pandoc">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-  <meta name="author" content="Patrick Brown, Paul Nguyen">
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="author" content="Patrick Brown, Paul Nguyen" />
   <title>Local-EM Example with Kentucky</title>
-  <style type="text/css">code{white-space: pre;}</style>
   <style type="text/css">
-div.sourceCode { overflow-x: auto; }
-table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
-  margin: 0; padding: 0; vertical-align: baseline; border: none; }
-table.sourceCode { width: 100%; line-height: 100%; }
-td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
-td.sourceCode { padding-left: 5px; }
-code > span.kw { color: #007020; font-weight: bold; } /* Keyword */
-code > span.dt { color: #902000; } /* DataType */
-code > span.dv { color: #40a070; } /* DecVal */
-code > span.bn { color: #40a070; } /* BaseN */
-code > span.fl { color: #40a070; } /* Float */
-code > span.ch { color: #4070a0; } /* Char */
-code > span.st { color: #4070a0; } /* String */
-code > span.co { color: #60a0b0; font-style: italic; } /* Comment */
-code > span.ot { color: #007020; } /* Other */
-code > span.al { color: #ff0000; font-weight: bold; } /* Alert */
-code > span.fu { color: #06287e; } /* Function */
-code > span.er { color: #ff0000; font-weight: bold; } /* Error */
-code > span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
-code > span.cn { color: #880000; } /* Constant */
-code > span.sc { color: #4070a0; } /* SpecialChar */
-code > span.vs { color: #4070a0; } /* VerbatimString */
-code > span.ss { color: #bb6688; } /* SpecialString */
-code > span.im { } /* Import */
-code > span.va { color: #19177c; } /* Variable */
-code > span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
-code > span.op { color: #666666; } /* Operator */
-code > span.bu { } /* BuiltIn */
-code > span.ex { } /* Extension */
-code > span.pp { color: #bc7a00; } /* Preprocessor */
-code > span.at { color: #7d9029; } /* Attribute */
-code > span.do { color: #ba2121; font-style: italic; } /* Documentation */
-code > span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
-code > span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
-code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+      code{white-space: pre-wrap;}
+      span.smallcaps{font-variant: small-caps;}
+      span.underline{text-decoration: underline;}
+      div.column{display: inline-block; vertical-align: top; width: 50%;}
+  </style>
+  <style type="text/css">
+a.sourceLine { display: inline-block; line-height: 1.25; }
+a.sourceLine { pointer-events: none; color: inherit; text-decoration: inherit; }
+a.sourceLine:empty { height: 1.2em; position: absolute; }
+.sourceCode { overflow: visible; }
+code.sourceCode { white-space: pre; position: relative; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+code.sourceCode { white-space: pre-wrap; }
+a.sourceLine { text-indent: -1em; padding-left: 1em; }
+}
+pre.numberSource a.sourceLine
+  { position: relative; }
+pre.numberSource a.sourceLine:empty
+  { position: absolute; }
+pre.numberSource a.sourceLine::before
+  { content: attr(data-line-number);
+    position: absolute; left: -5em; text-align: right; vertical-align: baseline;
+    border: none; pointer-events: all;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {  }
+@media screen {
+a.sourceLine::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
   </style>
   <link rel="stylesheet" href="webpage.css">
   <!--[if lt IE 9]>
@@ -50,45 +83,44 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
   <![endif]-->
   
   
-  
 </head>
 <body>
 <header>
 <h1 class="title">Local-EM Example with Kentucky</h1>
 <p class="author">Patrick Brown, Paul Nguyen</p>
-<p class="date">Friday 5 January 2018</p>
+<p class="date">Tuesday 11 September 2018</p>
 </header>
 <h2 id="introduction">Introduction</h2>
 <p>The <code>localEM</code> package contains functions to implement the kernel smoothing local-EM algorithm<span class="math inline"><em></em><sup>1</sup></span> of disease data aggregated to geographical regions. This algorithm provides an nonparametric alternative to the standard geospatial models, such as the Besag-York-Mollie (BYM) model<span class="math inline"><em></em><sup>2</sup></span>, for estimating spatial risk of areal disease data. With disease cases typically aggregated to highly coarse geographical regions (e.g., census counties, or census subdivisions), the local-EM method creates a tessellation of distinct regions by overlaying the map of these coarse regions with another map containing fine geographical regions (e.g., census tracts, census blocks, or census dissemination areas) of population data. This allows for the spatial risk to be estimated at a better resolution with the fine regions.</p>
 <p>The methodology of this package is demonstrated on simulated lung cancer cases for the state of Kentucky, USA. The spatial polygons for the census counties and tracts of Kentucky are included with this package.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># specify number of grid cells and number of cores for computations in parallel</span>
-ncores =<span class="st"> </span><span class="dv">2</span>
-cellsFine =<span class="st"> </span><span class="dv">80</span>
-cellsCoarse =<span class="st"> </span><span class="dv">8</span>
-nsim =<span class="st"> </span><span class="dv">4</span>
-nxv =<span class="st"> </span><span class="dv">4</span>
-Sbw =<span class="st"> </span><span class="kw">seq</span>(<span class="dv">10</span>, <span class="dv">35</span>, <span class="dt">by =</span> <span class="dv">5</span>) <span class="op">*</span><span class="st"> </span><span class="dv">1000</span>
-threshold =<span class="st"> </span><span class="kw">c</span>(<span class="dv">1</span>, <span class="fl">1.5</span>)
-Nboot =<span class="st"> </span><span class="dv">20</span> 
-<span class="co"># on unix systems results will be saved in /tmp/localEMusername</span>
-path =<span class="st"> </span><span class="kw">file.path</span>(<span class="kw">dirname</span>(<span class="kw">tempdir</span>()),  
-  <span class="kw">paste</span>(<span class="st">&#39;localEM&#39;</span>, <span class="kw">Sys.info</span>()[<span class="st">&#39;user&#39;</span>], <span class="dt">sep =</span> <span class="st">&#39;&#39;</span>))
-cacheDir =<span class="st"> &#39;cache/&#39;</span>
-figDir =<span class="st"> &#39;figure/&#39;</span></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb1-1" data-line-number="1"><span class="co"># specify number of grid cells and number of cores for computations in parallel</span></a>
+<a class="sourceLine" id="cb1-2" data-line-number="2">ncores =<span class="st"> </span><span class="dv">2</span></a>
+<a class="sourceLine" id="cb1-3" data-line-number="3">cellsFine =<span class="st"> </span><span class="dv">80</span></a>
+<a class="sourceLine" id="cb1-4" data-line-number="4">cellsCoarse =<span class="st"> </span><span class="dv">8</span></a>
+<a class="sourceLine" id="cb1-5" data-line-number="5">nsim =<span class="st"> </span><span class="dv">4</span></a>
+<a class="sourceLine" id="cb1-6" data-line-number="6">nxv =<span class="st"> </span><span class="dv">4</span></a>
+<a class="sourceLine" id="cb1-7" data-line-number="7">fact =<span class="st"> </span><span class="dv">2</span></a>
+<a class="sourceLine" id="cb1-8" data-line-number="8">Sbw =<span class="st"> </span><span class="kw">seq</span>(<span class="dv">10</span>, <span class="dv">35</span>, <span class="dt">by =</span> <span class="dv">5</span>) <span class="op">*</span><span class="st"> </span><span class="dv">1000</span></a>
+<a class="sourceLine" id="cb1-9" data-line-number="9">threshold =<span class="st"> </span><span class="kw">c</span>(<span class="dv">1</span>, <span class="fl">1.5</span>)</a>
+<a class="sourceLine" id="cb1-10" data-line-number="10">Nboot =<span class="st"> </span><span class="dv">20</span> </a>
+<a class="sourceLine" id="cb1-11" data-line-number="11">path =<span class="st"> &#39;lowResLocalem/&#39;</span></a>
+<a class="sourceLine" id="cb1-12" data-line-number="12">cacheDir =<span class="st"> &#39;lowResCache/&#39;</span></a>
+<a class="sourceLine" id="cb1-13" data-line-number="13">figDir =<span class="st"> &#39;lowResFigure/&#39;</span></a>
+<a class="sourceLine" id="cb1-14" data-line-number="14"><span class="kw">set.seed</span>(<span class="dv">100</span>)</a></code></pre></div>
 <p>specify number of grid cells for simulation</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="cf">if</span>(<span class="kw">requireNamespace</span>(<span class="st">&#39;RandomFields&#39;</span>, <span class="dt">quietly =</span> <span class="ot">TRUE</span>)) {
-  cellsSimulate =<span class="st"> </span><span class="dv">200</span>
-} <span class="cf">else</span> {
-  cellsSimulate =<span class="st"> </span><span class="dv">100</span>  
-}</code></pre></div>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">require</span>(<span class="st">&#39;mapmisc&#39;</span>, <span class="dt">quietly=</span><span class="ot">TRUE</span>)
-<span class="kw">require</span>(<span class="st">&#39;rgdal&#39;</span>, <span class="dt">quietly=</span><span class="ot">TRUE</span>)
-
-<span class="kw">data</span>(<span class="st">&#39;kentuckyCounty&#39;</span>, <span class="dt">package =</span> <span class="st">&#39;localEM&#39;</span>) 
-<span class="kw">data</span>(<span class="st">&#39;kentuckyTract&#39;</span>, <span class="dt">package =</span> <span class="st">&#39;localEM&#39;</span>) 
-<span class="kw">data</span>(<span class="st">&#39;kMap&#39;</span>, <span class="dt">package =</span> <span class="st">&#39;localEM&#39;</span>)</code></pre></div>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">kMap =<span class="st"> </span>mapmisc<span class="op">::</span><span class="kw">tonerToTrans</span>(
-  mapmisc<span class="op">::</span><span class="kw">openmap</span>(kentuckyCounty, <span class="dt">fact=</span><span class="fl">1.6</span>, <span class="dt">path=</span><span class="st">&#39;stamen-toner&#39;</span>))</code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb2-1" data-line-number="1"><span class="cf">if</span>(<span class="kw">requireNamespace</span>(<span class="st">&#39;RandomFields&#39;</span>, <span class="dt">quietly =</span> <span class="ot">TRUE</span>)) {</a>
+<a class="sourceLine" id="cb2-2" data-line-number="2">  cellsSimulate =<span class="st"> </span><span class="dv">200</span></a>
+<a class="sourceLine" id="cb2-3" data-line-number="3">} <span class="cf">else</span> {</a>
+<a class="sourceLine" id="cb2-4" data-line-number="4">  cellsSimulate =<span class="st"> </span><span class="dv">100</span>  </a>
+<a class="sourceLine" id="cb2-5" data-line-number="5">}</a></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb3-1" data-line-number="1"><span class="kw">require</span>(<span class="st">&#39;mapmisc&#39;</span>, <span class="dt">quietly=</span><span class="ot">TRUE</span>)</a>
+<a class="sourceLine" id="cb3-2" data-line-number="2"><span class="kw">require</span>(<span class="st">&#39;rgdal&#39;</span>, <span class="dt">quietly=</span><span class="ot">TRUE</span>)</a>
+<a class="sourceLine" id="cb3-3" data-line-number="3"></a>
+<a class="sourceLine" id="cb3-4" data-line-number="4"><span class="kw">data</span>(<span class="st">&#39;kentuckyCounty&#39;</span>, <span class="dt">package =</span> <span class="st">&#39;localEM&#39;</span>) </a>
+<a class="sourceLine" id="cb3-5" data-line-number="5"><span class="kw">data</span>(<span class="st">&#39;kentuckyTract&#39;</span>, <span class="dt">package =</span> <span class="st">&#39;localEM&#39;</span>) </a>
+<a class="sourceLine" id="cb3-6" data-line-number="6"><span class="kw">data</span>(<span class="st">&#39;kMap&#39;</span>, <span class="dt">package =</span> <span class="st">&#39;localEM&#39;</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb4-1" data-line-number="1">kMap =<span class="st"> </span>mapmisc<span class="op">::</span><span class="kw">tonerToTrans</span>(</a>
+<a class="sourceLine" id="cb4-2" data-line-number="2">  mapmisc<span class="op">::</span><span class="kw">openmap</span>(kentuckyCounty, <span class="dt">fact=</span><span class="fl">1.6</span>, <span class="dt">path=</span><span class="st">&#39;stamen-toner&#39;</span>))</a></code></pre></div>
 <h2 id="simulate-cases">Simulate Cases</h2>
 <p>Using the <code>simLgcp()</code> function from the <code>geostatsp</code> package, case locations are simulated with the log Gaussian Cox process (LGCP) and following parameters:</p>
 <ul>
@@ -98,35 +130,39 @@ figDir =<span class="st"> &#39;figure/&#39;</span></code></pre></div>
 <li>range: 120 km</li>
 <li>offsets: log of expected cases/m<span class="math inline"><em></em><sup>2</sup></span> of the census tracts</li>
 </ul>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">kentuckyOffset =<span class="st"> </span>geostatsp<span class="op">::</span><span class="kw">spdfToBrick</span>(
-    kentuckyTract,
-    geostatsp<span class="op">::</span><span class="kw">squareRaster</span>(kentuckyTract, cellsSimulate),
-    <span class="dt">pattern =</span> <span class="st">&#39;^expected$&#39;</span>,
-    <span class="dt">logSumExpected =</span> <span class="ot">TRUE</span>)
-
-<span class="kw">set.seed</span>(<span class="dv">0</span>)
-kCases =<span class="st"> </span>geostatsp<span class="op">::</span><span class="kw">simLgcp</span>(
-    <span class="dt">param =</span> <span class="kw">c</span>(<span class="dt">mean =</span> <span class="dv">0</span>, <span class="dt">variance =</span> <span class="fl">0.4</span><span class="op">^</span><span class="dv">2</span>, <span class="dt">range =</span> <span class="dv">120</span> <span class="op">*</span><span class="st"> </span><span class="dv">1000</span>, <span class="dt">shape =</span> <span class="dv">2</span>),
-    <span class="dt">covariates =</span> <span class="kw">list</span>(<span class="dt">logExpected =</span> kentuckyOffset), 
-    <span class="dt">offset =</span> <span class="st">&#39;logExpected&#39;</span>, <span class="dt">n =</span> nsim)</code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb5-1" data-line-number="1">kentuckyOffset =<span class="st"> </span>geostatsp<span class="op">::</span><span class="kw">spdfToBrick</span>(</a>
+<a class="sourceLine" id="cb5-2" data-line-number="2">    kentuckyTract,</a>
+<a class="sourceLine" id="cb5-3" data-line-number="3">    geostatsp<span class="op">::</span><span class="kw">squareRaster</span>(kentuckyTract, cellsSimulate),</a>
+<a class="sourceLine" id="cb5-4" data-line-number="4">    <span class="dt">pattern =</span> <span class="st">&#39;^expected$&#39;</span>,</a>
+<a class="sourceLine" id="cb5-5" data-line-number="5">    <span class="dt">logSumExpected =</span> <span class="ot">TRUE</span>)</a>
+<a class="sourceLine" id="cb5-6" data-line-number="6"></a>
+<a class="sourceLine" id="cb5-7" data-line-number="7"><span class="kw">set.seed</span>(<span class="dv">0</span>)</a>
+<a class="sourceLine" id="cb5-8" data-line-number="8">kCases =<span class="st"> </span>geostatsp<span class="op">::</span><span class="kw">simLgcp</span>(</a>
+<a class="sourceLine" id="cb5-9" data-line-number="9">    <span class="dt">param =</span> <span class="kw">c</span>(<span class="dt">mean =</span> <span class="dv">0</span>, <span class="dt">variance =</span> <span class="fl">0.4</span><span class="op">^</span><span class="dv">2</span>, <span class="dt">range =</span> <span class="dv">120</span> <span class="op">*</span><span class="st"> </span><span class="dv">1000</span>, <span class="dt">shape =</span> <span class="dv">2</span>),</a>
+<a class="sourceLine" id="cb5-10" data-line-number="10">    <span class="dt">covariates =</span> <span class="kw">list</span>(<span class="dt">logExpected =</span> kentuckyOffset), </a>
+<a class="sourceLine" id="cb5-11" data-line-number="11">    <span class="dt">offset =</span> <span class="st">&#39;logExpected&#39;</span>, <span class="dt">n =</span> nsim)</a></code></pre></div>
 <p>The simulated cases are then aggregated to the appropriate counties. Plots of the relative intensity, event locations and aggregated data are provided for the first simulated dataset.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">kCases<span class="op">$</span>agg =<span class="st"> </span><span class="kw">lapply</span>(
-    kCases[<span class="kw">grep</span>(<span class="st">&#39;^events[[:digit:]]+?&#39;</span>, <span class="kw">names</span>(kCases))],
-    <span class="cf">function</span>(qq) <span class="kw">over</span>(qq, kentuckyCounty)[,<span class="st">&#39;id&#39;</span>]
-)
-
-countyCounts =<span class="st"> </span><span class="kw">as.data.frame</span>(<span class="kw">lapply</span>(
-        kCases<span class="op">$</span>agg,  
-        <span class="cf">function</span>(xx) {
-          <span class="kw">as.vector</span>(<span class="kw">table</span>(xx, <span class="dt">exclude =</span> <span class="ot">NULL</span>)[
-                  <span class="kw">as.character</span>(kentuckyCounty<span class="op">$</span>id)])
-        }
-    ))
-
-countyCounts[<span class="kw">is.na</span>(countyCounts)] =<span class="st"> </span><span class="dv">0</span>
-<span class="kw">names</span>(countyCounts) =<span class="st"> </span><span class="kw">gsub</span>(<span class="st">&#39;^events&#39;</span>, <span class="st">&#39;count&#39;</span>, <span class="kw">names</span>(countyCounts))
-<span class="kw">rownames</span>(countyCounts) =<span class="st"> </span><span class="kw">as.character</span>(kentuckyCounty<span class="op">$</span>id)
-kentuckyCounty =<span class="st"> </span><span class="kw">merge</span>(kentuckyCounty, countyCounts, <span class="dt">by.x =</span> <span class="st">&#39;id&#39;</span>, <span class="dt">by.y =</span> <span class="st">&#39;row.names&#39;</span>)</code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb6-1" data-line-number="1">kCases<span class="op">$</span>agg =<span class="st"> </span><span class="kw">lapply</span>(</a>
+<a class="sourceLine" id="cb6-2" data-line-number="2">    kCases[<span class="kw">grep</span>(<span class="st">&#39;^events[[:digit:]]+?&#39;</span>, <span class="kw">names</span>(kCases))],</a>
+<a class="sourceLine" id="cb6-3" data-line-number="3">    <span class="cf">function</span>(qq) <span class="kw">over</span>(qq, kentuckyCounty)[,<span class="st">&#39;id&#39;</span>]</a>
+<a class="sourceLine" id="cb6-4" data-line-number="4">)</a>
+<a class="sourceLine" id="cb6-5" data-line-number="5"></a>
+<a class="sourceLine" id="cb6-6" data-line-number="6">countyCounts =<span class="st"> </span><span class="kw">as.data.frame</span>(<span class="kw">lapply</span>(</a>
+<a class="sourceLine" id="cb6-7" data-line-number="7">        kCases<span class="op">$</span>agg,  </a>
+<a class="sourceLine" id="cb6-8" data-line-number="8">        <span class="cf">function</span>(xx) {</a>
+<a class="sourceLine" id="cb6-9" data-line-number="9">          <span class="kw">as.vector</span>(<span class="kw">table</span>(xx, <span class="dt">exclude =</span> <span class="ot">NULL</span>)[</a>
+<a class="sourceLine" id="cb6-10" data-line-number="10">                  <span class="kw">as.character</span>(kentuckyCounty<span class="op">$</span>id)])</a>
+<a class="sourceLine" id="cb6-11" data-line-number="11">        }</a>
+<a class="sourceLine" id="cb6-12" data-line-number="12">    ))</a>
+<a class="sourceLine" id="cb6-13" data-line-number="13"></a>
+<a class="sourceLine" id="cb6-14" data-line-number="14">countyCounts[<span class="kw">is.na</span>(countyCounts)] =<span class="st"> </span><span class="dv">0</span></a>
+<a class="sourceLine" id="cb6-15" data-line-number="15"><span class="kw">names</span>(countyCounts) =<span class="st"> </span><span class="kw">gsub</span>(<span class="st">&#39;^events&#39;</span>, <span class="st">&#39;count&#39;</span>, <span class="kw">names</span>(countyCounts))</a>
+<a class="sourceLine" id="cb6-16" data-line-number="16"><span class="kw">rownames</span>(countyCounts) =<span class="st"> </span><span class="kw">as.character</span>(kentuckyCounty<span class="op">$</span>id)</a>
+<a class="sourceLine" id="cb6-17" data-line-number="17">kentuckyCounty =<span class="st"> </span><span class="kw">merge</span>(kentuckyCounty, countyCounts, <span class="dt">by.x =</span> <span class="st">&#39;id&#39;</span>, <span class="dt">by.y =</span> <span class="st">&#39;row.names&#39;</span>)</a>
+<a class="sourceLine" id="cb6-18" data-line-number="18"></a>
+<a class="sourceLine" id="cb6-19" data-line-number="19">temp =<span class="st"> </span><span class="kw">aggregate</span>(<span class="kw">list</span>(<span class="dt">logExpected =</span> kentuckyTract<span class="op">$</span>expected), <span class="kw">list</span>(<span class="dt">id =</span> kentuckyTract<span class="op">$</span>id2),<span class="dt">FUN =</span> <span class="cf">function</span>(x){<span class="kw">log</span>(<span class="kw">sum</span>(x))})</a>
+<a class="sourceLine" id="cb6-20" data-line-number="20">kentuckyCounty =<span class="st"> </span><span class="kw">merge</span>(kentuckyCounty, temp) <span class="co">#for plot</span></a>
+<a class="sourceLine" id="cb6-21" data-line-number="21">kentuckyCounty<span class="op">$</span>expected =<span class="st"> </span><span class="kw">exp</span>(kentuckyCounty<span class="op">$</span>logExpected)</a></code></pre></div>
 <div id="fig:plotOffset" class="subfigures">
 <table style="width:90%;">
 <colgroup>
@@ -136,18 +172,26 @@ kentuckyCounty =<span class="st"> </span><span class="kw">merge</span>(kentuckyC
 <tbody>
 <tr class="odd">
 <td style="text-align: center;"><figure>
-<img src="figure/plotOffset-1.png" alt="a) Offset" style="width:100.0%" /><figcaption>a) Offset</figcaption>
+<img src="lowResFigure/plotOffset-1.png" alt="a) Offset" style="width:100.0%" /><figcaption>a) Offset</figcaption>
 </figure></td>
 <td style="text-align: center;"><figure>
-<img src="figure/plotOffset-2.png" alt="b) Relative Intensity" style="width:100.0%" /><figcaption>b) Relative Intensity</figcaption>
+<img src="lowResFigure/plotOffset-2.png" alt="b) Relative Intensity" style="width:100.0%" /><figcaption>b) Relative Intensity</figcaption>
 </figure></td>
 </tr>
 <tr class="even">
 <td style="text-align: center;"><figure>
-<img src="figure/plotOffset-3.png" alt="c) Events" style="width:100.0%" /><figcaption>c) Events</figcaption>
+<img src="lowResFigure/plotOffset-3.png" alt="c) Events" style="width:100.0%" /><figcaption>c) Events</figcaption>
 </figure></td>
 <td style="text-align: center;"><figure>
-<img src="figure/plotOffset-4.png" alt="d) Counts" style="width:100.0%" /><figcaption>d) Counts</figcaption>
+<img src="lowResFigure/plotOffset-4.png" alt="d) Counts" style="width:100.0%" /><figcaption>d) Counts</figcaption>
+</figure></td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;"><figure>
+<img src="lowResFigure/plotOffset-5.png" alt="e) Offset by County" style="width:100.0%" /><figcaption>e) Offset by County</figcaption>
+</figure></td>
+<td style="text-align: center;"><figure>
+<img src="lowResFigure/plotOffset-6.png" alt="f) SIR by County" style="width:100.0%" /><figcaption>f) SIR by County</figcaption>
 </figure></td>
 </tr>
 </tbody>
@@ -158,27 +202,27 @@ kentuckyCounty =<span class="st"> </span><span class="kw">merge</span>(kentuckyC
 <p>The local-EM algorithm requires a smoothing parameter called the bandwidth to estimate the spatial risk. Small values of the bandwidth yield estimates similar to standardized incidence ratios of each areal regions, while large values yield estimates to the overall mean incidence ratio of the entire study area (i.e., [total counts]/[total offsets]). The preferred or optimal bandwidth for the disease data is one that minimizes the trade-off between the bias and variance of the estimator.</p>
 <p>To automatic the selection of the optimal bandwidth, the <code>lemXv()</code> function of this package implements a likelihood cross-validation (CV) approach with the set of specified bandwidths. CV scores are computed with <span class="math inline"><em>k</em></span>-fold sampling without replacement of the dataset. The optimal bandwidth is the one that yields the smallest CV score.</p>
 <p>The CV scores with 4-fold sampling are provided for the first simulated dataset.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(<span class="st">&#39;localEM&#39;</span>)
-
-fileHere =<span class="st"> </span><span class="kw">file.path</span>(path, <span class="st">&#39;xvKentucky.rds&#39;</span>)
-
-<span class="cf">if</span>(<span class="op">!</span><span class="kw">file.exists</span>(fileHere)) {
-
-  xvKentucky =<span class="st"> </span><span class="kw">lemXv</span>(
-      <span class="dt">cases =</span> kentuckyCounty[,<span class="kw">c</span>(<span class="st">&#39;id&#39;</span>,<span class="st">&#39;count1&#39;</span>)], 
-      <span class="dt">population =</span> kentuckyTract, 
-      <span class="dt">cellsCoarse =</span> cellsCoarse,  
-      <span class="dt">cellsFine =</span> cellsFine, 
-      <span class="dt">bw =</span> Sbw, 
-      <span class="dt">xv =</span> nxv, 
-      <span class="dt">ncores =</span> ncores, 
-      <span class="dt">path =</span> path, 
-      <span class="dt">verbose =</span> <span class="ot">TRUE</span>)
-  
-  <span class="kw">saveRDS</span>(xvKentucky, <span class="dt">file =</span> fileHere)
-} <span class="cf">else</span> {
-  xvKentucky =<span class="st"> </span><span class="kw">readRDS</span>(fileHere)
-}</code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb7-1" data-line-number="1"><span class="kw">library</span>(<span class="st">&#39;localEM&#39;</span>)</a></code></pre></div>
+<pre><code>## Loading required package: Matrix</code></pre>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb9-1" data-line-number="1">fileHere =<span class="st"> </span><span class="kw">file.path</span>(path, <span class="st">&#39;xvKentucky.rds&#39;</span>)</a>
+<a class="sourceLine" id="cb9-2" data-line-number="2"></a>
+<a class="sourceLine" id="cb9-3" data-line-number="3"><span class="cf">if</span>(<span class="op">!</span><span class="kw">file.exists</span>(fileHere)) {</a>
+<a class="sourceLine" id="cb9-4" data-line-number="4"></a>
+<a class="sourceLine" id="cb9-5" data-line-number="5">  xvKentucky =<span class="st"> </span><span class="kw">lemXv</span>(</a>
+<a class="sourceLine" id="cb9-6" data-line-number="6">      <span class="dt">cases =</span> kentuckyCounty[,<span class="kw">c</span>(<span class="st">&#39;id&#39;</span>,<span class="st">&#39;count1&#39;</span>)], </a>
+<a class="sourceLine" id="cb9-7" data-line-number="7">      <span class="dt">population =</span> kentuckyTract, </a>
+<a class="sourceLine" id="cb9-8" data-line-number="8">      <span class="dt">cellsCoarse =</span> cellsCoarse,  </a>
+<a class="sourceLine" id="cb9-9" data-line-number="9">      <span class="dt">cellsFine =</span> cellsFine, </a>
+<a class="sourceLine" id="cb9-10" data-line-number="10">      <span class="dt">bw =</span> Sbw, </a>
+<a class="sourceLine" id="cb9-11" data-line-number="11">      <span class="dt">xv =</span> nxv, </a>
+<a class="sourceLine" id="cb9-12" data-line-number="12">      <span class="dt">ncores =</span> ncores, </a>
+<a class="sourceLine" id="cb9-13" data-line-number="13">      <span class="dt">path =</span> path, </a>
+<a class="sourceLine" id="cb9-14" data-line-number="14">      <span class="dt">verbose =</span> <span class="ot">TRUE</span>)</a>
+<a class="sourceLine" id="cb9-15" data-line-number="15">  </a>
+<a class="sourceLine" id="cb9-16" data-line-number="16">  <span class="kw">saveRDS</span>(xvKentucky, <span class="dt">file =</span> fileHere)</a>
+<a class="sourceLine" id="cb9-17" data-line-number="17">} <span class="cf">else</span> {</a>
+<a class="sourceLine" id="cb9-18" data-line-number="18">  xvKentucky =<span class="st"> </span><span class="kw">readRDS</span>(fileHere)</a>
+<a class="sourceLine" id="cb9-19" data-line-number="19">}</a></code></pre></div>
 <div id="fig:cvPlotOne" class="subfigures">
 <table style="width:60%;">
 <colgroup>
@@ -187,7 +231,7 @@ fileHere =<span class="st"> </span><span class="kw">file.path</span>(path, <span
 <tbody>
 <tr class="odd">
 <td style="text-align: center;"><figure>
-<img src="figure/cvPlotOne-1.png" alt="a) Cross-validation Scores for Simulation 1" style="width:100.0%" /><figcaption>a) Cross-validation Scores for Simulation 1</figcaption>
+<img src="lowResFigure/cvPlotOne-1.png" alt="a) Cross-validation Scores for Simulation 1" style="width:100.0%" /><figcaption>a) Cross-validation Scores for Simulation 1</figcaption>
 </figure></td>
 </tr>
 </tbody>
@@ -197,17 +241,17 @@ fileHere =<span class="st"> </span><span class="kw">file.path</span>(path, <span
 <h2 id="risk-estimation">Risk Estimation</h2>
 <p>The R objects created from the <code>lemXv()</code> function also contain the local-EM risk estimation done with the optimal bandwidth found in the CV approach. High-resolution plots of the local-EM estimation with their optimal bandwidths are provided for all simulated datasets.</p>
 <p>The <code>riskEst()</code> function allows local-EM risk estimation to be done with specified bandwidths. Plots of the local-EM estimation with all bandwidths used in this example are provided for the first simulated dataset. The plots show high cancer risk in the areas located east of Bowling Green and south of Frankfurt decreasing as the bandwidth increases.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">riskKentucky =<span class="st"> </span><span class="kw">riskEst</span>(
-    <span class="dt">cases =</span> kentuckyCounty[,<span class="kw">c</span>(<span class="st">&#39;id&#39;</span>,<span class="st">&#39;count1&#39;</span>)], 
-    <span class="dt">lemObjects =</span> xvKentucky<span class="op">$</span>smoothingMatrix, 
-    <span class="dt">bw =</span> Sbw,
-    <span class="dt">ncores =</span> ncores,
-    <span class="dt">path =</span> cacheDir)</code></pre></div>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># estimated risk maps</span>
-toPlot =<span class="st"> </span><span class="kw">brick</span>(<span class="kw">filename</span>(riskKentucky<span class="op">$</span>riskEst))[[
-  <span class="kw">round</span>(<span class="kw">seq</span>(<span class="dv">1</span>, <span class="kw">nlayers</span>(riskKentucky<span class="op">$</span>riskEst), <span class="dt">len=</span><span class="dv">6</span>))
-  ]]
-SbwShort =<span class="st"> </span><span class="kw">as.numeric</span>(<span class="kw">gsub</span>(<span class="st">&quot;^bw|_[[:alnum:]]+$&quot;</span>, <span class="st">&quot;&quot;</span>, <span class="kw">names</span>(toPlot)))</code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb10-1" data-line-number="1">riskKentucky =<span class="st"> </span><span class="kw">riskEst</span>(</a>
+<a class="sourceLine" id="cb10-2" data-line-number="2">    <span class="dt">cases =</span> kentuckyCounty[,<span class="kw">c</span>(<span class="st">&#39;id&#39;</span>,<span class="st">&#39;count1&#39;</span>)], </a>
+<a class="sourceLine" id="cb10-3" data-line-number="3">    <span class="dt">lemObjects =</span> xvKentucky<span class="op">$</span>smoothingMatrix, </a>
+<a class="sourceLine" id="cb10-4" data-line-number="4">    <span class="dt">bw =</span> Sbw,</a>
+<a class="sourceLine" id="cb10-5" data-line-number="5">    <span class="dt">ncores =</span> ncores,</a>
+<a class="sourceLine" id="cb10-6" data-line-number="6">    <span class="dt">path =</span> cacheDir)</a></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb11-1" data-line-number="1"><span class="co"># estimated risk maps</span></a>
+<a class="sourceLine" id="cb11-2" data-line-number="2">toPlot =<span class="st"> </span><span class="kw">brick</span>(<span class="kw">filename</span>(riskKentucky<span class="op">$</span>riskEst))[[</a>
+<a class="sourceLine" id="cb11-3" data-line-number="3">  <span class="kw">round</span>(<span class="kw">seq</span>(<span class="dv">1</span>, <span class="kw">nlayers</span>(riskKentucky<span class="op">$</span>riskEst), <span class="dt">len=</span><span class="dv">6</span>))</a>
+<a class="sourceLine" id="cb11-4" data-line-number="4">  ]]</a>
+<a class="sourceLine" id="cb11-5" data-line-number="5">SbwShort =<span class="st"> </span><span class="kw">as.numeric</span>(<span class="kw">gsub</span>(<span class="st">&quot;^bw|_[[:alnum:]]+$&quot;</span>, <span class="st">&quot;&quot;</span>, <span class="kw">names</span>(toPlot)))</a></code></pre></div>
 <div id="fig:plotRiskOne" class="subfigures">
 <table style="width:90%;">
 <colgroup>
@@ -217,26 +261,26 @@ SbwShort =<span class="st"> </span><span class="kw">as.numeric</span>(<span clas
 <tbody>
 <tr class="odd">
 <td style="text-align: center;"><figure>
-<img src="figure/plotRiskOne-1.png" alt="a) 10 km" style="width:100.0%" /><figcaption>a) 10 km</figcaption>
+<img src="lowResFigure/plotRiskOne-1.png" alt="a) 10 km" style="width:100.0%" /><figcaption>a) 10 km</figcaption>
 </figure></td>
 <td style="text-align: center;"><figure>
-<img src="figure/plotRiskOne-2.png" alt="b) 15 km" style="width:100.0%" /><figcaption>b) 15 km</figcaption>
+<img src="lowResFigure/plotRiskOne-2.png" alt="b) 15 km" style="width:100.0%" /><figcaption>b) 15 km</figcaption>
 </figure></td>
 </tr>
 <tr class="even">
 <td style="text-align: center;"><figure>
-<img src="figure/plotRiskOne-3.png" alt="c) 20 km" style="width:100.0%" /><figcaption>c) 20 km</figcaption>
+<img src="lowResFigure/plotRiskOne-3.png" alt="c) 20 km" style="width:100.0%" /><figcaption>c) 20 km</figcaption>
 </figure></td>
 <td style="text-align: center;"><figure>
-<img src="figure/plotRiskOne-4.png" alt="d) 25 km" style="width:100.0%" /><figcaption>d) 25 km</figcaption>
+<img src="lowResFigure/plotRiskOne-4.png" alt="d) 25 km" style="width:100.0%" /><figcaption>d) 25 km</figcaption>
 </figure></td>
 </tr>
 <tr class="odd">
 <td style="text-align: center;"><figure>
-<img src="figure/plotRiskOne-5.png" alt="e) 30 km" style="width:100.0%" /><figcaption>e) 30 km</figcaption>
+<img src="lowResFigure/plotRiskOne-5.png" alt="e) 30 km" style="width:100.0%" /><figcaption>e) 30 km</figcaption>
 </figure></td>
 <td style="text-align: center;"><figure>
-<img src="figure/plotRiskOne-6.png" alt="f) 35 km" style="width:100.0%" /><figcaption>f) 35 km</figcaption>
+<img src="lowResFigure/plotRiskOne-6.png" alt="f) 35 km" style="width:100.0%" /><figcaption>f) 35 km</figcaption>
 </figure></td>
 </tr>
 </tbody>
@@ -246,14 +290,14 @@ SbwShort =<span class="st"> </span><span class="kw">as.numeric</span>(<span clas
 <h2 id="uncertainty-estimation">Uncertainty Estimation</h2>
 <p>To measure the uncertainty of the local-EM algorithm, the <code>excProb()</code> function computes the exceedance probabilities with the same bandwidth parameter used in the risk estimation. Bootstrapping from a Poisson process is used to simulate the events for calculating these exceedance probabilities.</p>
 <p>Specifically, under the assumption that disease events are a realisation from the background population and constant risk threshold, cases are bootstrapped and randomly aggregated to the areal regions. Using the same bandwidth as the observed data, the local-EM risk is then estimated for each of the bootstrapped data. Afterwards, exceedance probabilities are computed as the proportion of the observed risk estimate at least as large as the ones of the bootstrap data. Large exceedance probabilities are consistent with the risk being greater than the specified threshold.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">excProbKentucky =<span class="st"> </span><span class="kw">excProb</span>(
-    <span class="dt">lemObjects =</span> xvKentucky, 
-    <span class="dt">threshold =</span> threshold, 
-    <span class="dt">Nboot =</span> Nboot, 
-    <span class="dt">fact =</span> <span class="dv">2</span>,
-    <span class="dt">ncores =</span> ncores, 
-    <span class="dt">path =</span> path,
-    <span class="dt">verbose=</span><span class="ot">TRUE</span>)</code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb12-1" data-line-number="1">excProbKentucky =<span class="st"> </span><span class="kw">excProb</span>(</a>
+<a class="sourceLine" id="cb12-2" data-line-number="2">    <span class="dt">lemObjects =</span> xvKentucky, </a>
+<a class="sourceLine" id="cb12-3" data-line-number="3">    <span class="dt">threshold =</span> threshold, </a>
+<a class="sourceLine" id="cb12-4" data-line-number="4">    <span class="dt">Nboot =</span> Nboot, </a>
+<a class="sourceLine" id="cb12-5" data-line-number="5">    <span class="dt">fact =</span> <span class="dv">2</span>,</a>
+<a class="sourceLine" id="cb12-6" data-line-number="6">    <span class="dt">ncores =</span> ncores,</a>
+<a class="sourceLine" id="cb12-7" data-line-number="7">    <span class="dt">path =</span> path,</a>
+<a class="sourceLine" id="cb12-8" data-line-number="8">    <span class="dt">verbose=</span><span class="ot">TRUE</span>)</a></code></pre></div>
 <div id="fig:plotExcProbOne" class="subfigures">
 <table style="width:90%;">
 <colgroup>
@@ -263,18 +307,18 @@ SbwShort =<span class="st"> </span><span class="kw">as.numeric</span>(<span clas
 <tbody>
 <tr class="odd">
 <td style="text-align: center;"><figure>
-<img src="figure/plotExcProbOne-1.png" alt="a) Threshold 1" style="width:100.0%" /><figcaption>a) Threshold 1</figcaption>
+<img src="lowResFigure/plotExcProbOne-1.png" alt="a) Threshold 1" style="width:100.0%" /><figcaption>a) Threshold 1</figcaption>
 </figure></td>
 <td style="text-align: center;"><figure>
-<img src="figure/plotExcProbOne-2.png" alt="b) Threshold 1.5" style="width:100.0%" /><figcaption>b) Threshold 1.5</figcaption>
+<img src="lowResFigure/plotExcProbOne-2.png" alt="b) Threshold 1.5" style="width:100.0%" /><figcaption>b) Threshold 1.5</figcaption>
 </figure></td>
 </tr>
 <tr class="even">
 <td style="text-align: center;"><figure>
-<img src="figure/plotExcProbOne-3.png" alt="c) truth" style="width:100.0%" /><figcaption>c) truth</figcaption>
+<img src="lowResFigure/plotExcProbOne-3.png" alt="c) truth" style="width:100.0%" /><figcaption>c) truth</figcaption>
 </figure></td>
 <td style="text-align: center;"><figure>
-<img src="figure/plotExcProbOne-4.png" alt="d) estimate" style="width:100.0%" /><figcaption>d) estimate</figcaption>
+<img src="lowResFigure/plotExcProbOne-4.png" alt="d) estimate" style="width:100.0%" /><figcaption>d) estimate</figcaption>
 </figure></td>
 </tr>
 </tbody>
@@ -283,12 +327,12 @@ SbwShort =<span class="st"> </span><span class="kw">as.numeric</span>(<span clas
 </div>
 <h2 id="multiple-datasets">Multiple datasets</h2>
 <p>Using the R objects created from the <code>lemXv()</code> function for the first simulated dataset, this CV method can be efficiently implemented on the remaining simulated datasets.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">xvAllKentucky =<span class="st"> </span><span class="kw">lemXv</span>(
-    <span class="dt">cases =</span> kentuckyCounty<span class="op">@</span>data[,
-        <span class="kw">grep</span>(<span class="st">&#39;^count[[:digit:]]&#39;</span>, <span class="kw">names</span>(kentuckyCounty))], 
-    <span class="dt">lemObjects =</span> xvKentucky<span class="op">$</span>smoothingMatrix,
-    <span class="dt">ncores =</span> ncores,
-    <span class="dt">path =</span> cacheDir, <span class="dt">verbose=</span><span class="ot">TRUE</span>)</code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb13-1" data-line-number="1">xvAllKentucky =<span class="st"> </span><span class="kw">lemXv</span>(</a>
+<a class="sourceLine" id="cb13-2" data-line-number="2">    <span class="dt">cases =</span> kentuckyCounty<span class="op">@</span>data[,</a>
+<a class="sourceLine" id="cb13-3" data-line-number="3">        <span class="kw">grep</span>(<span class="st">&#39;^count[[:digit:]]&#39;</span>, <span class="kw">names</span>(kentuckyCounty))], </a>
+<a class="sourceLine" id="cb13-4" data-line-number="4">    <span class="dt">lemObjects =</span> xvKentucky<span class="op">$</span>smoothingMatrix,</a>
+<a class="sourceLine" id="cb13-5" data-line-number="5">    <span class="dt">ncores =</span> ncores,</a>
+<a class="sourceLine" id="cb13-6" data-line-number="6">    <span class="dt">path =</span> cacheDir, <span class="dt">verbose=</span><span class="ot">TRUE</span>)</a></code></pre></div>
 <div id="fig:cvPlotAll" class="subfigures">
 <table style="width:80%;">
 <colgroup>
@@ -297,7 +341,7 @@ SbwShort =<span class="st"> </span><span class="kw">as.numeric</span>(<span clas
 <tbody>
 <tr class="odd">
 <td style="text-align: center;"><figure>
-<img src="figure/cvPlotAll-1.png" alt="a) Cross-validation Scores for All Simulations" style="width:100.0%" /><figcaption>a) Cross-validation Scores for All Simulations</figcaption>
+<img src="lowResFigure/cvPlotAll-1.png" alt="a) Cross-validation Scores for All Simulations" style="width:100.0%" /><figcaption>a) Cross-validation Scores for All Simulations</figcaption>
 </figure></td>
 </tr>
 </tbody>
@@ -313,39 +357,56 @@ SbwShort =<span class="st"> </span><span class="kw">as.numeric</span>(<span clas
 <tbody>
 <tr class="odd">
 <td style="text-align: center;"><figure>
-<img src="figure/plotRiskAll-1.png" alt="a) est 1, bw=15 km" style="width:100.0%" /><figcaption>a) est 1, bw=15 km</figcaption>
+<img src="lowResFigure/plotRiskAll-1.png" alt="a) est 1, bw=15 km" style="width:100.0%" /><figcaption>a) est 1, bw=15 km</figcaption>
 </figure></td>
 <td style="text-align: center;"><figure>
-<img src="figure/plotRiskAll-2.png" alt="b) truth 1" style="width:100.0%" /><figcaption>b) truth 1</figcaption>
+<img src="lowResFigure/plotRiskAll-2.png" alt="b) truth 1" style="width:100.0%" /><figcaption>b) truth 1</figcaption>
 </figure></td>
 </tr>
 <tr class="even">
 <td style="text-align: center;"><figure>
-<img src="figure/plotRiskAll-3.png" alt="c) est 2, bw=20 km" style="width:100.0%" /><figcaption>c) est 2, bw=20 km</figcaption>
+<img src="lowResFigure/plotRiskAll-3.png" alt="c) est 2, bw=20 km" style="width:100.0%" /><figcaption>c) est 2, bw=20 km</figcaption>
 </figure></td>
 <td style="text-align: center;"><figure>
-<img src="figure/plotRiskAll-4.png" alt="d) truth 2" style="width:100.0%" /><figcaption>d) truth 2</figcaption>
+<img src="lowResFigure/plotRiskAll-4.png" alt="d) truth 2" style="width:100.0%" /><figcaption>d) truth 2</figcaption>
 </figure></td>
 </tr>
 <tr class="odd">
 <td style="text-align: center;"><figure>
-<img src="figure/plotRiskAll-5.png" alt="e) est 3, bw=15 km" style="width:100.0%" /><figcaption>e) est 3, bw=15 km</figcaption>
+<img src="lowResFigure/plotRiskAll-5.png" alt="e) est 3, bw=15 km" style="width:100.0%" /><figcaption>e) est 3, bw=15 km</figcaption>
 </figure></td>
 <td style="text-align: center;"><figure>
-<img src="figure/plotRiskAll-6.png" alt="f) truth 3" style="width:100.0%" /><figcaption>f) truth 3</figcaption>
+<img src="lowResFigure/plotRiskAll-6.png" alt="f) truth 3" style="width:100.0%" /><figcaption>f) truth 3</figcaption>
 </figure></td>
 </tr>
 <tr class="even">
 <td style="text-align: center;"><figure>
-<img src="figure/plotRiskAll-7.png" alt="g) est 4, bw=30 km" style="width:100.0%" /><figcaption>g) est 4, bw=30 km</figcaption>
+<img src="lowResFigure/plotRiskAll-7.png" alt="g) est 4, bw=30 km" style="width:100.0%" /><figcaption>g) est 4, bw=30 km</figcaption>
 </figure></td>
 <td style="text-align: center;"><figure>
-<img src="figure/plotRiskAll-8.png" alt="h) truth 4" style="width:100.0%" /><figcaption>h) truth 4</figcaption>
+<img src="lowResFigure/plotRiskAll-8.png" alt="h) truth 4" style="width:100.0%" /><figcaption>h) truth 4</figcaption>
 </figure></td>
 </tr>
 </tbody>
 </table>
 <p><em>Figure 6</em>: Estimated and True Relative Risk</p>
+</div>
+<p>Compute exceedance probabilities for both LocalEM and BYM model:</p>
+<p>Compute ROC curves for both LocalEM and BYM model:</p>
+<div id="fig:rocPlot" class="subfigures">
+<table style="width:80%;">
+<colgroup>
+<col style="width: 80%" />
+</colgroup>
+<tbody>
+<tr class="odd">
+<td style="text-align: center;"><figure>
+<img src="lowResFigure/rocPlot-1.png" alt="a) Average ROC acroess all simulations" style="width:100.0%" /><figcaption>a) Average ROC acroess all simulations</figcaption>
+</figure></td>
+</tr>
+</tbody>
+</table>
+<p><em>Figure 7</em>: Average ROC acroess all simulations</p>
 </div>
 <h2 id="references">References</h2>
 <ol type="1">
