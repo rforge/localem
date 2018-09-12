@@ -125,6 +125,25 @@ rasterPartition = function(
     })
   names(rasterIdCoarse) = 'idCoarse'
 
+  dontHave = setdiff(unique(polyCoarse$idCoarse),
+    unique(values(rasterIdCoarse)))
+  if(length(dontHave)) {
+    # sometimes rasterize fails to detect some regions
+  rasterIdCoarse2 = rasterize(
+    polyCoarse[dontHave,],
+    rasterFine,
+    field='idCoarse', fun = function(xx, ...) {
+      res = table(xx)
+      as.numeric(names(res)[which.max(res)])
+    })
+  toUpdate= which(!is.na(values(rasterIdCoarse2)))
+  if(length(toUpdate)) {
+    values(rasterIdCoarse)[toUpdate] =
+      values(rasterIdCoarse2)[toUpdate]
+  }
+  }
+
+
   polyFine@data[is.na(polyFine@data[,'expected']),'expected'] = 0
 
   # offsets for fine raster
@@ -133,6 +152,7 @@ rasterPartition = function(
     template=rasterFine,
     pattern='^expected$')
   names(rasterOffset) = 'offset'
+
 
   # cross-validation sets
   if(length(xv) == 1) {
