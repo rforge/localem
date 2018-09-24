@@ -94,7 +94,7 @@ if(nCoresInner > 1) {
 		parallel::clusterExport(innerCluster, 
 			varlist = 'nCoresInner',
 			envir = environment())
-		data.table::setDTthreads(nCoresInner)
+		data.table::setDTthreads(1)
 	})
 
 	if(verbose){
