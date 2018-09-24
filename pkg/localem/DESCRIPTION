@@ -1,8 +1,8 @@
 Package: localEM
 Type: Package
 Title: Nonparametric Modelling of Spatial Risk for Areal Disease Data
-Version: 0.5.1
-Date: 2018-02-03
+Version: 0.6.0
+Date: 2018-09-24
 Author: Paul Nguyen, Patrick Brown
 Maintainer: Paul Nguyen <pablo.nguyen@utoronto.ca>
 Description: Implementing the kernel smoothing local-EM algorithm on disease data aggregated to highly coarse geographical regions while using population data collected on highly fine geographical regions to estimate spatial risk.
@@ -18,18 +18,18 @@ Imports:
     geostatsp (>= 1.4.4),
     mmap,
     parallel,
-    abind
+    abind,
+    data.table
 Suggests:
     spdep,
     diseasemapping,
     rgeos,
     rgdal,
   	mapmisc,
-  	RColorBrewer, 
   	knitr
 Enhances:
+    RColorBrewer, 
     RandomFields,
-    spatial.tools,
   	gpuR,
   	Pmisc
 RoxygenNote: 6.1.0
