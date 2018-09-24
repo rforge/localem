@@ -13,7 +13,7 @@ get2ndDeriv = function(
 	diagCombined2 = cbind(
 		data.frame(i=cellSeq), 
 		data.frame(j=cellSeq), 
-		x=(-2)*diagCombined)
+		(-2)*diagCombined)
 
 	offDiagCombined = cbind(
 		as.data.frame(offDiagSecondDerivIJ),
@@ -42,8 +42,10 @@ get2ndDeriv = function(
 		))
 
 	secondDerivLong = 
-		toAgg[,  lapply(.SD, sum), by = .(i,j)]
-
+		toAgg[ ,  
+			lapply(.SD, sum), 
+			by = list(i,j)]
+	
 
 	if(!missing(sparseTemplate)) {
 		st2 = as(sparseTemplate, 'TsparseMatrix')
@@ -101,28 +103,42 @@ derivDet = function(outerOffsetHere,
 	detHere
 }
 
-objectsForLikelihoodOneMap = 
-function(Dmap, Oijl, yHere, 
+objectsForLikelihoodOneMap = function(
+	OijlHere, yHere, 
 	lambdaHere, thetaHere = lambdaHere^2) {
 
 	# sum_m O_ijm theta_m^2
-	offThetaIJ = as.vector(Matrix::crossprod(Oijl[[Dmap]], lambdaHere))
+	offThetaIJ = as.vector(Matrix::crossprod(
+		OijlHere, lambdaHere))
+
+	yThetaMat = Matrix::Diagonal(
+			length(offThetaIJ), 
+			yHere/offThetaIJ)
 
 	# sum_ij Y_ij O_ijl / sum_m O_ijm theta_m^2
-	diagOf2ndDeriv = apply(Oijl[[Dmap]] %*% Matrix::Diagonal(
-		length(offThetaIJ), yHere[[Dmap]]/offThetaIJ),
-	1,sum)
+	diagOf2ndDeriv = apply(
+		OijlHere %*% yThetaMat,
+		1, sum)
 
 	# sum_ij Y_ij O_ijl theta_l O_ijk theta-k / [sum_m O_ijm theta_m^2]^2
-	offDiagSecondDeriv = 
-	Matrix::tcrossprod(Diagonal(length(lambdaHere), lambdaHere) %*%
-		Oijl[[Dmap]] %*% Matrix::Diagonal(length(offThetaIJ), 
-			sqrt(yHere[[Dmap]])/offThetaIJ))
+	offDiagSecondDeriv = Matrix::tcrossprod(
+		Diagonal(
+			length(lambdaHere), lambdaHere) %*%
+		OijlHere %*% 
+		yThetaMat)
+
+	offDiagSecondDeriv =
+		as(offDiagSecondDeriv, 'TsparseMatrix')
+	offDiagSecondDeriv = data.frame(
+		i = offDiagSecondDeriv@i,
+		j = offDiagSecondDeriv@j,
+		x = offDiagSecondDeriv@x
+		)
 
 	list(
 		diagOf2ndDeriv = diagOf2ndDeriv,
 		offDiagSecondDeriv = offDiagSecondDeriv,
-		dPoisson = sum(yHere[[Dmap]]*log(offThetaIJ) ) -
+		dPoisson = sum(yHere*log(offThetaIJ) ) -
 		sum(offThetaIJ)
 		)		
 }
@@ -133,14 +149,14 @@ function(yHere,
 	Oijl, 
 	thetaHere = sqrt(lambdaHere)) {
 
-	res = mapply(objectsForLikelihoodOneMap,
-		Dmap = names(yHere),
+	res = Map(objectsForLikelihoodOneMap,
+		OijlHere = Oijl,
+		yHere = yHere,
 		MoreArgs = list(
-			yHere = yHere,
 			lambdaHere = lambdaHere,
-			thetaHere = thetaHere, 
-			Oijl = Oijl
-			), SIMPLIFY=FALSE)
+			thetaHere = thetaHere
+			))
+
 	res = mapply(
 		function(D, yy) lapply(yy, function(yyy) yyy[[D]]),
 		D = names(res[[1]]),
@@ -148,50 +164,62 @@ function(yHere,
 		SIMPLIFY = FALSE
 		)
 
-	res$dPoisson = sum(unlist(res$dPoisson))
-	res$diagOf2ndDeriv = apply(do.call(cbind,res$diagOf2ndDeriv),1,sum)
-	res$offDiagSecondDeriv = do.call(rbind, 
-		lapply(res$offDiagSecondDeriv, 
-			function(xx) {
-				xxx = as(xx, 'TsparseMatrix')
-				cbind(i=xxx@i, j=xxx@j, x=xxx@x)
-			} 
-			))
+	res$dPoisson = Reduce('+', res$dPoisson)
+	res$diagOf2ndDeriv = Reduce('+', 
+		res$diagOf2ndDeriv)
+	res$offDiagSecondDeriv = as.matrix(
+		data.table::rbindlist( 
+		res$offDiagSecondDeriv)
+	)
+
 	res
 }
 
-objectsForLikeilhood = function(Oijl, y, lambda, cl = NULL) {
+objectsForLikeilhood = function(
+	Oijl, y, 
+	lambda, cl = NULL) {
 
-	yExpanded = mapply(
-		function(Dobs, yy) lapply(yy, function(yyy) yyy[,Dobs]),
+	yExpanded = Map(
+		function(Dobs, yy) {
+			lapply(yy, function(yyy) yyy[,Dobs])
+		},
 		Dobs = colnames(y[[1]]),
-		MoreArgs = list(yy=y),
-		SIMPLIFY = FALSE
+		MoreArgs = list(yy=y)
 		)
 
 	if(!is.null(cl)) {
 		res = parallel::clusterMap(cl,
 			objectsForLikelihoodOneDataset,
-			lambdaHere = as.list(as.data.frame(as.matrix(lambda))),
-			yHere = yExpanded[gsub('_.*', '', colnames(lambda))],
+			yHere = yExpanded[
+				gsub('_.*', '', colnames(lambda))],
+			lambdaHere = lapply(
+				seq_len(ncol(lambda)), 
+				function(D) lambda[, D]),
 			MoreArgs = list( Oijl = Oijl))
 	} else {
 
 		res = Map(
 			objectsForLikelihoodOneDataset,
-			lambdaHere = as.list(as.data.frame(as.matrix(lambda))),
-			yHere = yExpanded[gsub('_.*', '', colnames(lambda))],
+			yHere = yExpanded[
+				gsub('_.*', '', colnames(lambda))],
+			lambdaHere = lapply(
+				seq_len(ncol(lambda)), 
+				function(D) lambda[, D]),
 			MoreArgs = list( Oijl = Oijl)
 			)
 	}
+	names(res) = colnames(lambda)
 	res2 = list(
-		diagOf2ndDeriv = do.call(cbind, lapply(res, function(xx) xx$diagOf2ndDeriv)),
+		diagOf2ndDeriv = do.call(cbind, 
+			lapply(res, 
+				function(xx) xx$diagOf2ndDeriv)),
 		dPoisson = unlist(lapply(res, function(xx) xx$dPoisson)),
 		offDiagSecondDerivIJ = 
-		res[[1]]$offDiagSecondDeriv[,c('i','j')],
+			res[[1]]$offDiagSecondDeriv[,c('i','j')],
 		offDiagSecondDerivX = do.call(cbind, 
 			lapply(res, function(xx) xx$offDiagSecondDeriv[,'x']))
 		)
+
 	res2
 }
 
@@ -325,7 +353,9 @@ emsOneSd = function(
 		cat(' det ')
 	}
 
-	for2deriv = objectsForLikeilhood(Oijl, y, lambda, cl = cl) 
+	for2deriv = objectsForLikeilhood(
+		Oijl, y, 
+		lambda, cl = cl) 
 
 
 	if(verbose) {
@@ -334,8 +364,8 @@ emsOneSd = function(
 
 	secondDeriv <- get2ndDeriv(
 		diagCombined = for2deriv$diagOf2ndDeriv,
-		for2deriv$offDiagSecondDerivIJ,
-		for2deriv$offDiagSecondDerivX,		
+		offDiagSecondDerivIJ=for2deriv$offDiagSecondDerivIJ,
+		offDiagSecondDerivX=for2deriv$offDiagSecondDerivX,		
 		precPlusTwoOffset = StildeInv/DSigmaSquared,
 		sparseTemplate)		
 	

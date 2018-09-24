@@ -63,11 +63,15 @@ allFunctions = c('derivDet', 'eStepFun',
 
 if(nCoresOuter > 1) {
 	outerCluster = parallel::makeCluster(nCoresOuter, type='PSOCK', methods=TRUE)
-	parallel::clusterEvalQ(outerCluster, library('Matrix'))
-	parallel::clusterEvalQ(outerCluster, library('data.table'))
+	parallel::clusterEvalQ(outerCluster, require('Matrix'))
+	parallel::clusterEvalQ(outerCluster, require('data.table'))
+	parallel::clusterEvalQ(outerCluster, require('localEM'))
 	parallel::clusterExport(outerCluster, 
-		varlist = c(allFunctions, 'nCoresInner', 'allFunctions'),
+		varlist = 'nCoresInner',
 		envir = environment())
+	parallel::clusterEvalQ(outerCluster, 
+		data.table::setDTthreads(pmax(1,nCoresInner)))
+
 	if(verbose){
 		cat('cluster pid: ', 
 			unlist(parallel::clusterCall(outerCluster, function() Sys.getpid())), 
@@ -75,8 +79,8 @@ if(nCoresOuter > 1) {
 	} 
 } else {
 	outerCluster = NULL
+	require('data.table')
 }
-
 
 if(nCoresInner > 1) {
 	if(nCoresOuter == 1) {
@@ -84,13 +88,15 @@ if(nCoresInner > 1) {
 	}
 	parallel::clusterEvalQ(outerCluster, 
 		{innerCluster <- parallel::makeCluster(nCoresInner, type='PSOCK', methods=TRUE);
-		parallel::clusterEvalQ(innerCluster, library('Matrix'))
-		parallel::clusterEvalQ(innerCluster, library('data.table'))
+		parallel::clusterEvalQ(innerCluster, require('Matrix'))
+		parallel::clusterEvalQ(innerCluster, require('data.table'))
+		parallel::clusterEvalQ(innerCluster, require('localEM'))
 		parallel::clusterExport(innerCluster, 
-			varlist = c(allFunctions, 'nCoresInner', 'allFunctions'),
+			varlist = 'nCoresInner',
 			envir = environment())
 		data.table::setDTthreads(nCoresInner)
 	})
+
 	if(verbose){
 		cat('inner pid\n')
 		print(simplify2array(
@@ -104,11 +110,14 @@ if(nCoresInner > 1) {
 
 } else {
 	innerCluster = NULL
+	parallel::clusterEvalQ(outerCluster, {
+		innerCluster = NULL
+	})
 }
 
 
 
-
+	if(!is.null(outerCluster)) {
 	res = parallel::clusterMap(outerCluster, 
 		emsOneRange,
 		range = Srange,
@@ -120,8 +129,22 @@ if(nCoresInner > 1) {
 		    cl = 'innerCluster',
 		    reduce = reduce,
 		    verbose = verbose + verbose*(nCoresOuter==1)
-			),
-		SIMPLIFY=FALSE) 
+			)) 
+} else {
+
+		res = Map(
+		emsOneRange,
+		range = Srange,
+		MoreArgs = list(
+			Ssd = Ssd,
+			data=data,
+			maxIter = maxIter,
+			tol = tol,
+		    cl = 'innerCluster',
+		    reduce = reduce,
+		    verbose = 2*verbose
+			)) 
+}
 
 if(nCoresInner > 1) {
 	parallel::clusterEvalQ(outerCluster, parallel::stopCluster(innerCluster))

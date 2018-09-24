@@ -25,6 +25,7 @@ emsObjects = function(y, x, shape,
 			res = as(res, 'TsparseMatrix')
 			cbind(i=res@i, j=res@j, x=res@x)
 		}, Dobs = Sobs, SIMPLIFY=FALSE)
+
 		YijOijl[[Dmap]] = cbind(
 			res[[1]][,c('i','j')],
 			cell = res[[1]][,'i']+1,
@@ -54,7 +55,7 @@ emsObjects = function(y, x, shape,
 	offsetIntercept = x$offset$matrix %*% interceptMatrix
 
 
-	
+
 # template for the determinant of second derivative
 	if(!missing(shape)) {
 
@@ -78,7 +79,8 @@ emsObjects = function(y, x, shape,
 
 	for2deriv = objectsForLikeilhood(
 		Oijl, 
-		y = lapply(y, function(xx) xx[,1, drop=FALSE]), 
+		y = lapply(y, 
+			function(xx) xx[,1, drop=FALSE]), 
 		lambda = matrix(1, Ncells, 1,
 			dimnames = list(NULL, rownames(obsIntercept)[1] )
 		))
@@ -100,7 +102,8 @@ emsObjects = function(y, x, shape,
 	sparseTemplate = Matrix::forceSymmetric(sparseTemplate1)
 
 	secondDerivHere = sparseTemplate
-	secondDerivHere@x = secondDeriv[sparseTemplate@x, Dobs]	
+	secondDerivHere@x = secondDeriv[
+		sparseTemplate@x, Dobs]	
 
 	chol2ndDeriv = try(Matrix::Cholesky(secondDerivHere, LDL=TRUE), silent=TRUE)
 	cholGmrfCor = Matrix::Cholesky(gmrfCorMatrix, LDL=TRUE)
