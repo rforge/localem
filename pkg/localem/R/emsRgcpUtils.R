@@ -10,12 +10,14 @@ get2ndDeriv = function(
 
 	# diagonal elemts 2 sum(Y_ij O_ijl)
 	cellSeq = seq(0, len=nrow(diagCombined))
-	diagCombined = cbind(i=cellSeq, j=cellSeq, 
-		x=(-2)*as.matrix(diagCombined))
+	diagCombined2 = cbind(
+		data.frame(i=cellSeq), 
+		data.frame(j=cellSeq), 
+		x=(-2)*diagCombined)
 
 	offDiagCombined = cbind(
-		as.matrix(offDiagSecondDerivIJ),
-		4*as.matrix(offDiagSecondDerivX)
+		as.data.frame(offDiagSecondDerivIJ),
+		4*offDiagSecondDerivX
 		)
 
 	# 4 * sum Y_ij O_ijl theta_ijl O_ijk theta_ijk
@@ -23,15 +25,18 @@ get2ndDeriv = function(
 	# the correlation matrix and offsets
 	precPlusTwoOffsetT = as(precPlusTwoOffset, 'TsparseMatrix')
 	precPlusTwoOffsetL =	cbind(
-		i=precPlusTwoOffsetT@i, j=precPlusTwoOffsetT@j,
+		data.frame(i=precPlusTwoOffsetT@i), 
+		data.frame(j=precPlusTwoOffsetT@j),
 		matrix(precPlusTwoOffsetT@x, 
-			length(precPlusTwoOffsetT@x), ncol(	offDiagSecondDerivX),
-			dimnames = list(NULL, colnames(	offDiagSecondDerivX)))
+			length(precPlusTwoOffsetT@x), 
+			ncol(offDiagSecondDerivX),
+			dimnames = list(NULL, 
+				colnames(	offDiagSecondDerivX)))
 		)
 
 	# add up diag, outer offsets, and gmrf mat
-	toAgg = data.table::as.data.table(rbind(
-		diagCombined, 
+	toAgg = data.table::rbindlist(list(
+		diagCombined2, 
 		offDiagCombined, 
 		precPlusTwoOffsetL
 		))

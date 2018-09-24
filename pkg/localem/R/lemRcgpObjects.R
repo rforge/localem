@@ -54,6 +54,7 @@ emsObjects = function(y, x, shape,
 	offsetIntercept = x$offset$matrix %*% interceptMatrix
 
 
+	
 # template for the determinant of second derivative
 	if(!missing(shape)) {
 
@@ -83,8 +84,8 @@ emsObjects = function(y, x, shape,
 		))
 	secondDeriv <- get2ndDeriv(
 		diagCombined = for2deriv$diagOf2ndDeriv,
-		for2deriv$offDiagSecondDerivIJ,
-		for2deriv$offDiagSecondDerivX,		
+		offDiagSecondDerivIJ=for2deriv$offDiagSecondDerivIJ,
+		offDiagSecondDerivX=for2deriv$offDiagSecondDerivX,		
 		precPlusTwoOffset = gmrfCorMatrix + 2*x$offset$matrix
 		)
 
