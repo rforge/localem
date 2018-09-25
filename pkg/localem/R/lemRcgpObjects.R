@@ -77,12 +77,14 @@ emsObjects = function(y, x, shape,
 	outerOffsetBoth = diagBoth = list()
 	SobsIntercept = Dobs
 
-	for2deriv = objectsForLikeilhood(
+	for2deriv = objectsForLikelihood(
 		Oijl, 
 		y = lapply(y, 
 			function(xx) xx[,1, drop=FALSE]), 
 		lambda = matrix(1, Ncells, 1,
-			dimnames = list(NULL, rownames(obsIntercept)[1] )
+			dimnames = list(
+				NULL, 
+				rownames(obsIntercept)[1] )
 		))
 	secondDeriv <- get2ndDeriv(
 		diagCombined = for2deriv$diagOf2ndDeriv,
