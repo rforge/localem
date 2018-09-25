@@ -105,27 +105,26 @@ derivDet = function(outerOffsetHere,
 
 objectsForLikelihoodOneMap = function(
 	OijlHere, yHere, 
-	lambdaHere, thetaHere = lambdaHere^2) {
+	lambdaHere, thetaHere = sqrt(lambdaHere)) {
 
 	# sum_m O_ijm theta_m^2
 	offThetaIJ = as.vector(Matrix::crossprod(
 		OijlHere, lambdaHere))
 
-	yThetaMat = Matrix::Diagonal(
-			length(offThetaIJ), 
-			yHere/offThetaIJ)
-
+	
 	# sum_ij Y_ij O_ijl / sum_m O_ijm theta_m^2
 	diagOf2ndDeriv = apply(
-		OijlHere %*% yThetaMat,
+		OijlHere %*% Matrix::Diagonal(
+			length(offThetaIJ), yHere/offThetaIJ),
 		1, sum)
 
 	# sum_ij Y_ij O_ijl theta_l O_ijk theta-k / [sum_m O_ijm theta_m^2]^2
 	offDiagSecondDeriv = Matrix::tcrossprod(
 		Diagonal(
 			length(lambdaHere), lambdaHere) %*%
-		OijlHere %*% 
-		yThetaMat)
+		OijlHere %*% Matrix::Diagonal(
+			length(offThetaIJ), 
+			sqrt(yHere)/offThetaIJ))
 
 	offDiagSecondDeriv =
 		as(offDiagSecondDeriv, 'TsparseMatrix')
@@ -175,7 +174,7 @@ function(yHere,
 	res
 }
 
-objectsForLikeilhood = function(
+objectsForLikelihood = function(
 	Oijl, y, 
 	lambda, cl = NULL) {
 
@@ -353,7 +352,7 @@ emsOneSd = function(
 		cat(' det ')
 	}
 
-	for2deriv = objectsForLikeilhood(
+	for2deriv = objectsForLikelihood(
 		Oijl, y, 
 		lambda, cl = cl) 
 
