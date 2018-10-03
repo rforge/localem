@@ -103,6 +103,41 @@ derivDet = function(outerOffsetHere,
 	detHere
 }
 
+derivDiag = function(
+		param, offsetMatrix,precTemplateMatrix,
+		diagOf2ndDeriv,offDiagSecondDerivIJ,
+		offDiagSecondDerivX, sparseTemplate,
+		cholGmrfCorTemplate) {
+
+		precMat = offsetMatrix + 
+			geostatsp::maternGmrfPrec(
+				precTemplateMatrix,
+				param = param, 
+				adjustEdges = TRUE
+				)
+
+		derivHere = get2ndDeriv(
+			diagCombined = diagOf2ndDeriv,
+			offDiagSecondDerivIJ=offDiagSecondDerivIJ,
+			offDiagSecondDerivX=offDiagSecondDerivX,		
+			precPlusTwoOffset = precMat,
+			sparseTemplate)
+		derivHere = as.data.frame(derivHere)
+
+		derivMat = Matrix::sparseMatrix(
+			i = as.vector(derivHere[,'i']),
+			j = as.vector(derivHere[,'j']),
+			x = as.vector(derivHere[,4]),
+			dims = dim(precMat), dimnames = dimnames(precMat),
+			index1 = FALSE)
+
+		cholHere <- try(Matrix::update(
+			cholGmrfCorTemplate, derivMat), silent=TRUE)
+
+		diag(solve(cholHere))
+
+	}
+
 objectsForLikelihoodOneMap = function(
 	OijlHere, yHere, 
 	lambdaHere, thetaHere = sqrt(lambdaHere)) {
@@ -438,7 +473,7 @@ emsOneRange = function(
 	}
 
 	if(verbose) {
-		cat('pid ', Sys.getpid(), ' range ', range, ' ')
+		cat('pid ', Sys.getpid(), ' range ', range[1], '\n')
 	}
 
 	templateMatrix = data$precTemplateMatrix
@@ -477,6 +512,7 @@ emsOneRange = function(
 	resAllSd = list()
 
 
+	verboseHere = verbose==1
 	for(Dsd in Ssd) {
 		resAllSd[[as.character(Dsd)]] = emsOneSd(
 			sd = Dsd, gmrfCorMatrix, data,         
@@ -485,8 +521,8 @@ emsOneRange = function(
 			tol=tol, cl = cl, 
 			verbose = verbose>1
 			)
-		if(verbose>0) {
-			cat(' ', range[1], '_', Dsd, ' ')
+		if(verboseHere) {
+			cat(' ', range[1], '_', Dsd, '\n')
 		}
 		theta = resAllSd[[as.character(Dsd)]]$theta
 		if(reduce) {
@@ -497,7 +533,7 @@ emsOneRange = function(
 					logLik2[,'obs', drop=FALSE], max),
 				all=FALSE)
 			resAllSd[[as.character(Dsd)]]$theta = 
-			resAllSd[[as.character(Dsd)]]$theta[,onlyMax$name]
+			resAllSd[[as.character(Dsd)]]$theta[,onlyMax$name, drop=FALSE]
 			colnames(resAllSd[[as.character(Dsd)]]$theta) = 
 			gsub('_.*', '', colnames(resAllSd[[as.character(Dsd)]]$theta))
 		}
@@ -542,10 +578,6 @@ emsOneRange = function(
 	logLik$invCorMatHalfLogDet = 
 		Matrix::determinant(cholGmrfCor)$modulus
 	logLik$logL = logLik$logLminusDet + logLik$invCorMatHalfLogDet
-
-	if(verbose) {
-		cat(' ', range, ' ')
-	}
 
 
 	list(logL = logLik, theta = thetaAll)

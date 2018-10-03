@@ -10,7 +10,7 @@ emsObjects = function(y, x, shape,
 	Ncells = ncell(coarseCells)
 
 	y = lapply(y, function(xx) {
-		res = as.matrix(xx@data[,Sobs])
+		res = as.matrix(xx@data[,Sobs, drop=FALSE])
 		rownames(res) = xx$id
 		res
 	})
