@@ -210,11 +210,11 @@ emsRgcp = function(
 
 	forMLE = as.data.table(logLik)
 	mle = forMLE[,
-		list(range = range[which.max(logL)], 
-			sd=sd[which.max(logL)], 
-			intercept = intercept[which.max(logL)], 
-			logL = max(logL)), 
-		by=obs]
+	list(range = range[which.max(logL)], 
+		sd=sd[which.max(logL)], 
+		intercept = intercept[which.max(logL)], 
+		logL = max(logL)), 
+	by=obs]
 
 	res = list(mle = as.data.frame(mle), 
 		theta = thetaBrick, logL = logLik, profL = logLprof, 
@@ -228,6 +228,7 @@ emsRgcpPred = function(
 	param = x$mle,
 	theta = x$theta,
 	data = x$data,
+	p= c(0.01,0.025, 0.05, 0.1, 0.5, 0.9, 0.95, 0.975,0.99),
 	cl = NULL
 	) {
 
@@ -251,51 +252,109 @@ emsRgcpPred = function(
 
 
 	if(!is.null(cl)) {
-		twoDeriv = parallel::clusterMap(cl, 
+
+		twoDerivList = parallel::clusterMap(cl, 
 			derivDiag,
-		param =  lapply(rownames(param), 
-			function(i) drop(as.matrix(param[i,c('range','variance','shape')]))),
-		diagOf2ndDeriv =  lapply(1:nrow(param), 
-			function(i) for2deriv$diagOf2ndDeriv[,i,drop=FALSE]),
-		offDiagSecondDerivX = lapply(1:nrow(param), 
-			function(i) for2deriv$offDiagSecondDerivX[,i,drop=FALSE]),
-		MoreArgs = c(
-			data[c('precTemplateMatrix','sparseTemplate','offsetMatrix','cholGmrfCorTemplate')],
-			for2deriv['offDiagSecondDerivIJ']
+			param =  lapply(rownames(param), 
+				function(i) drop(as.matrix(param[i,c('range','variance','shape')]))),
+			diagOf2ndDeriv =  lapply(1:nrow(param), 
+				function(i) for2deriv$diagOf2ndDeriv[,i,drop=FALSE]),
+			offDiagSecondDerivX = lapply(1:nrow(param), 
+				function(i) for2deriv$offDiagSecondDerivX[,i,drop=FALSE]),
+			MoreArgs = c(
+				data[c('precTemplateMatrix','sparseTemplate','offsetMatrix','cholGmrfCorTemplate')],
+				for2deriv['offDiagSecondDerivIJ']
+				)
 			)
-		)
 	} else {
 
-	twoDeriv = Map(derivDiag,
-	param =  lapply(rownames(param), 
-		function(i) drop(as.matrix(param[i,c('range','variance','shape')]))),
-	diagOf2ndDeriv =  lapply(1:nrow(param), 
-		function(i) for2deriv$diagOf2ndDeriv[,i,drop=FALSE]),
-	offDiagSecondDerivX = lapply(1:nrow(param), 
-		function(i) for2deriv$offDiagSecondDerivX[,i,drop=FALSE]),
-	MoreArgs = c(
-		data[c('precTemplateMatrix','sparseTemplate','offsetMatrix','cholGmrfCorTemplate')],
-		for2deriv['offDiagSecondDerivIJ']
-		)
-	)
+		twoDerivList = Map(derivDiag,
+			param =  lapply(rownames(param), 
+				function(i) drop(as.matrix(
+					param[i,c('range','variance','shape')]))),
+			diagOf2ndDeriv =  lapply(1:nrow(param), 
+				function(i) for2deriv$diagOf2ndDeriv[,i,drop=FALSE]),
+			offDiagSecondDerivX = lapply(1:nrow(param), 
+				function(i) for2deriv$offDiagSecondDerivX[,i,drop=FALSE]),
+			MoreArgs = c(
+				data[c('precTemplateMatrix','sparseTemplate','offsetMatrix','cholGmrfCorTemplate')],
+				for2deriv['offDiagSecondDerivIJ']
+				)
+			)
 	}
 
 
-	twoDeriv = do.call(cbind, twoDeriv)
-	twoDeriv = twoDeriv / 2
+	diagTwoDeriv = do.call(cbind, twoDerivList)
 
 	coarseCells = data$coarseCells
 
-	seArray = array(twoDeriv, 
-			c(ncol(coarseCells), nrow(coarseCells), 
-				ncol(twoDeriv)))
+	varArray = array(diagTwoDeriv/2, 
+		c(ncol(coarseCells), nrow(coarseCells), 
+			ncol(diagTwoDeriv)))
 
-	seBrick = raster::brick(seArray, 
-			xmin(coarseCells), xmax(coarseCells),
-			ymin(coarseCells), ymax(coarseCells), 
-			projection(coarseCells),
-			transpose=TRUE)
-	names(seBrick) = colnames(twoDeriv)
-	seBrick
+	varBrick = raster::brick(varArray, 
+		xmin(coarseCells), xmax(coarseCells),
+		ymin(coarseCells), ymax(coarseCells), 
+		projection(coarseCells),
+		transpose=TRUE)
+	names(varBrick) = names(theta)
+
+	meanBrick = theta + varBrick
+
+	Squant = p
+	if(!is.null(cl)) {
+	quantList = parallel::clusterMap(cl, 
+		stats::qchisq,
+		p=c(0.025, 0.05, 0.1, 0.5, 0.9, 0.95,0.975),
+		MoreArgs = list(
+			ncp = values(theta)^2/values(varBrick),
+			df = 1)
+		)
+
+	} else {
+	quantList = Map(
+		stats::qchisq,
+		p=Squant,
+		MoreArgs = list(
+			ncp = values(theta)^2/values(varBrick),
+			df = 1)
+		)
+	}
+			
+	
+
+	qArray1 = do.call(cbind, quantList)
+	qArray2 = qArray1*( 
+		values(varBrick)[,colnames(qArray1)])
+	qArray = array(qArray2, 
+		c(ncol(coarseCells), nrow(coarseCells), 
+			ncol(qArray2)))
+
+	qBrick = raster::brick(qArray, 
+		xmin(coarseCells), xmax(coarseCells),
+		ymin(coarseCells), ymax(coarseCells), 
+		projection(coarseCells),
+		transpose=TRUE)
+
+	if(nlayers(theta) == 1) {
+		names(qBrick) = paste0('q', Squant)
+	} else {
+		names(qBrick) = paste0(
+			colnames(qArray1),
+			'q', rep(Squant, each = nlayers(theta))
+			)
+
+	}
+
+	seBrick = sqrt(varBrick)
+	names(seBrick) = paste0(names(varBrick), '_se')
+
+	resQ = stack(
+		meanBrick,
+		seBrick,
+		qBrick
+		)
+
+	resQ
 
 }

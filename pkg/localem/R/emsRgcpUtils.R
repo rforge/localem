@@ -109,7 +109,7 @@ derivDiag = function(
 		offDiagSecondDerivX, sparseTemplate,
 		cholGmrfCorTemplate) {
 
-		precMat = offsetMatrix + 
+		precMat = 2*offsetMatrix + 
 			geostatsp::maternGmrfPrec(
 				precTemplateMatrix,
 				param = param, 
@@ -130,6 +130,7 @@ derivDiag = function(
 			x = as.vector(derivHere[,4]),
 			dims = dim(precMat), dimnames = dimnames(precMat),
 			index1 = FALSE)
+		derivMat = forceSymmetric(derivMat)
 
 		cholHere <- try(Matrix::update(
 			cholGmrfCorTemplate, derivMat), silent=TRUE)
