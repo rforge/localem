@@ -219,11 +219,34 @@ emsRgcp = function(
 	res = list(mle = as.data.frame(mle), 
 		theta = thetaBrick, logL = logLik, profL = logLprof, 
 		array = logLikArray, data=data)
+
+	if(reduce) {
+		if(!is.null(innerCluster)) {
+			clHere = innerCluster
+		} else {
+			clHere = outerCluster
+		}
+
+		pred = rgcpPred(res, cl=clHere) 
+		res$pred = res
+	}
+
+	if(nCoresOuter > 1) {
+		if(nCoresInner > 1) {
+			parallel::clusterEvalQ(outerCluster, parallel::stopCluster(innerCluster))
+		}
+		parallel::stopCluster(outerCluster)
+	} else {
+		if(!is.null(innerCluster)) {
+			parallel::stopCluster(innerCluster)	
+		}
+	}
+
 	res
 }
 
 
-emsRgcpPred = function(
+rgcpPred = function(
 	x, 
 	param = x$mle,
 	theta = x$theta,
@@ -338,23 +361,55 @@ emsRgcpPred = function(
 
 	if(nlayers(theta) == 1) {
 		names(qBrick) = paste0('q', Squant)
+		names(theta) = 'mode'
+		names(meanBrick) = 'mean'
 	} else {
 		names(qBrick) = paste0(
 			colnames(qArray1),
-			'q', rep(Squant, each = nlayers(theta))
+			'.q', rep(Squant, each = nlayers(theta))
 			)
-
+		names(theta) = paste0(names(theta), '.mode')
+		names(meanBrick) = paste0(names(meanBrick), '.mean')
 	}
 
 	seBrick = sqrt(varBrick)
-	names(seBrick) = paste0(names(varBrick), '_se')
+	names(seBrick) = paste0(names(varBrick), '.se')
 
 	resQ = stack(
 		meanBrick,
 		seBrick,
-		qBrick
+		qBrick,
+		theta
 		)
 
 	resQ
 
+}
+
+
+emsExcProb = function(x, threshold=1) {
+
+	modeLayers = grep('(^|[.])mode$', names(x), value=TRUE)
+	seLayers = gsub('mode$', 'se', modeLayers)
+
+	vars = values(x[[seLayers]]^2)
+
+	ncp = values(x[[modeLayers]])^2 / vars
+	 
+	resE = stats::pchisq(
+		threshold / vars, 
+		1, 
+		ncp, lower.tail=FALSE, 
+		)
+	coarseCells = raster(x)
+	eArray = array(resE, 
+		c(ncol(coarseCells), nrow(coarseCells), 
+			ncol(resE)))
+	eBrick = raster::brick(eArray, 
+		xmin(coarseCells), xmax(coarseCells),
+		ymin(coarseCells), ymax(coarseCells), 
+		projection(coarseCells),
+		transpose=TRUE)
+	names(eBrick) = gsub("[.]?mode$", "", modeLayers)
+	eBrick
 }
