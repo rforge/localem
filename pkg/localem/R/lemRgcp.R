@@ -134,16 +134,6 @@ emsRgcp = function(
 				)) 
 	}
 
-	if(nCoresOuter > 1) {
-		if(nCoresInner > 1) {
-			parallel::clusterEvalQ(outerCluster, parallel::stopCluster(innerCluster))
-		}
-		parallel::stopCluster(outerCluster)
-	} else {
-		if(!is.null(innerCluster)) {
-			parallel::stopCluster(innerCluster)	
-		}
-	}
 
 	logLik = do.call(rbind, lapply(res, function(qq) qq$logL))
 	rownames(logLik) = 1:nrow(logLik)
@@ -221,6 +211,10 @@ emsRgcp = function(
 		array = logLikArray, data=data)
 
 	if(reduce) {
+		if(verbose){
+			cat('computing quantiles\n')
+		}
+
 		if(!is.null(innerCluster)) {
 			clHere = innerCluster
 		} else {
@@ -326,24 +320,24 @@ rgcpPred = function(
 
 	Squant = p
 	if(!is.null(cl)) {
-	quantList = parallel::clusterMap(cl, 
-		stats::qchisq,
-		p=c(0.025, 0.05, 0.1, 0.5, 0.9, 0.95,0.975),
-		MoreArgs = list(
-			ncp = values(theta)^2/values(varBrick),
-			df = 1)
-		)
+		quantList = parallel::clusterMap(cl, 
+			stats::qchisq,
+			p=Squant,
+			MoreArgs = list(
+				ncp = values(theta)^2/values(varBrick),
+				df = 1)
+			)
 
 	} else {
-	quantList = Map(
-		stats::qchisq,
-		p=Squant,
-		MoreArgs = list(
-			ncp = values(theta)^2/values(varBrick),
-			df = 1)
-		)
+		quantList = Map(
+			stats::qchisq,
+			p=Squant,
+			MoreArgs = list(
+				ncp = values(theta)^2/values(varBrick),
+				df = 1)
+			)
 	}
-			
+	
 	
 
 	qArray1 = do.call(cbind, quantList)
@@ -395,7 +389,7 @@ emsExcProb = function(x, threshold=1) {
 	vars = values(x[[seLayers]]^2)
 
 	ncp = values(x[[modeLayers]])^2 / vars
-	 
+	
 	resE = stats::pchisq(
 		threshold / vars, 
 		1, 
