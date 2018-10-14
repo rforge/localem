@@ -49,16 +49,18 @@ emsRgcp = function(
 
 		if(verbose){
 			cat('cluster pid: ', 
-				unlist(parallel::clusterCall(outerCluster, function() Sys.getpid())), 
+				unlist(parallel::clusterCall(outerCluster, 
+					function() Sys.getpid())), 
 				'\n')
 		} 
-	} else {
+	} else { # noCoresOuter <= 1
 		outerCluster = NULL
 		require('data.table')
 	}
 
 	if(nCoresInner > 1) {
-		if(nCoresOuter <= 1) {
+		if(nCoresOuter <= 1) { 
+		# an inner cluster but no outer cluster
 			innerCluster <- parallel::makeCluster(nCoresInner, type='PSOCK', methods=TRUE)
 			parallel::clusterEvalQ(innerCluster, require('Matrix'))
 			parallel::clusterEvalQ(innerCluster, require('data.table'))
@@ -72,7 +74,7 @@ emsRgcp = function(
 					unlist(parallel::clusterCall(innerCluster, Sys.getpid)),
 					'\n')
 			}
-		} else {
+		} else { # inner and outer cluster
 			parallel::clusterEvalQ(outerCluster, 
 				{innerCluster <- parallel::makeCluster(nCoresInner, type='PSOCK', methods=TRUE);
 				parallel::clusterEvalQ(innerCluster, require('Matrix'))
@@ -96,11 +98,13 @@ emsRgcp = function(
 			} 
 		}
 
-	} else {
+	} else { # nCoresInner <= 1
 		innerCluster = NULL
-		parallel::clusterEvalQ(outerCluster, {
+		if(!is.null(outerCluster)) {
+			parallel::clusterEvalQ(outerCluster, {
 			innerCluster = NULL
-		})
+			})
+		}
 	}
 
 
@@ -215,10 +219,10 @@ emsRgcp = function(
 			cat('computing quantiles\n')
 		}
 
-		if(!is.null(innerCluster)) {
-			clHere = innerCluster
-		} else {
+		if(!is.null(outerCluster)) {
 			clHere = outerCluster
+		} else {
+			clHere = innerCluster
 		}
 
 		pred = rgcpPred(res, cl=clHere) 
