@@ -226,7 +226,7 @@ emsRgcp = function(
 		}
 
 		pred = rgcpPred(res, cl=clHere) 
-		res$pred = res
+		res$pred = pred
 	}
 
 	if(nCoresOuter > 1) {
