@@ -104,40 +104,43 @@ derivDet = function(outerOffsetHere,
 }
 
 derivDiag = function(
-		param, offsetMatrix,precTemplateMatrix,
-		diagOf2ndDeriv,offDiagSecondDerivIJ,
-		offDiagSecondDerivX, sparseTemplate,
-		cholGmrfCorTemplate) {
+	param, offsetMatrix,precTemplateMatrix,
+	diagOf2ndDeriv,offDiagSecondDerivIJ,
+	offDiagSecondDerivX, sparseTemplate) {
 
-		precMat = 2*offsetMatrix + 
-			geostatsp::maternGmrfPrec(
-				precTemplateMatrix,
-				param = param, 
-				adjustEdges = TRUE
-				)
+	precMat = 2*offsetMatrix + 
+	geostatsp::maternGmrfPrec(
+		precTemplateMatrix,
+		param = drop(as.matrix(param)), 
+		adjustEdges = TRUE
+		)
 
-		derivHere = get2ndDeriv(
-			diagCombined = diagOf2ndDeriv,
-			offDiagSecondDerivIJ=offDiagSecondDerivIJ,
-			offDiagSecondDerivX=offDiagSecondDerivX,		
-			precPlusTwoOffset = precMat,
-			sparseTemplate)
-		derivHere = as.data.frame(derivHere)
+	derivHere = get2ndDeriv(
+		diagCombined = diagOf2ndDeriv,
+		offDiagSecondDerivIJ=offDiagSecondDerivIJ,
+		offDiagSecondDerivX=offDiagSecondDerivX,		
+		precPlusTwoOffset = precMat,
+		sparseTemplate)
+	derivHere = as.data.frame(derivHere)
 
-		derivMat = Matrix::sparseMatrix(
+	derivMat = Matrix::forceSymmetric(
+		Matrix::sparseMatrix(
 			i = as.vector(derivHere[,'i']),
 			j = as.vector(derivHere[,'j']),
 			x = as.vector(derivHere[,4]),
 			dims = dim(precMat), dimnames = dimnames(precMat),
-			index1 = FALSE)
-		derivMat = forceSymmetric(derivMat)
+			index1 = FALSE
+			))
 
-		cholHere <- try(Matrix::update(
-			cholGmrfCorTemplate, derivMat), silent=TRUE)
-
-		diag(solve(cholHere))
-
+	if(requireNamespace('INLA', quietly=TRUE)) {
+		diagHere = diag(INLA::inla.qinv(derivMat))
+	} else {
+		diagHere = diag(solve(derivMat))
 	}
+
+	diagHere
+
+}
 
 objectsForLikelihoodOneMap = function(
 	OijlHere, yHere, 

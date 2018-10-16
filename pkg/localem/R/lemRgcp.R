@@ -283,10 +283,11 @@ rgcpPred = function(
 			offDiagSecondDerivX = lapply(1:nrow(param), 
 				function(i) for2deriv$offDiagSecondDerivX[,i,drop=FALSE]),
 			MoreArgs = c(
-				data[c('precTemplateMatrix','sparseTemplate','offsetMatrix','cholGmrfCorTemplate')],
+				data[c('precTemplateMatrix','sparseTemplate','offsetMatrix')],
 				for2deriv['offDiagSecondDerivIJ']
 				)
 			)
+
 	} else {
 
 		twoDerivList = Map(derivDiag,
@@ -298,7 +299,7 @@ rgcpPred = function(
 			offDiagSecondDerivX = lapply(1:nrow(param), 
 				function(i) for2deriv$offDiagSecondDerivX[,i,drop=FALSE]),
 			MoreArgs = c(
-				data[c('precTemplateMatrix','sparseTemplate','offsetMatrix','cholGmrfCorTemplate')],
+				data[c('precTemplateMatrix','sparseTemplate','offsetMatrix')],
 				for2deriv['offDiagSecondDerivIJ']
 				)
 			)

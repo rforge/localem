@@ -26,7 +26,8 @@ Suggests:
     rgeos,
     rgdal,
   	mapmisc,
-  	knitr
+  	knitr,
+    INLA
 Enhances:
     RColorBrewer, 
     RandomFields,
