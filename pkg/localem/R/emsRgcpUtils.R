@@ -267,9 +267,11 @@ eStepFun = function(
 
 	denom = Matrix::crossprod(OijlHere, lambda)
 
-	mStepMatHere %*% (
+	resEstep = mStepMatHere %*% (
 		YijOijlHere[,SobsFull] / denom[YijOijlHere[,'id'],]
 		)
+	resEstep[is.na(resEstep)] = 0
+	resEstep
 }
 
 
