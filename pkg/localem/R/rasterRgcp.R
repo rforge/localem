@@ -6,6 +6,18 @@ rasterPartitionRgcp = function(
 	pathBase, verbose=FALSE
 	) {
 
+	# add an X before integers in names
+	# because raster will do it if we don't
+	names(coarsePolyList) = 
+		gsub("(^[[:digit:]])",
+			"X\\1", names(coarsePolyList))
+
+	names(finePolyList) = 
+		gsub("(^[[:digit:]])",
+			"X\\1", names(finePolyList))
+
+
+
 	rasterList = list()
 
 	DmapFirst = Dmap = names(coarsePolyList)[1]
