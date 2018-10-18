@@ -50,7 +50,7 @@ get2ndDeriv = function(
 	if(!missing(sparseTemplate)) {
 		st2 = as(sparseTemplate, 'TsparseMatrix')
 		secondDerivLong = merge(
-			data.table(
+			data.table::data.table(
 				i = st2@i, j=st2@j, index=st2@x
 				), secondDerivLong, sort=FALSE, all=TRUE)
 		res = secondDerivLong[
@@ -159,7 +159,7 @@ objectsForLikelihoodOneMap = function(
 
 	# sum_ij Y_ij O_ijl theta_l O_ijk theta-k / [sum_m O_ijm theta_m^2]^2
 	offDiagSecondDeriv = Matrix::tcrossprod(
-		Diagonal(
+		Matrix::Diagonal(
 			length(lambdaHere), lambdaHere) %*%
 		OijlHere %*% Matrix::Diagonal(
 			length(offThetaIJ), 
@@ -518,7 +518,7 @@ emsOneRange = function(
 	resAllSd = list()
 
 
-	verboseHere = verbose==1
+	verboseHere = (verbose ==1)
 	for(Dsd in Ssd) {
 		resAllSd[[as.character(Dsd)]] = emsOneSd(
 			sd = Dsd, gmrfCorMatrix, data,         
