@@ -15,6 +15,11 @@ emsObjects = function(y, x, shape,
 		res
 	})
 
+	names(y) = 
+		gsub("(^[[:digit:]])",
+			"X\\1", names(y))
+
+
 	Smap = names(y)
 
 	YijOijl = mStepMat = list()
