@@ -3,13 +3,14 @@ rasterPartitionRgcp = function(
 	coarsePolyList,
 	finePolyList,
 	Ncoarse, Nfine,
-	pathBase
+	pathBase, verbose=FALSE
 	) {
 
 	rasterList = list()
 
 	DmapFirst = Dmap = names(coarsePolyList)[1]
 
+	if(verbose) cat(Dmap, ' ')
 	rasterList[[ Dmap ]] = 
 	localEM::rasterPartition(
 		polyCoarse = coarsePolyList[[Dmap]],
@@ -18,12 +19,13 @@ rasterPartitionRgcp = function(
 		Nfine,
 		NULL, NULL, NULL,
 		path=file.path(pathBase, Dmap),
-		verbose=TRUE
+		verbose=verbose
 		)
 	fineCells = deratify(rasterList[[DmapFirst]]$rasterFine, 'cellCoarse')
 	coarseCells = rasterList[[DmapFirst]]$rasterCoarse
 
 	for(Dmap in names(coarsePolyList)[-1]) {
+		if(verbose) cat(Dmap, ' ')
 		rasterList[[ Dmap ]] = 
 		localEM::rasterPartition(
 			polyCoarse = coarsePolyList[[Dmap]],
@@ -32,7 +34,7 @@ rasterPartitionRgcp = function(
 			cellsFine = fineCells,
 			NULL, NULL, NULL,
 			path=file.path(pathBase, Dmap),
-			verbose=TRUE)
+			verbose=verbose>1)
 	}
 
 	toBrick = lapply(rasterList, function(xx) xx$offset[['offset']])
@@ -44,7 +46,11 @@ rasterPartitionRgcp = function(
 # sum of offsets in intersection of
 # coarse polygons and coarse cells
 	Oijl = list()
+	if(verbose) cat('\n')
+
 	for(Dmap in names(rasterList)) {
+		if(verbose) cat(Dmap, ' ')
+
 		stuff = deratify(rasterList[[Dmap]]$rasterFine, 
 			c('idCoarse','cellCoarse'))
 		notNa= which(!is.na(values(offsetStack[[Dmap]])))
