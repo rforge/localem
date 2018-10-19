@@ -368,9 +368,10 @@ emsOneSd = function(
 
 		# update lambda and theta
 		lambda = muStuff + theta * etaStuff
-		theta = sqrt(matrix(
-			pmax(0,as.matrix(lambda)), 
-			nrow(lambda), ncol(lambda))
+
+		theta = matrix(
+			sqrt(pmax(0,as.matrix(lambda))), 
+			nrow(lambda), ncol(lambda) )
 
 		firstDerivHere = 2 * muLambdaTheta - 
 			twoOffsetMat %*% theta -
