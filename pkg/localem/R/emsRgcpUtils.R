@@ -155,7 +155,7 @@ objectsForLikelihoodOneMap = function(
 	diagOf2ndDeriv = apply(
 		OijlHere %*% Matrix::Diagonal(
 			length(offThetaIJ), yHere/offThetaIJ),
-		1, sum)
+		1, sum, na.rm=TRUE)
 
 	# sum_ij Y_ij O_ijl theta_l O_ijk theta-k / [sum_m O_ijm theta_m^2]^2
 	offDiagSecondDeriv = Matrix::tcrossprod(
@@ -368,7 +368,9 @@ emsOneSd = function(
 
 		# update lambda and theta
 		lambda = muStuff + theta * etaStuff
-		theta = sqrt(as.matrix(lambda))
+		theta = sqrt(matrix(
+			pmax(0,as.matrix(lambda)), 
+			nrow(lambda), ncol(lambda))
 
 		firstDerivHere = 2 * muLambdaTheta - 
 			twoOffsetMat %*% theta -

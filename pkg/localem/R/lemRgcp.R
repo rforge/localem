@@ -225,7 +225,7 @@ emsRgcp = function(
 			clHere = innerCluster
 		}
 
-		pred = rgcpPred(res, cl=clHere) 
+		pred = try(rgcpPred(res, cl=clHere)) 
 		res$pred = pred
 	}
 
