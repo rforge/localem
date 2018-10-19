@@ -369,9 +369,7 @@ emsOneSd = function(
 		# update lambda and theta
 		lambda = muStuff + theta * etaStuff
 
-		theta = matrix(
-			sqrt(pmax(0,as.matrix(lambda))), 
-			nrow(lambda), ncol(lambda) )
+		theta = sqrt(pmax(as.matrix(lambda), 0))
 
 		firstDerivHere = 2 * muLambdaTheta - 
 			twoOffsetMat %*% theta -
@@ -418,17 +416,16 @@ emsOneSd = function(
 	}
 
 
-		halfLogDet <- mapFun(
-			derivDet,
+	halfLogDet <- mapFun(
+		derivDet,
 			# secondDeriv is a data.table, need with=FALSE
-			outerOffsetHere = as.list(
-					secondDeriv[,SobsIntercept, with=FALSE]),
-			MoreArgs = list(
-				sparseTemplate = sparseTemplate,
-				cholTemplate = cholTemplate,
-				verbose = verbose
-				)
+		outerOffsetHere = as.list(secondDeriv[,SobsIntercept, with=FALSE]),
+		MoreArgs = list(
+			sparseTemplate = sparseTemplate,
+			cholTemplate = cholTemplate,
+			verbose = verbose
 			)
+		)
 
 	if(verbose) {
 		cat(".")
