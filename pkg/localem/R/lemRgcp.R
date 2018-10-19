@@ -111,6 +111,7 @@ emsRgcp = function(
 
 	if(!is.null(outerCluster)) {
 		res = parallel::clusterMap(outerCluster, 
+#			localEM:::emsOneRange,
 			emsOneRange,
 			range = Srange,
 			MoreArgs = list(
@@ -124,6 +125,7 @@ emsRgcp = function(
 				)) 
 	} else {
 
+#			parallel::clusterExport(innerCluster, varlist = 'objectsForLikelihoodOneMap', envir = environment())
 		res = Map(
 			emsOneRange,
 			range = Srange,
@@ -225,7 +227,7 @@ emsRgcp = function(
 			clHere = innerCluster
 		}
 
-		pred = try(rgcpPred(res, cl=clHere)) 
+		pred = try(rgcpPred(res, cl=clHere), silent=TRUE) 
 		res$pred = pred
 	}
 

@@ -176,8 +176,8 @@ objectsForLikelihoodOneMap = function(
 	list(
 		diagOf2ndDeriv = diagOf2ndDeriv,
 		offDiagSecondDeriv = offDiagSecondDeriv,
-		dPoisson = sum(yHere*log(offThetaIJ) ) -
-		sum(offThetaIJ)
+		dPoisson = sum(yHere*log(offThetaIJ), na.rm=TRUE) -
+		sum(offThetaIJ,na.rm=TRUE)
 		)		
 }
 
