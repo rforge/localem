@@ -458,7 +458,7 @@ rasterPartitionMulti = function(
     ## rasters
     xvMatMap = xvUpdateList[[inM]]
     
-    lemRasterMap = localEM::rasterPartition(
+    lemRasterMap = rasterPartition(
       polyCoarse = polyCoarse[[inM]], 
       polyFine = polyFine[[inM]], 
       cellsCoarse = rasterCoarse, 

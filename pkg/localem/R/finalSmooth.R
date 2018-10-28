@@ -1,3 +1,6 @@
+###
+# SINGLE MAP
+###
 
 # Computes the risk estimation to the fine raster by smoothing the risk of the partitions at the final iteration
 finalSmooth = function(
@@ -183,5 +186,99 @@ finalSmoothOldQuestionmark = function(
   # remove temporary raster files
   unlink(gsub("[[:alpha:]]$", "*", filename(theFinalEst)))
   unlink(gsub("grd$", "gri", tempFileFocal))
+  return(result)
+}
+
+
+###
+# MULTIPLE MAPS
+###
+
+# Computes the risk estimation to the fine raster by smoothing the risk of the partitions at the final iteration
+finalSmoothMulti = function(
+    x, 
+	focalMat, 
+    Slayers,
+    fact=1,
+    ncores=1,
+    filename=tempfile("final", tempdir(), ".grd")
+    ) {
+
+  toSmooth = x
+  toSmooth = toSmooth[[Slayers]]
+  toSmooth = raster::writeRaster(toSmooth,
+                      filename = tempfile("deratify", tempdir(), ".grd"))
+  
+  theFocal = focalMat
+
+  if(fact > 1) {
+    toSmooth = raster::aggregate(
+      toSmooth, fact=fact,fun=mean,
+      filename = tempfile("deratify", tempdir(), ".grd")
+      )
+    theFocal = lapply(theFocal,
+      function(xx) {
+        dim1 = round( (dim(xx)-1)/2)
+        seqHere = mapply(
+          seq,
+          to = dim1,
+          MoreArgs = list(from=0, by=fact)
+          )
+        seqHere = rbind(
+          -seqHere, seqHere
+          )
+        seqHere = apply(seqHere, 2, function(xxx) sort(unique(xxx)))
+        seqHere = seqHere + 1 + 
+          matrix(dim1, nrow=nrow(seqHere), ncol=2, byrow=TRUE)
+        res = xx[seqHere[,1], seqHere[,2]]  
+        res/sum(res)
+      })
+
+  }
+
+  endCluster = FALSE
+  theCluster = NULL
+  if(length(grep("cluster", class(ncores))) ) {
+    theCluster = ncores
+  } else if(!is.null(ncores)) {
+    if(ncores > 1) {
+      theCluster = parallel::makeCluster(spec=ncores, type='PSOCK', methods=TRUE)
+      parallel::setDefaultCluster(theCluster)
+      endCluster = TRUE
+    }
+  }
+  
+  theFinalEst = focalMult(
+      x=toSmooth,
+      w=theFocal,
+      edgeCorrect = TRUE,
+      filename = tempfile('finalsmoothed',
+      tempdir(), '.grd'),
+      cl = theCluster
+  )
+
+  names(theFinalEst) = Slayers
+
+  # done with the cluster
+  if(endCluster)
+    parallel::stopCluster(theCluster)
+
+  if(fact > 1) {
+    result = raster::projectRaster(
+      theFinalEst,
+      x,
+      method = 'bilinear',
+      filename = filename,
+      overwrite = file.exists(filename)
+    )
+  } else {
+    result = raster::writeRaster(theFinalEst,
+			filename = filename,
+			overwrite = file.exists(filename)
+		)
+  }
+  # remove temporary raster files
+  unlink(gsub("[[:alpha:]]$", "*", filename(theFinalEst)))
+
   return(result)
 }

@@ -270,3 +270,98 @@ riskEst = function(
 
 
 }
+
+
+riskEstMulti = function(
+  cases, 
+  lemObjects, 
+  bw, 
+  fact = 1,   
+  ncores = 1, 
+  iterations = list(tol = 1e-5, maxIter = 1000, gpu = FALSE), 
+  path = getwd(), 
+  filename = 'lemRisk.grd', 
+  verbose = FALSE
+){
+  
+  if(!length(grep('/', filename))) {
+    filename = file.path(path, filename)
+  }
+  if(!(length(grep("\\.gr[id]$", filename)))){
+    warning("filename should have .grd extension")
+  }
+  
+  if(verbose) {
+    cat(date(), '\n')
+    cat('running local-EM risk estimation for all maps with input bw:', bw, '\n')
+  }
+  
+  resList = list()
+  lambdaList = list()
+  for(inM in 1:length(cases)) {
+    
+    lemRiskMap = riskEst(
+      cases = cases[[inM]], 
+      lemObjects = lemObjects[[inM]], 
+	    bw = bw, 
+      ncores = ncores, 
+      fact = 0, 	  
+      iterations = iterations, 
+      path = path, 
+      filename = paste0(gsub('.grd', '', filename), inM, '.grd'), 
+      verbose = verbose)
+    
+    resList[[inM]] = lemRiskMap
+    
+    lambdaRasterMap = raster::deratify(lemRiskMap$riskAll)
+    names(lambdaRasterMap) = paste0(names(lambdaRasterMap), '_', inM)
+    
+    lambdaList[[inM]] = lambdaRasterMap
+  }
+  
+  lambdaRasterStack = stack(lambdaList)
+  lambdaRaster = raster::stackApply(lambdaRasterStack, 
+                                    indices = gsub('_[[:digit:]]+', '', names(lambdaRasterStack)), 
+                                    fun = 'sum', na.rm = TRUE)
+  names(lambdaRaster) = gsub('index_', '', names(lambdaRaster))
+  
+  for(inM in 1:length(cases)) {
+    
+    lambdaRasterMask = lambdaList[[inM]][[1]]
+    
+    lambdaRaster = raster::mask(lambdaRaster, lambdaRasterMask)
+  }
+  
+  result = list(
+    riskAll = lambdaRaster, 
+    smoothingMatrix = resList)
+  
+  # estimate continuous risk at high resolution (if specified)
+  if(fact > 0) {
+    
+    if(verbose) {
+      cat(date(), '\n')
+      cat('applying final smoothing step with input bw:', bw, '\n')
+    }
+
+    Slayers = names(result$riskAll)
+    riskFile = filename
+    
+    result$riskEst = finalSmoothMulti(
+      x = result$riskAll,
+      focalMat = result$smoothingMatrix[[1]]$smoothingMatrix$focal$focal,
+      Slayers = Slayers,
+      fact = fact,
+      filename = riskFile,
+      ncores = ncores)
+  }
+
+  result$bw = bw
+  
+  if(verbose) {
+    cat(date(), '\n')
+    cat('done\n')
+  }
+  
+  return(result)
+}

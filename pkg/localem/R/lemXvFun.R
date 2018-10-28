@@ -331,7 +331,6 @@ lemXv = function(
 }
 
 
-#' @export
 lemXvMulti = function(
   cases, 
   population, 
@@ -528,48 +527,13 @@ lemXvMulti = function(
     Slayers = paste('bw', format(bwMin, scientific = FALSE), '_', countcol, sep = '')
     riskFile = file.path(path, filename)
     
-    result$riskEst = finalSmooth(
+    result$riskEst = finalSmoothMulti(
       x = result$riskAll,
       focalMat = result$smoothingMatrix[[1]]$smoothingMatrix$focal$focal,
       Slayers = Slayers,
       fact = fact,
       filename = riskFile,
       ncores = ncores)
-    
-    # 	  finalEstList = list()
-    # 	  for(inM in 1:length(cases)) {
-    # 
-    # 	    lemXvMap = resList[[inM]]
-    # 	    
-    # 	    lambdaRasterMap = lambdaList[[inM]]
-    # 	    lambdaRasterMap = lambdaRasterMap[[grep('xv', names(lambdaRasterMap), invert = TRUE)]]
-    # 	    names(lambdaRasterMap) = gsub('_[[:digit:]]', '', names(lambdaRasterMap))
-    # 
-    # 	    riskFileMap = file.path(path, 
-    # 	                            paste0(gsub('.grd', '', filename), 'Xv', inM, '.grd'))
-    # 	    
-    #       finalEstMap = finalSmooth(
-    #         x = lambdaRasterMap, 
-    #         focalMat = lemXvMap$smoothingMatrix$focal$focal, 
-    #         Slayers = Slayers,
-    #         fact = fact,
-    #         filename = riskFileMap,
-    #         ncores = ncores)
-    #       names(finalEstMap) = paste0(names(finalEstMap), '_', inM)
-    #       
-    #       finalEstList[[inM]] = finalEstMap
-    # 	  }
-    #     
-    # 	  finalEstStack = stack(finalEstList)
-    # 	  finalEst = raster::stackApply(finalEstStack, 
-    # 	                                indices = gsub('_[[:digit:]]+', '', names(finalEstStack)), 
-    # 	                                    fun = 'sum', na.rm = TRUE)
-    # 	  names(finalEst) = gsub('index_', '', names(finalEst))
-    # 	  finalEst = raster::mask(finalEst, lemXvMap$smoothingMatrix$rasterFine)
-    # 	  
-    # 	  result$riskEst = raster::writeRaster(finalEst, 
-    # 	                                       filename = riskFile,
-    # 	                                       overwrite = file.exists(riskFile))
     
     result$bw = paste('bw', bwMin, sep = '')
   }
