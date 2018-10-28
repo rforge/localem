@@ -434,7 +434,7 @@ rasterPartitionMulti = function(
       coarse = lemXvMat$polyCoarse$idCoarse, 
       coarseRaster = raster::deratify(lemXvMat$rasterFine), 
       offsetRaster = lemXvMat$offset, 
-      Nxv = Nxv * length(polyCoarse))
+      Nxv = xv * length(polyCoarse))
     
     xvList[[inM]] = xvMatMap
   }
@@ -443,7 +443,7 @@ rasterPartitionMulti = function(
   xvUpdateList = getXvMatUpdate(
     polyCoarse = polyCoarse, 
     xvMat = xvList, 
-    Nxv = Nxv)
+    Nxv = xv)
   
   
   if(verbose) {
