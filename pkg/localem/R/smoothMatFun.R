@@ -178,6 +178,7 @@ smoothingMatrix = function(
 }
 
 
+#' @export
 smoothingMatrixMulti = function(
   rasterObjects,
   ncores = 1,

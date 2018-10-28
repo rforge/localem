@@ -272,6 +272,7 @@ riskEst = function(
 }
 
 
+#' @export
 riskEstMulti = function(
   cases, 
   lemObjects, 

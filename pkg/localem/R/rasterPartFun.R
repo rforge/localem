@@ -364,6 +364,7 @@ if(length(bw)) {
 }
 
 
+#' @export
 rasterPartitionMulti = function(
   polyCoarse,
   polyFine,

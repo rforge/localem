@@ -331,10 +331,15 @@ lemXv = function(
 }
 
 
+#' @export
 lemXvMulti = function(
   cases, 
   population, 
-  fact = 1, 
+  cellsCoarse,
+  cellsFine,
+  bw,
+  fact = 1,
+  xv = 4,
   lemObjects, 
   ncores = 1, 
   iterations = list(tol = 1e-5, maxIter = 1000, gpu = FALSE), 

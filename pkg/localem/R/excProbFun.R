@@ -340,6 +340,7 @@ names(theExcProbStack) = as.vector(t(outer(
 }
 
 
+#' @export
 excProbMulti = function(
   lemObjects,
   threshold = 1,
