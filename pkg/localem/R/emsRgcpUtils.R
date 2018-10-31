@@ -435,7 +435,7 @@ emsOneSd = function(
 	#determinant(gmrfCorMatrix)$modulus/2
 
 	thetaC = theta - interceptMatrix 
-	thetaCC = apply(thetaC * (gmrfCorMatrix %*% thetaC),2,sum)
+	thetaCC = apply(thetaC * (gmrfCorMatrix %*% thetaC),2,sum, na.rm=TRUE)
 
 
 	theL = cbind(
