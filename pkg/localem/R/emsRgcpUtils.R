@@ -176,8 +176,7 @@ objectsForLikelihoodOneMap = function(
 	list(
 		diagOf2ndDeriv = diagOf2ndDeriv,
 		offDiagSecondDeriv = offDiagSecondDeriv,
-		dPoisson = sum(yHere*log(offThetaIJ), na.rm=TRUE) -
-		sum(offThetaIJ,na.rm=TRUE)
+		dPoisson = sum(dpois(yHere,offThetaIJ,log=TRUE),na.rm=TRUE)
 		)		
 }
 
@@ -235,7 +234,7 @@ objectsForLikelihood = function(
 				function(D) lambda[, D]),
 			MoreArgs = list( Oijl = Oijl))
 	} else {
-
+# for debugging yHere = yExpanded[[1]][[2]];lambdaHere = lambda[,1];OijlHere = Oijl[[2]]
 		res = Map(
 			objectsForLikelihoodOneDataset,
 			yHere = yExpanded[
