@@ -344,7 +344,16 @@ rgcpPred = function(
 				df = 1)
 			)
 	}
-	
+	if(FALSE) {
+		normList = Map(
+		stats::qnorm,
+		p=Squant,
+		MoreArgs = list(
+			mean = values(theta),
+			sd = sqrt(values(varBrick))
+		)
+		)
+	}
 	
 
 	qArray1 = do.call(cbind, quantList)
@@ -391,7 +400,11 @@ rgcpPred = function(
 emsExcProb = function(x, threshold=1) {
 
 	modeLayers = grep('(^|[.])mode$', names(x), value=TRUE)
-	seLayers = gsub('mode$', 'se', modeLayers)
+	seLayers = grep("se$", names(x), value=TRUE)
+
+	if(length(seLayers)>1) {
+		seLayers = gsub('mode$', 'se', modeLayers)
+	}
 
 	vars = values(x[[seLayers]]^2)
 
@@ -402,6 +415,8 @@ emsExcProb = function(x, threshold=1) {
 		1, 
 		ncp, lower.tail=FALSE, 
 		)
+	# in case resE is a vector
+	resE= as.matrix(resE)
 	coarseCells = raster(x)
 	eArray = array(resE, 
 		c(ncol(coarseCells), nrow(coarseCells), 
