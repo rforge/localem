@@ -540,7 +540,7 @@ emsOneRange = function(
 			resAllSd[[as.character(Dsd)]]$theta = 
 			resAllSd[[as.character(Dsd)]]$theta[,onlyMax$name, drop=FALSE]
 			colnames(resAllSd[[as.character(Dsd)]]$theta) = 
-			gsub('_.*', '', colnames(resAllSd[[as.character(Dsd)]]$theta))
+			gsub('_alpha.*', '', colnames(resAllSd[[as.character(Dsd)]]$theta))
 		}
 	}
 
