@@ -228,7 +228,7 @@ objectsForLikelihood = function(
 		res = parallel::clusterMap(cl,
 			objectsForLikelihoodOneDataset,
 			yHere = yExpanded[
-				gsub('_.*', '', colnames(lambda))],
+				gsub('_alpha.*', '', colnames(lambda))],
 			lambdaHere = lapply(
 				seq_len(ncol(lambda)), 
 				function(D) lambda[, D]),
@@ -238,7 +238,7 @@ objectsForLikelihood = function(
 		res = Map(
 			objectsForLikelihoodOneDataset,
 			yHere = yExpanded[
-				gsub('_.*', '', colnames(lambda))],
+				gsub('_alpha.*', '', colnames(lambda))],
 			lambdaHere = lapply(
 				seq_len(ncol(lambda)), 
 				function(D) lambda[, D]),
