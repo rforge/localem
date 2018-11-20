@@ -133,7 +133,10 @@ derivDiag = function(
 			))
 
 	if(requireNamespace('INLA', quietly=TRUE)) {
-		diagHere = diag(INLA::inla.qinv(derivMat))
+		diagHere = try(diag(INLA::inla.qinv(derivMat)))
+    if(class(diagHere) == 'try-error') {
+      diagHere = diag(solve(derivMat))
+    }
 	} else {
 		diagHere = diag(solve(derivMat))
 	}
