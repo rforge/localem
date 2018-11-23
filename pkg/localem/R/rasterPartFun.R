@@ -141,10 +141,11 @@ rasterPartition = function(
     values(rasterIdCoarse)[toUpdate] =
       values(rasterIdCoarse2)[toUpdate]
   }
-  }
+  } # end donthave
 
-
-  polyFine@data[is.na(polyFine@data[,'expected']),'expected'] = 0
+  polyFine@data[
+    is.na(polyFine@data[,'expected']),
+    'expected'] = 0
 
   # offsets for fine raster
   rasterOffset = geostatsp::spdfToBrick(
@@ -174,8 +175,10 @@ rasterPartition = function(
   # scale the offsets to cases per cell
   # times 10 (roughly)
   # then create fine ID's with homogeneous offsets
-  maxOffset = 10^5 / maxValue(rasterOffset)
-  ratifyOffset = ratify(round(rasterOffset*maxOffset), count=FALSE)
+#  maxOffset = 10^5 / maxValue(rasterOffset)
+#  ratifyOffset = ratify(round(rasterOffset*maxOffset), count=FALSE)
+  ratifyOffset = ratify(signif(rasterOffset, 5), count=FALSE)
+
   stuff= raster::levels(ratifyOffset)[[1]]
   if(!is.null(stuff)) {
     stuff$idFine = seq(1, nrow(stuff))
