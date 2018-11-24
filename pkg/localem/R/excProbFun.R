@@ -355,11 +355,20 @@ excProbMulti = function(
   verbose = FALSE
   ){
 
+  dir.create(path, showWarnings = FALSE, recursive = TRUE)
+  
   # warning messages
   if(missing(lemObjects)) {
     stop('smoothing matrix and rasters not supplied')
   }
 
+  if(!length(grep('/', filename))) {
+    filename = file.path(path, filename)
+  }
+  if(!(length(grep("\\.gr[id]$", filename)))){
+    warning("filename should have .grd extension")
+  }
+  
   # bandwidths of interest
   bwString = grep(
     paste0('^(bw)?', bw[1], '$'), 
