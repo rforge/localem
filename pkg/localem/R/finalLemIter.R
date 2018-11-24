@@ -303,7 +303,7 @@ finalLemIter = function(
     oldLambda = Lambda
     Diter = Diter + 1
 
-    if(verbose) cat(".")
+#    if(verbose) cat(".")
   }
   if(verbose) cat("\ndone lem,", Diter, 'iterations\n')
   colnames(Lambda) = colnames(obsCounts)

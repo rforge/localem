@@ -188,7 +188,8 @@ excProb = function(
             lemObjects = lemObjects,
             bw = bw[inB],
 			fact=fact,
-			ncores=ncores,
+			ncores=ncores, 
+			iterations=iterations, 
             path = path,
             filename = tempfile(
 				paste0('riskBoot', bwString),
@@ -443,6 +444,7 @@ excProbMulti = function(
     bw = bw, 
     fact = fact, 
     ncores = ncores, 
+	iterations = iterations, 
     path = path, 
     filename = tempfile(paste0('riskBoot', bwString), path, '.grd'), 
     verbose = verbose)
