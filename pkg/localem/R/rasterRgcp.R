@@ -132,7 +132,7 @@ rasterPartitionRgcp = function(
 			f=rgcpOijlFun,
 			rasterHere = rasterList,
 			offsetStackHere = as.list(offsetStack),
-			MoreArgs = list(coarseCells = rasterCoarse)
+			MoreArgs = list(coarseCells = rasterCoarse[['cellCoarse']])
 			)
 	}
 
@@ -146,7 +146,7 @@ rasterPartitionRgcp = function(
 	
 	list(
 		Oijl = Oijl,
-		cells =  list(coarse=coarseCells, fine=fineCells),
+		cells =  list(coarse=rasterCoarse[['cellCoarse']], fine=rasterFine),
 		offset = list(raster = offsetStack, matrix = offsetMat)
 		)
 }
