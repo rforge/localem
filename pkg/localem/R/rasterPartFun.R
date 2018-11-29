@@ -177,20 +177,21 @@ rasterPartition = function(
   # then create fine ID's with homogeneous offsets
   rasterCutValues = sort(unique(
     signif(values(rasterOffset), 5)))
-  rasterCutValues = rasterCutValues[-1]-diff(rasterCutValues)/2
+  rasterCutValuesB = rasterCutValues[-1]-diff(rasterCutValues)/2
   cutOffset = raster::cut(rasterOffset,     
-    c(-Inf, rasterCutValues, Inf))
-  ratifyOffset = ratify(cutOffset, count=FALSE)
+    c(-Inf, rasterCutValuesB, Inf))
+  ratifyOffset = ratify(cutOffset)#, count=FALSE)
 
 #  maxOffset = 10^5 / maxValue(rasterOffset)
 #  minOffset = min(values(rasterOffset)[values(rasterOffset)>0])
 #  ratifyOffset = ratify(round(rasterOffset*maxOffset), count=FALSE)
 #  ratifyOffset = ratify(signif(rasterOffset, 5), count=FALSE)
 
-  stuff= raster::levels(ratifyOffset)[[1]]
-  if(!is.null(stuff)) {
-    stuff$idFine = seq(1, nrow(stuff))
-    levels(ratifyOffset) = list(stuff)
+  theLevels = raster::levels(ratifyOffset)[[1]]
+  if(!is.null(theLevels)) {
+    theLevels$idFine = seq(1, nrow(theLevels))
+    theLevels$offset = rasterCutValues
+    levels(ratifyOffset) = list(theLevels)
   } else {
     warning('offset problems, cant find levels')
   }
@@ -210,7 +211,8 @@ rasterPartition = function(
 
   offsetTempFile = file.path(path, 'offsetTemp.grd')
 
-  rasterOffset = raster::mask(rasterOffset, rasterIdCoarse[['idCoarse']],
+  rasterOffset = raster::mask(rasterOffset, 
+    rasterIdCoarse[['idCoarse']],
     filename = offsetTempFile,
 	  overwrite = file.exists(offsetTempFile))
 

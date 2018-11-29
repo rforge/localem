@@ -17,43 +17,59 @@ rasterPartitionRgcp = function(
 		gsub("(^[[:digit:]])",
 			"X\\1", names(finePolyList))
 
-
-	Dmap = names(coarsePolyList)[1]
-
-	if(verbose) {
-		cat('first rasterization ')
+  if(is.numeric(Ncoarse)) {
+	elist = lapply(coarsePolyList, extent)
+	if(length(elist) > 1) {
+		names(elist)[1:2] = c('x','y')
+		coarseExtent = do.call(raster::merge, elist)
+	} else {
+		coarseExtent = elist[[1]]
 	}
-	rasterList1 = 
-	localEM::rasterPartition(
-		polyCoarse = coarsePolyList[[Dmap]],
-		polyFine = finePolyList[[Dmap]],
-		Ncoarse,
-		Nfine,
-		NULL, NULL, NULL,
-		path=file.path(pathBase, Dmap),
-		verbose=verbose
-		)
-	fineCells = deratify(rasterList1$rasterFine, 'cellCoarse')
-	coarseCells = rasterList1$rasterCoarse
 
-	Smap = setdiff(names(coarsePolyList)[-1], Dmap)
+    rasterCoarse=geostatsp::squareRaster(coarseExtent, Ncoarse)
+    raster::projection(rasterCoarse) = 
+    	raster::projection(coarsePolyList[[1]])
+    values(rasterCoarse) = seq(1, ncell(rasterCoarse))
+    names(rasterCoarse) = "cellCoarse"
+  } else {
+    rasterCoarse = Ncoarse
+  }
+
+
+  if(is.numeric(Nfine)) {
+    rasterFine = disaggregate(rasterCoarse,
+      ceiling(Nfine/ncol(rasterCoarse)))
+    names(rasterFine) = 'cellCoarse'
+  } else {
+    rasterFine = cellsFine
+  }
+
+
+	Smap = names(coarsePolyList)
 	MoreArgs = list(
-		cellsCoarse = coarseCells[['cellCoarse']],
-		cellsFine = fineCells,
+		cellsCoarse = rasterCoarse[['cellCoarse']],
+		cellsFine = rasterFine,
 		bw=NULL, focalSize=NULL, xv=NULL,
 		verbose=verbose
 	)
 
 	if(verbose) {
-		cat('remaining rasterizations ')
+		cat('rasterizations ')
+	}
+
+	if(FALSE) {
+		# for debugging
+			polyCoarse = coarsePolyList[[Smap[3]]]
+			polyFine = finePolyList[[Smap[3]]]
+			path=file.path(pathBase, Smap[3])
 	}
 
 	if(mc.cores <= 1) {
 		cl = NULL
-		rasterList2 = Map(localEM::rasterPartition,
+		rasterList = Map(localEM::rasterPartition,
 			polyCoarse = coarsePolyList[Smap],
 			polyFine = finePolyList[Smap],
-			path=file.path(pathBase, Dmap),
+			path=file.path(pathBase, Smap),
 			MoreArgs = MoreArgs
 			)
 	} else {
@@ -61,7 +77,7 @@ rasterPartitionRgcp = function(
 		parallel::clusterEvalQ(cl, require('raster'))
 		parallel::clusterEvalQ(cl, require('Matrix'))
 
-		rasterList2 = parallel::clusterMap(
+		rasterList = parallel::clusterMap(
 			cl = cl,
 			fun=localEM::rasterPartition,
 			polyCoarse = coarsePolyList[Smap],
@@ -83,12 +99,12 @@ rasterPartitionRgcp = function(
 		bw=NULL, focalSize=NULL, xv=NULL,
 		verbose=verbose
 				)
-	}
 
 	rasterList = c(
 		list(x=rasterList1),
 		rasterList2
 		)
+	}
 
 	toBrick = lapply(rasterList, function(xx) xx$offset[['offset']])
 	offsetStack = do.call(raster::stack, toBrick)
@@ -119,7 +135,7 @@ rasterPartitionRgcp = function(
 			)
 	}
 
-	offsetIL = lapply(Oijl, function(xx) apply(xx,MARGIN=1, FUN=sum))
+	offsetIL = lapply(Oijl, function(xx) apply(xx, MARGIN=1, FUN=sum))
 	offsetL = apply(do.call(cbind, offsetIL), 1, sum)
 	offsetMat = Matrix::Diagonal(length(offsetL), offsetL)
 
