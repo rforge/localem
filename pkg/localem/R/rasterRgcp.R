@@ -41,7 +41,7 @@ rasterPartitionRgcp = function(
       ceiling(Nfine/ncol(rasterCoarse)))
     names(rasterFine) = 'cellCoarse'
   } else {
-    rasterFine = cellsFine
+    rasterFine = Nfine
   }
 
 
@@ -66,9 +66,9 @@ rasterPartitionRgcp = function(
 
 	if(mc.cores <= 1) {
 		cl = NULL
-		rasterList = Map(localEM::rasterPartition,
-			polyCoarse = coarsePolyList[Smap],
-			polyFine = finePolyList[Smap],
+		rasterList = Map(rasterPartition,
+			polyCoarse = coarsePolyList,
+			polyFine = finePolyList,
 			path=file.path(pathBase, Smap),
 			MoreArgs = MoreArgs
 			)
@@ -107,9 +107,10 @@ rasterPartitionRgcp = function(
 	}
 
 	toBrick = lapply(rasterList, function(xx) xx$offset[['offset']])
+	names(toBrick)[1] = 'x'
 	offsetStack = do.call(raster::stack, toBrick)
 	offsetStack = offsetStack * prod(res(offsetStack))
-	names(offsetStack) = names(rasterList) = c(Dmap, Smap)
+	names(offsetStack) = names(rasterList) = names(coarsePolyList)
 
 # sum of offsets in intersection of
 # coarse polygons and coarse cells
@@ -123,15 +124,15 @@ rasterPartitionRgcp = function(
 			fun=rgcpOijlFun,
 			rasterHere = rasterList,
 			offsetStackHere = as.list(offsetStack),
-			MoreArgs = list(coarseCells = coarseCells)
+			MoreArgs = list(coarseCells = rasterCoarse[['cellCoarse']])
 			)
 		parallel::stopCluster(cl)
 	} else {
 		Oijl = Map(
-			fun=rgcpOijlFun,
+			f=rgcpOijlFun,
 			rasterHere = rasterList,
 			offsetStackHere = as.list(offsetStack),
-			MoreArgs = list(coarseCells = coarseCells)
+			MoreArgs = list(coarseCells = rasterCoarse)
 			)
 	}
 
