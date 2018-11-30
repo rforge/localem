@@ -272,6 +272,13 @@ rgcpPred = function(
 	if(is.character(cl)) {
 		cl = get(cl)
 	}
+	if(is.numeric(cl)) {
+		cl = parallel::makeCluster(cl, type='PSOCK', methods=TRUE)
+		parallel::clusterEvalQ(cl, require('Matrix'))
+		parallel::clusterEvalQ(cl, require('data.table'))
+		parallel::clusterEvalQ(cl, require('localEM'))
+
+	}
 
 
 	if(!is.null(cl)) {
@@ -289,7 +296,6 @@ rgcpPred = function(
 				for2deriv['offDiagSecondDerivIJ']
 				)
 			)
-
 	} else {
 
 		twoDerivList = Map(derivDiag,
@@ -334,6 +340,7 @@ rgcpPred = function(
 				ncp = values(theta)^2/values(varBrick),
 				df = 1)
 			)
+		parallel::stopCluster(cl)
 
 	} else {
 		quantList = Map(

@@ -132,14 +132,15 @@ derivDiag = function(
 			index1 = FALSE
 			))
 
-	if(requireNamespace('INLA', quietly=TRUE)) {
-		diagHere = try(diag(INLA::inla.qinv(derivMat)))
-    if(class(diagHere) == 'try-error') {
-      diagHere = diag(solve(derivMat))
-    }
-	} else {
-		diagHere = diag(solve(derivMat))
-	}
+#	if(requireNamespace('INLA', quietly=TRUE) & FALSE) {
+#		diagHere = try(diag(INLA::inla.qinv(derivMat)))
+#    if(class(diagHere) == 'try-error') {
+#      diagHere = diag(solve(derivMat))
+#    }
+#	} else {
+		invHere = Matrix::solve(derivMat)
+		diagHere = Matrix::diag(invHere)
+#	}
 
 	diagHere
 
@@ -584,7 +585,7 @@ emsOneRange = function(
 	# combine results for different SD
 
 	logLik$mean = logLik$intercept^2
-	logLik$sdNatrual = logLik$sd/logLik$intercept
+	logLik$sdNatural = logLik$sd/logLik$intercept
 	logLik$range = range[1]
 
 	cholGmrfCor = Matrix::update(data$cholGmrfCorTemplate, gmrfCorMatrix)
