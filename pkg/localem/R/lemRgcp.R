@@ -331,26 +331,50 @@ rgcpPred = function(
 
 	meanBrick = theta + varBrick
 
+	SqForApprox = exp(seq(-5, log(50),len=301))
 	Squant = p
+
 	if(!is.null(cl)) {
-		quantList = parallel::clusterMap(cl, 
-			stats::qchisq,
-			p=Squant,
-			MoreArgs = list(
-				ncp = values(theta)^2/values(varBrick),
-				df = 1)
-			)
+	pchisqList = parallel::clusterMap(cl, 
+		stats::pchisq,
+		q = SqForApprox,
+		MoreArgs = list( 
+		df= 1, 
+		ncp = values(theta)^2/values(varBrick),
+		log.p=TRUE, lower.tail=FALSE) 
+		)
+
 		parallel::stopCluster(cl)
 
 	} else {
-		quantList = Map(
-			stats::qchisq,
-			p=Squant,
-			MoreArgs = list(
-				ncp = values(theta)^2/values(varBrick),
-				df = 1)
-			)
+	pchisqList = Map(stats::pchisq,
+		q = SqForApprox,
+		MoreArgs = list( 
+		df= 1, 
+		ncp = values(theta)^2/values(varBrick),
+		log.p=TRUE, lower.tail=FALSE) 
+		)
 	}
+
+	pchisqMat = do.call(cbind, pchisqList)
+
+	qchisqMat = t(apply(pchisqMat, 1, function(xx) {
+		approx(xx, SqForApprox, log(1-Squant))$y
+	}))
+
+	qchisqMat2 = qchisqMat * drop(values(varBrick))
+
+	qBrick = raster::brick(array(
+		qchisqMat2,
+		c(ncol(meanBrick), nrow(meanBrick), length(Squant))
+		), transpose=TRUE)
+	extent(qBrick) = extent(meanBrick)
+		projection(qBrick) = projection(meanBrick)
+
+		names(qBrick) = paste0('q', Squant)
+
+
+
 	if(FALSE) {
 		normList = Map(
 		stats::qnorm,
@@ -360,7 +384,6 @@ rgcpPred = function(
 			sd = sqrt(values(varBrick))
 		)
 		)
-	}
 	
 
 	qArray1 = do.call(cbind, quantList)
@@ -375,11 +398,17 @@ rgcpPred = function(
 		ymin(coarseCells), ymax(coarseCells), 
 		projection(coarseCells),
 		transpose=TRUE)
+	}
+
+
+	seBrick = sqrt(varBrick)
+	names(seBrick) = paste0(names(varBrick), '.se')
 
 	if(nlayers(theta) == 1) {
 		names(qBrick) = paste0('q', Squant)
 		names(theta) = 'mode'
 		names(meanBrick) = 'mean'
+		names(seBrick) = 'se'
 	} else {
 		names(qBrick) = paste0(
 			colnames(qArray1),
@@ -389,8 +418,6 @@ rgcpPred = function(
 		names(meanBrick) = paste0(names(meanBrick), '.mean')
 	}
 
-	seBrick = sqrt(varBrick)
-	names(seBrick) = paste0(names(varBrick), '.se')
 
 	resQ = stack(
 		meanBrick,
