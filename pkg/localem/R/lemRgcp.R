@@ -247,7 +247,8 @@ emsRgcp = function(
 
 
 rgcpPred = function(
-	x, 
+	x,
+	sd,
 	param = x$mle,
 	theta = x$theta,
 	data = x$data,
@@ -255,6 +256,22 @@ rgcpPred = function(
 	cl = NULL
 	) {
 
+	if(is.character(cl)) {
+		cl = get(cl)
+	}
+	if(is.numeric(cl)) {
+		cl = parallel::makeCluster(cl, type='PSOCK', methods=TRUE)
+		parallel::clusterEvalQ(cl, require('Matrix'))
+		parallel::clusterEvalQ(cl, require('data.table'))
+		parallel::clusterEvalQ(cl, require('localEM'))
+
+	}
+
+
+	if(!missing(sd) & 'mean' %in% names(x)) {
+		varBrick = sd^2
+		meanBrick = theta + varBrick
+	} else {
 	if(class(theta) == 'array') {
 		warning("haven't written this part yet")
 	}
@@ -268,17 +285,6 @@ rgcpPred = function(
 		data$Oijl, 
 		data$y, 
 		as.matrix(theta)^2) 
-
-	if(is.character(cl)) {
-		cl = get(cl)
-	}
-	if(is.numeric(cl)) {
-		cl = parallel::makeCluster(cl, type='PSOCK', methods=TRUE)
-		parallel::clusterEvalQ(cl, require('Matrix'))
-		parallel::clusterEvalQ(cl, require('data.table'))
-		parallel::clusterEvalQ(cl, require('localEM'))
-
-	}
 
 
 	if(!is.null(cl)) {
@@ -330,6 +336,7 @@ rgcpPred = function(
 	names(varBrick) = names(theta)
 
 	meanBrick = theta + varBrick
+}
 
 	SqForApprox = exp(seq(-5, log(50),len=301))
 	Squant = p
