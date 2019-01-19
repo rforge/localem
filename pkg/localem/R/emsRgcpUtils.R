@@ -336,6 +336,8 @@ emsOneSd = function(
 		dimnames = list(
 			values(coarseCells),
 			SobsIntercept))
+	} else {
+		theta = pmax(theta, 0, na.rm=TRUE)
 	}
 	lambda = theta^2
 
@@ -374,7 +376,7 @@ emsOneSd = function(
 
 		if(any(lambda < 0)) {
 			lambda = pmax(as.matrix(lambda), 0)
-			Diter = Inf
+			Diter = maxIter + 1
 			warning("ems iteration produced negative lambda")
 		}
 		theta = sqrt(as.matrix(lambda))
@@ -386,8 +388,17 @@ emsOneSd = function(
 
 		derivMax = max(abs(firstDerivHere))
 
-		if(verbose & (!(Diter %% iterPrint))) {
-			cat(signif(derivMax, 2), ' ')
+		if(verbose) {
+			if(is.na(Diter) | is.na(iterPrint)) {
+				cat(' !', Diter, '!!', iterPrint, '! ')
+			}
+			if(is.na(Diter %% iterPrint)) {
+				cat(' !', Diter, '!!', iterPrint, '! ')
+			}
+
+			if(!(Diter %% iterPrint)) {
+				cat(signif(derivMax, 2), ' ')
+			}
 		}
 		Diter = Diter + 1
 	} # Diter
@@ -396,6 +407,7 @@ emsOneSd = function(
 	}
 	if(Diter >= maxIter) {
 		warning("max iterations reached")
+		cat('!!')
 	}
 	# second derivative
 	if(verbose) {
@@ -445,6 +457,7 @@ emsOneSd = function(
 	thetaC = theta - interceptMatrix 
 	thetaCC = apply(thetaC * (gmrfCorMatrix %*% thetaC),2,sum)
 
+	halfLogDet = pmax(halfLogDet, -Inf, na.rm=TRUE)
 
 	theL = cbind(
 		obsIntercept,
