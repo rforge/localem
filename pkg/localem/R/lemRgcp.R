@@ -216,6 +216,7 @@ emsRgcp = function(
 		theta = thetaBrick, logL = logLik, profL = logLprof, 
 		array = logLikArray, data=data)
 
+
 	if(reduce) {
 		if(verbose){
 			cat('computing quantiles\n')
@@ -237,7 +238,7 @@ emsRgcp = function(
 		}
 		parallel::stopCluster(outerCluster)
 	} else {
-		if(!is.null(innerCluster)) {
+		if(nCoresInner > 1) {
 			parallel::stopCluster(innerCluster)	
 		}
 	}
