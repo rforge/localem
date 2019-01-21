@@ -53,12 +53,13 @@ emsRgcp = function(
 					function() Sys.getpid())), 
 				'\n')
 		} 
-	} else { # noCoresOuter <= 1
+	} else { 
+		# noCoresOuter <= 1
 		outerCluster = NULL
 		require('data.table')
 	}
 
-	if(nCoresInner > 1) {
+	if(nCoresInner > 1) {	
 		if(nCoresOuter <= 1) { 
 		# an inner cluster but no outer cluster
 			innerCluster <- parallel::makeCluster(nCoresInner, type='PSOCK', methods=TRUE)
@@ -74,7 +75,9 @@ emsRgcp = function(
 					unlist(parallel::clusterCall(innerCluster, Sys.getpid)),
 					'\n')
 			}
-		} else { # inner and outer cluster
+		} else {
+
+		 # inner and outer cluster
 			parallel::clusterEvalQ(outerCluster, 
 				{innerCluster <- parallel::makeCluster(nCoresInner, type='PSOCK', methods=TRUE);
 				parallel::clusterEvalQ(innerCluster, require('Matrix'))
@@ -98,11 +101,12 @@ emsRgcp = function(
 			} 
 		}
 
-	} else { # nCoresInner <= 1
+	} else { 
+	# nCoresInner <= 1
 		innerCluster = NULL
 		if(!is.null(outerCluster)) {
 			parallel::clusterEvalQ(outerCluster, {
-			innerCluster = NULL
+				innerCluster = NULL
 			})
 		}
 	}
@@ -229,7 +233,7 @@ emsRgcp = function(
 			clHere = innerCluster
 		}
 
-		pred = try(rgcpPred(res, p=0.5, cl=clHere, verbose=verbose), silent=TRUE) 
+		pred = try(rgcpPred(res, cl=clHere, verbose=verbose), silent=TRUE) 
 		res$pred = pred
 	}
 
@@ -262,18 +266,19 @@ rgcpPred = function(
 	if(is.character(cl)) {
 		cl = get(cl)
 	}
+
 	if(is.numeric(cl)) {
 		cl = parallel::makeCluster(cl, type='PSOCK', methods=TRUE)
 		parallel::clusterEvalQ(cl, require('Matrix'))
 		parallel::clusterEvalQ(cl, require('data.table'))
 		parallel::clusterEvalQ(cl, require('localEM'))
 
-	stopCluster = TRUE
+		stopCluster = TRUE
 
 	} else {
 		stopCluster = FALSE
 	}
- 
+
 
 	if(!missing(sd) & 'mean' %in% names(x)) {
 		varBrick = sd^2
@@ -281,70 +286,70 @@ rgcpPred = function(
 	} else {
 		if(class(theta) == 'array') {
 			warning("haven't written this part yet")
-	}
+		}
 
-	if(is.null(param$shape)) {
-		param$shape = data$shape
-	}
-	param$variance = param$sd^2
+		if(is.null(param$shape)) {
+			param$shape = data$shape
+		}
+		param$variance = param$sd^2
 
-	for2deriv = objectsForLikelihood(
-		data$Oijl, 
-		data$y, 
-		as.matrix(theta)^2) 
+		for2deriv = objectsForLikelihood(
+			data$Oijl, 
+			data$y, 
+			as.matrix(theta)^2) 
 
 
-	if(!is.null(cl) & (nrow(param)<1) ) {
+		if(!is.null(cl) & (nrow(param)<1) ) {
 
-		twoDerivList = parallel::clusterMap(cl,
-			derivDiag,
-			param =  lapply(rownames(param), 
-				function(i) drop(as.matrix(param[i,c('range','variance','shape')]))),
-			diagOf2ndDeriv =  lapply(1:nrow(param), 
-				function(i) for2deriv$diagOf2ndDeriv[,i,drop=FALSE]),
-			offDiagSecondDerivX = lapply(1:nrow(param), 
-				function(i) for2deriv$offDiagSecondDerivX[,i,drop=FALSE]),
-			MoreArgs = c(
-				data[c('precTemplateMatrix','sparseTemplate','offsetMatrix')],
-				for2deriv['offDiagSecondDerivIJ']
+			twoDerivList = parallel::clusterMap(cl,
+				derivDiag,
+				param =  lapply(rownames(param), 
+					function(i) drop(as.matrix(param[i,c('range','variance','shape')]))),
+				diagOf2ndDeriv =  lapply(1:nrow(param), 
+					function(i) for2deriv$diagOf2ndDeriv[,i,drop=FALSE]),
+				offDiagSecondDerivX = lapply(1:nrow(param), 
+					function(i) for2deriv$offDiagSecondDerivX[,i,drop=FALSE]),
+				MoreArgs = c(
+					data[c('precTemplateMatrix','sparseTemplate','offsetMatrix')],
+					for2deriv['offDiagSecondDerivIJ']
+					)
 				)
-			)
-	} else {
+		} else {
 
-		twoDerivList = Map(derivDiag,
-			param =  lapply(rownames(param), 
-				function(i) drop(as.matrix(
-					param[i,c('range','variance','shape')]))),
-			diagOf2ndDeriv =  lapply(1:nrow(param), 
-				function(i) for2deriv$diagOf2ndDeriv[,i,drop=FALSE]),
-			offDiagSecondDerivX = lapply(1:nrow(param), 
-				function(i) for2deriv$offDiagSecondDerivX[,i,drop=FALSE]),
-			MoreArgs = c(
-				data[c('precTemplateMatrix','sparseTemplate','offsetMatrix')],
-				for2deriv['offDiagSecondDerivIJ'],
-				verbose=verbose
+			twoDerivList = Map(derivDiag,
+				param =  lapply(rownames(param), 
+					function(i) drop(as.matrix(
+						param[i,c('range','variance','shape')]))),
+				diagOf2ndDeriv =  lapply(1:nrow(param), 
+					function(i) for2deriv$diagOf2ndDeriv[,i,drop=FALSE]),
+				offDiagSecondDerivX = lapply(1:nrow(param), 
+					function(i) for2deriv$offDiagSecondDerivX[,i,drop=FALSE]),
+				MoreArgs = c(
+					data[c('precTemplateMatrix','sparseTemplate','offsetMatrix')],
+					for2deriv['offDiagSecondDerivIJ'],
+					verbose=verbose
+					)
 				)
-			)
+		}
+
+
+		diagTwoDeriv = do.call(cbind, twoDerivList)
+
+		coarseCells = data$coarseCells
+
+		varArray = array(diagTwoDeriv/2, 
+			c(ncol(coarseCells), nrow(coarseCells), 
+				ncol(diagTwoDeriv)))
+
+		varBrick = raster::brick(varArray, 
+			xmin(coarseCells), xmax(coarseCells),
+			ymin(coarseCells), ymax(coarseCells), 
+			projection(coarseCells),
+			transpose=TRUE)
+		names(varBrick) = names(theta)
+
+		meanBrick = theta + varBrick
 	}
-
-
-	diagTwoDeriv = do.call(cbind, twoDerivList)
-
-	coarseCells = data$coarseCells
-
-	varArray = array(diagTwoDeriv/2, 
-		c(ncol(coarseCells), nrow(coarseCells), 
-			ncol(diagTwoDeriv)))
-
-	varBrick = raster::brick(varArray, 
-		xmin(coarseCells), xmax(coarseCells),
-		ymin(coarseCells), ymax(coarseCells), 
-		projection(coarseCells),
-		transpose=TRUE)
-	names(varBrick) = names(theta)
-
-	meanBrick = theta + varBrick
-
 
 	SqForApprox = c(exp(seq(-5, log(50),len=301)), 60,80,100,200)
 	Squant = p
@@ -437,7 +442,7 @@ emsExcProb = function(x, threshold=1) {
 	vars = values(x[[seLayers]]^2)
 
 	ncp = values(x[[modeLayers]])^2 / vars
-	
+
 	resE = stats::pchisq(
 		threshold / vars, 
 		1, 
@@ -456,4 +461,5 @@ emsExcProb = function(x, threshold=1) {
 		transpose=TRUE)
 	names(eBrick) = gsub("[.]?mode$", "", modeLayers)
 	eBrick
+
 }
