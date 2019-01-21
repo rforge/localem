@@ -106,7 +106,12 @@ derivDet = function(outerOffsetHere,
 derivDiag = function(
 	param, offsetMatrix,precTemplateMatrix,
 	diagOf2ndDeriv,offDiagSecondDerivIJ,
-	offDiagSecondDerivX, sparseTemplate) {
+	offDiagSecondDerivX, sparseTemplate,
+	verbose=FALSE) {
+
+	if(verbose) {
+		cat("creating matrix\n")
+	}
 
 	precMat = 2*offsetMatrix + 
 	geostatsp::maternGmrfPrec(
@@ -138,7 +143,11 @@ derivDiag = function(
 #      diagHere = diag(solve(derivMat))
 #    }
 #	} else {
+	if(verbose) {
+		cat("inverting matrix\n")
+	}
 		invHere = Matrix::solve(derivMat)
+
 		diagHere = Matrix::diag(invHere)
 #	}
 

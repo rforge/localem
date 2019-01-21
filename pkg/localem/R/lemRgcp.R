@@ -222,24 +222,25 @@ emsRgcp = function(
 			cat('computing quantiles\n')
 		}
 
-		if(!is.null(outerCluster)) {
+
+		if(nCoresOuter > 1) {
 			clHere = outerCluster
 		} else {
 			clHere = innerCluster
 		}
 
-		pred = try(rgcpPred(res, p=0.5, cl=clHere), silent=TRUE) 
+		pred = try(rgcpPred(res, p=0.5, cl=clHere, verbose=verbose), silent=TRUE) 
 		res$pred = pred
 	}
 
 	if(nCoresOuter > 1) {
 		if(nCoresInner > 1) {
-			parallel::clusterEvalQ(outerCluster, parallel::stopCluster(innerCluster))
+			try(parallel::clusterEvalQ(outerCluster, parallel::stopCluster(innerCluster)))
 		}
-		parallel::stopCluster(outerCluster)
+		try(parallel::stopCluster(outerCluster))
 	} else {
 		if(nCoresInner > 1) {
-			parallel::stopCluster(innerCluster)	
+			try(parallel::stopCluster(innerCluster))	
 		}
 	}
 
@@ -254,7 +255,8 @@ rgcpPred = function(
 	theta = x$theta,
 	data = x$data,
 	p= c(0.01,0.025, 0.05, 0.1, 0.5, 0.9, 0.95, 0.975,0.99),
-	cl = NULL
+	cl = NULL,
+	verbose=FALSE
 	) {
 
 	if(is.character(cl)) {
@@ -266,15 +268,19 @@ rgcpPred = function(
 		parallel::clusterEvalQ(cl, require('data.table'))
 		parallel::clusterEvalQ(cl, require('localEM'))
 
-	}
+	stopCluster = TRUE
 
+	} else {
+		stopCluster = FALSE
+	}
+ 
 
 	if(!missing(sd) & 'mean' %in% names(x)) {
 		varBrick = sd^2
 		meanBrick = theta + varBrick
 	} else {
-	if(class(theta) == 'array') {
-		warning("haven't written this part yet")
+		if(class(theta) == 'array') {
+			warning("haven't written this part yet")
 	}
 
 	if(is.null(param$shape)) {
@@ -288,9 +294,9 @@ rgcpPred = function(
 		as.matrix(theta)^2) 
 
 
-	if(!is.null(cl)) {
+	if(!is.null(cl) & (nrow(param)<1) ) {
 
-		twoDerivList = parallel::clusterMap(cl, 
+		twoDerivList = parallel::clusterMap(cl,
 			derivDiag,
 			param =  lapply(rownames(param), 
 				function(i) drop(as.matrix(param[i,c('range','variance','shape')]))),
@@ -315,7 +321,8 @@ rgcpPred = function(
 				function(i) for2deriv$offDiagSecondDerivX[,i,drop=FALSE]),
 			MoreArgs = c(
 				data[c('precTemplateMatrix','sparseTemplate','offsetMatrix')],
-				for2deriv['offDiagSecondDerivIJ']
+				for2deriv['offDiagSecondDerivIJ'],
+				verbose=verbose
 				)
 			)
 	}
@@ -337,37 +344,42 @@ rgcpPred = function(
 	names(varBrick) = names(theta)
 
 	meanBrick = theta + varBrick
-}
 
-	SqForApprox = exp(seq(-5, log(50),len=301))
+
+	SqForApprox = c(exp(seq(-5, log(50),len=301)), 60,80,100,200)
 	Squant = p
 
 	if(!is.null(cl)) {
-	pchisqList = parallel::clusterMap(cl, 
-		stats::pchisq,
-		q = SqForApprox,
-		MoreArgs = list( 
-		df= 1, 
-		ncp = values(theta)^2/values(varBrick),
-		log.p=TRUE, lower.tail=FALSE) 
-		)
+		pchisqList = parallel::clusterMap(cl, 
+			stats::pchisq,
+			q = SqForApprox,
+			MoreArgs = list( 
+				df= 1, 
+				ncp = values(theta)^2/values(varBrick),
+				log.p=TRUE, lower.tail=FALSE) 
+			)
 
-		parallel::stopCluster(cl)
 
 	} else {
-	pchisqList = Map(stats::pchisq,
-		q = SqForApprox,
-		MoreArgs = list( 
-		df= 1, 
-		ncp = values(theta)^2/values(varBrick),
-		log.p=TRUE, lower.tail=FALSE) 
-		)
+
+		pchisqList = Map(stats::pchisq,
+			q = SqForApprox,
+			MoreArgs = list( 
+				df= 1, 
+				ncp = values(theta)^2/values(varBrick),
+				log.p=TRUE, lower.tail=FALSE) 
+			)
 	}
+
+	if(stopCluster) {
+		parallel::stopCluster(cl)
+	}
+
 
 	pchisqMat = do.call(cbind, pchisqList)
 
 	qchisqMat = t(apply(pchisqMat, 1, function(xx) {
-		approx(xx, SqForApprox, log(1-Squant))$y
+		approx(xx, SqForApprox, log(1-Squant), rule=2)$y
 	}))
 
 	qchisqMat2 = qchisqMat * drop(values(varBrick))
@@ -377,36 +389,10 @@ rgcpPred = function(
 		c(ncol(meanBrick), nrow(meanBrick), length(Squant))
 		), transpose=TRUE)
 	extent(qBrick) = extent(meanBrick)
-		projection(qBrick) = projection(meanBrick)
+	projection(qBrick) = projection(meanBrick)
 
-		names(qBrick) = paste0('q', Squant)
+	names(qBrick) = paste0('q', Squant)
 
-
-
-	if(FALSE) {
-		normList = Map(
-		stats::qnorm,
-		p=Squant,
-		MoreArgs = list(
-			mean = values(theta),
-			sd = sqrt(values(varBrick))
-		)
-		)
-	
-
-	qArray1 = do.call(cbind, quantList)
-	qArray2 = qArray1*( 
-		values(varBrick)[,colnames(qArray1)])
-	qArray = array(qArray2, 
-		c(ncol(coarseCells), nrow(coarseCells), 
-			ncol(qArray2)))
-
-	qBrick = raster::brick(qArray, 
-		xmin(coarseCells), xmax(coarseCells),
-		ymin(coarseCells), ymax(coarseCells), 
-		projection(coarseCells),
-		transpose=TRUE)
-	}
 
 
 	seBrick = sqrt(varBrick)
