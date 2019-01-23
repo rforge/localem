@@ -443,23 +443,32 @@ emsExcProb = function(x, threshold=1) {
 
 	ncp = values(x[[modeLayers]])^2 / vars
 
-	resE = stats::pchisq(
-		threshold / vars, 
-		1, 
-		ncp, lower.tail=FALSE, 
+	resE = mapply(
+		function(threshold, vars,ncp) {
+			stats::pchisq(threshold/vars,1,ncp,lower.tail=FALSE)
+		},
+		threshold = threshold,
+		MoreArgs = list(vars = vars, ncp = ncp), SIMPLIFY=FALSE
 		)
+	if(length(modeLayers)>1) {
+		resE = do.call(abind::abind, c(resE, list(along=3)))
+	} else {
+		resE = do.call(cbind, resE)
+	}
+
 	# in case resE is a vector
-	resE= as.matrix(resE)
 	coarseCells = raster(x)
 	eArray = array(resE, 
 		c(ncol(coarseCells), nrow(coarseCells), 
-			ncol(resE)))
+			prod(dim(resE)[-1])))
 	eBrick = raster::brick(eArray, 
 		xmin(coarseCells), xmax(coarseCells),
 		ymin(coarseCells), ymax(coarseCells), 
 		projection(coarseCells),
 		transpose=TRUE)
-	names(eBrick) = gsub("[.]?mode$", "", modeLayers)
+	names(eBrick) = as.vector(outer(
+		gsub("[.]?mode$", "", modeLayers),
+		threshold, paste, sep='exc'))
 	eBrick
 
 }

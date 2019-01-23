@@ -385,7 +385,7 @@ emsOneSd = function(
 
 		if(any(lambda < 0)) {
 			lambda = pmax(as.matrix(lambda), 0)
-			Diter = maxIter + 1
+			Diter = Diter + 4
 			warning("ems iteration produced negative lambda")
 		}
 		theta = sqrt(as.matrix(lambda))
