@@ -321,10 +321,15 @@ riskEstMulti = function(
   }
   
   lambdaRasterStack = stack(lambdaList)
-  lambdaRaster = raster::stackApply(lambdaRasterStack, 
-                                    indices = gsub('_[[:digit:]]+', '', names(lambdaRasterStack)), 
-                                    fun = 'sum', na.rm = TRUE)
-  names(lambdaRaster) = gsub('index_', '', names(lambdaRaster))
+  # lambdaRaster = raster::stackApply(lambdaRasterStack, 
+  #                                   indices = gsub('_[[:digit:]]+', '', names(lambdaRasterStack)), 
+  #                                   fun = 'sum', na.rm = TRUE)
+  # names(lambdaRaster) = gsub('index_', '', names(lambdaRaster))
+  lambdaRasterDf = t(rowsum(t(as.data.frame(lambdaRasterStack)), 
+                            group = gsub('_[[:digit:]]+', '', names(lambdaRasterStack)), 
+                            reorder = FALSE))
+  lambdaRaster = lambdaRasterMap
+  values(lambdaRaster) = lambdaRasterDf
   
   for(inM in 1:length(cases)) {
     
