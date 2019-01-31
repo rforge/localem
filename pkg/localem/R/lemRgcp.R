@@ -351,7 +351,13 @@ rgcpPred = function(
 		meanBrick = theta + varBrick
 	}
 
-	SqForApprox = c(exp(seq(-5, log(50),len=301)), 60,80,100,200)
+	ncp = theta^2/varBrick
+	meanNcp = mean(values(ncp), na.rm=TRUE)
+	SqForApprox = sort(unique(c(
+		seq(0, meanNcp, len=40),
+		seq(meanNcp, 2*meanNcp, len=40),
+		quantile(values(ncp), seq(0,1,len=201) ))))
+
 	Squant = p
 
 	if(!is.null(cl)) {
@@ -360,10 +366,9 @@ rgcpPred = function(
 			q = SqForApprox,
 			MoreArgs = list( 
 				df= 1, 
-				ncp = values(theta)^2/values(varBrick),
+				ncp = values(ncp),
 				log.p=TRUE, lower.tail=FALSE) 
 			)
-
 
 	} else {
 
@@ -371,7 +376,7 @@ rgcpPred = function(
 			q = SqForApprox,
 			MoreArgs = list( 
 				df= 1, 
-				ncp = values(theta)^2/values(varBrick),
+				ncp = values(ncp),
 				log.p=TRUE, lower.tail=FALSE) 
 			)
 	}
@@ -381,28 +386,50 @@ rgcpPred = function(
 	}
 
 	if(!is.matrix(pchisqList[[1]])) {
-			pchisqMat = do.call(cbind, pchisqList)
-			qchisqMat = t(apply(pchisqMat, 1, function(xx) {
-				if(length(unique(xx))==1) {
-					xx[1] = xx[1]+1
-				}
-				approx(xx, SqForApprox, log(1-Squant), rule=2)$y
-			})
-			)
-
+		pchisqMat = do.call(cbind, pchisqList)
 	} else {
-			pchisqMat = do.call(abind::abind, c(pchisqList, list(along=3)))
-			qchisqMat = apply(pchisqMat, 1:2, function(xx) {
-				if(length(unique(xx))==1) {
-					xx[1] = xx[1]+1
-				}
-				approx(xx, SqForApprox, log(1-Squant), rule=2)$y
-			})
-			qchisqMat = aperm(qchisqMat, c(2,3,1))
+		pchisqMat = do.call(abind::abind, c(pchisqList, list(along=3)))
 	}
 
+	pchisqMat[is.nan(pchisqMat)] = -Inf
+	pchisqMat = exp(pchisqMat)
 
+	qchisqMat = apply(pchisqMat, 
+			seq(1, length(dim(pchisqMat))-1), 
+			function(xx) {
+				if(length(unique(xx))==1) {
+					xx[1] = xx[1]+1
+				}
+				approx(xx, SqForApprox, 1-Squant, rule=2)$y
+			})
+	if(is.matrix(qchisqMat)) {
+		qchisqMat= t(qchisqMat)
+	} else {
+		qchisqMat = aperm(qchisqMat, c(2,3,1))
+	}
+
+#	dimnames(qchisqMat)[[2]] = paste0('q', Squant)
+
+if(FALSE) {		qchisqBrick = raster::brick(
+			array(qchisqMat, c(ncol(meanBrick), nrow(meanBrick),
+				prod(dim(qchisqMat)[-1])))
+			)
+		names(qchisqBrick) = apply(
+			do.call(expand.grid, dimnames(qchisqMat)[-1]),
+			1, paste, collapse='.')
+
+	qchisqMat2= as.vector(qchisqMat[,,1]) * as.vector(values(varBrick[[1]]))
+	qBrick = raster::brick(array(
+		qchisqMat2,
+		c(ncol(meanBrick), nrow(meanBrick), length(Squant))
+		), transpose=TRUE)
+
+}
+
+#	stuff = array(as.vector(values(varBrick)), dim(qchisqMat))
 	qchisqMat2 = as.vector(qchisqMat) * as.vector(drop(values(varBrick)))
+
+#	qq2 = array(qchisqMat2, dim(qchisqMat), dimnames=dimnames(qchisqMat))
 
 	qBrick = raster::brick(array(
 		qchisqMat2,
@@ -421,10 +448,12 @@ rgcpPred = function(
 		names(meanBrick) = 'mean'
 		names(seBrick) = 'se'
 	} else {
-		names(qBrick) = paste0(
-			rep(names(theta), length(Squant)),
-			'.q', rep(Squant, each = nlayers(theta))
-			)
+	names(qBrick) = apply(
+		expand.grid(
+			names(theta), 
+			paste0('q', Squant)),
+		1, paste, collapse='.'
+		)
 		names(theta) = paste0(names(theta), '.mode')
 		names(meanBrick) = paste0(names(meanBrick), '.mean')
 	}
