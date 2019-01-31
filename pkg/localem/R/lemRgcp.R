@@ -380,7 +380,7 @@ rgcpPred = function(
 		parallel::stopCluster(cl)
 	}
 
-	if(is.matrix(pchisqList[[1]])) {
+	if(!is.matrix(pchisqList[[1]])) {
 			pchisqMat = do.call(cbind, pchisqList)
 			qchisqMat = t(apply(pchisqMat, 1, function(xx) {
 				if(length(unique(xx))==1) {
