@@ -380,24 +380,36 @@ rgcpPred = function(
 		parallel::stopCluster(cl)
 	}
 
+	if(is.matrix(pchisqList[[1]])) {
+			pchisqMat = do.call(cbind, pchisqList)
+			qchisqMat = t(apply(pchisqMat, 1, function(xx) {
+				if(length(unique(xx))==1) {
+					xx[1] = xx[1]+1
+				}
+				approx(xx, SqForApprox, log(1-Squant), rule=2)$y
+			})
+			)
 
-	pchisqMat = do.call(cbind, pchisqList)
+	} else {
+			pchisqMat = do.call(abind::abind, c(pchisqList, list(along=3)))
+			qchisqMat = apply(pchisqMat, 1:2, function(xx) {
+				if(length(unique(xx))==1) {
+					xx[1] = xx[1]+1
+				}
+				approx(xx, SqForApprox, log(1-Squant), rule=2)$y
+			})
+			qchisqMat = aperm(qchisqMat, c(2,3,1))
+	}
 
-	qchisqMat = t(apply(pchisqMat, 1, function(xx) {
-		approx(xx, SqForApprox, log(1-Squant), rule=2)$y
-	}))
 
-	qchisqMat2 = qchisqMat * drop(values(varBrick))
+	qchisqMat2 = as.vector(qchisqMat) * as.vector(drop(values(varBrick)))
 
 	qBrick = raster::brick(array(
 		qchisqMat2,
-		c(ncol(meanBrick), nrow(meanBrick), length(Squant))
+		c(ncol(meanBrick), nrow(meanBrick), length(Squant)*nlayers(theta))
 		), transpose=TRUE)
 	extent(qBrick) = extent(meanBrick)
 	projection(qBrick) = projection(meanBrick)
-
-	names(qBrick) = paste0('q', Squant)
-
 
 
 	seBrick = sqrt(varBrick)
@@ -410,7 +422,7 @@ rgcpPred = function(
 		names(seBrick) = 'se'
 	} else {
 		names(qBrick) = paste0(
-			colnames(qArray1),
+			rep(names(theta), length(Squant)),
 			'.q', rep(Squant, each = nlayers(theta))
 			)
 		names(theta) = paste0(names(theta), '.mode')

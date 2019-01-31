@@ -103,14 +103,22 @@ derivDet = function(outerOffsetHere,
 	detHere
 }
 
-diagOfInv = function(x) {
+diagOfInv = function(x, verbose=FALSE) {
 
+	if(verbose) {
+		cat("cholesky\n")
+	}
 	cholHere = Matrix::expand(Matrix::Cholesky(x, 
 		LDL=FALSE, 
 		super=FALSE))
-
+	if(verbose) {
+		cat("solve\n")
+	}
 	cholHere$Linv = Matrix::solve(cholHere$L)
 
+	if(verbose) {
+		cat("multiply\n")
+	}
 	# sum the columns of Linv^2
 	cholHere$LinvDf = data.table::data.table(
 		col = rep(1:nrow(cholHere$Linv), diff(cholHere$Linv@p)),
@@ -118,6 +126,10 @@ diagOfInv = function(x) {
 		)
 
 	varDiag = cholHere$LinvDf[, .(sum = sum(x)), by = col]
+
+	if(verbose) {
+		cat("permute\n")
+	}
 
 	# do the permutation transform
 	varDiagMat = Diagonal(nrow(varDiag), varDiag$sum)
@@ -171,7 +183,7 @@ derivDiag = function(
 		cat("diagonal of inverse of matrix\n")
 	}
 
-	diagOfInv(derivMat)
+	diagOfInv(derivMat, verbose=verbose)
 }
 
 objectsForLikelihoodOneMap = function(
