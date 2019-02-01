@@ -486,7 +486,7 @@ emsExcProb = function(x, threshold=1) {
 
 	resE = mapply(
 		function(threshold, vars,ncp) {
-			stats::pchisq(threshold/vars,1,ncp,lower.tail=FALSE)
+			suppressWarnings(stats::pchisq(threshold/vars,1,ncp,lower.tail=FALSE))
 		},
 		threshold = threshold,
 		MoreArgs = list(vars = vars, ncp = ncp), SIMPLIFY=FALSE
