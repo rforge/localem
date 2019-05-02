@@ -62,11 +62,26 @@ rasterPartitionRgcp = function(
 			polyCoarse = coarsePolyList[[Smap[3]]]
 			polyFine = finePolyList[[Smap[3]]]
 			path=file.path(pathBase, Smap[3])
+
+			rasterList = list()
+			for(Dmap in Smap) {
+				cat(Dmap)
+				rasterList[[Dmap]] = localEM::rasterPartition(
+					polyCoarse = coarsePolyList[[Dmap]],
+					polyFine = finePolyList[[Dmap]],
+					path = file.path(pathBase, Dmap),
+					cellsCoarse = rasterCoarse[['cellCoarse']],
+					cellsFine = rasterFine,
+					bw=NULL, focalSize=NULL, xv=NULL,
+					verbose=verbose
+					)
+			}
 	}
 
+	dir.create(file.path(pathBase, Smap), showWarnings=FALSE)
 	if(mc.cores <= 1) {
 		cl = NULL
-		rasterList = Map(rasterPartition,
+		rasterList = Map(localEM::rasterPartition,
 			polyCoarse = coarsePolyList,
 			polyFine = finePolyList,
 			path=file.path(pathBase, Smap),

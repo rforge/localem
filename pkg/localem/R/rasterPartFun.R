@@ -300,9 +300,12 @@ if(length(bw)) {
     overwrite = file.exists(offsetFile))
 }
   # create list of partitions
-  partitions = as.data.frame(stats::na.omit(raster::unique(rasterFineId)))
+#  partitions = as.data.frame(stats::na.omit(raster::unique(rasterFineId)))
+  partitions = as.data.frame(rasterFineId)
+  partitions = partitions[!is.na(partitions[,'idCoarse']), ]
   partitions$partition = paste('c', partitions$cellCoarse, 'p', partitions$idCoarse,
     '.', partitions$idFine, sep = '')
+  partitions = partitions[!duplicated(partitions[,'partition']), ]
   partitions = cbind(ID = 1:nrow(partitions), partitions)
 
   # raster with partition ID's
