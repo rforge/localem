@@ -78,7 +78,7 @@ rasterPartitionRgcp = function(
 			}
 	}
 
-	dir.create(file.path(pathBase, Smap), showWarnings=FALSE)
+#	dir.create(file.path(pathBase, Smap), showWarnings=FALSE)
 	if(mc.cores <= 1) {
 		cl = NULL
 		rasterList = Map(localEM::rasterPartition,
