@@ -5,7 +5,8 @@ get2ndDeriv = function(
 	offDiagSecondDerivIJ,
 	offDiagSecondDerivX,		
 	precPlusTwoOffset,
-	sparseTemplate		
+	sparseTemplate,
+	coefForDeriv = c(-2, 4)		
 	) {
 
 	# diagonal elemts 2 sum(Y_ij O_ijl)
@@ -13,12 +14,13 @@ get2ndDeriv = function(
 	diagCombined2 = cbind(
 		data.frame(i=cellSeq), 
 		data.frame(j=cellSeq), 
-		(-2)*diagCombined)
+#		(-2)*diagCombined)
+		coefForDeriv[1]*diagCombined)
 
 	offDiagCombined = cbind(
 		as.data.frame(offDiagSecondDerivIJ),
-		4*offDiagSecondDerivX
-		)
+#		4*offDiagSecondDerivX
+		coefForDeriv[2]*offDiagSecondDerivX)
 
 	# 4 * sum Y_ij O_ijl theta_ijl O_ijk theta_ijk
 
@@ -31,7 +33,7 @@ get2ndDeriv = function(
 			length(precPlusTwoOffsetT@x), 
 			ncol(offDiagSecondDerivX),
 			dimnames = list(NULL, 
-				colnames(	offDiagSecondDerivX)))
+				colnames(offDiagSecondDerivX)))
 		)
 
 	# add up diag, outer offsets, and gmrf mat
@@ -105,12 +107,18 @@ derivDet = function(outerOffsetHere,
 
 diagOfInv = function(x, verbose=FALSE) {
 
+	if(class(x) != 'dCHMsimpl') {
 	if(verbose) {
 		cat("cholesky\n")
 	}
-	cholHere = Matrix::expand(Matrix::Cholesky(x, 
+	cholHere = Matrix::Cholesky(x, 
 		LDL=FALSE, 
-		super=FALSE))
+		super=FALSE)
+	} else {
+	cholHere = x		
+	}
+
+	cholHere = Matrix::expand(cholHere)
 	if(verbose) {
 		cat("solve\n")
 	}
@@ -143,7 +151,8 @@ derivDiag = function(
 	param, offsetMatrix,precTemplateMatrix,
 	diagOf2ndDeriv,offDiagSecondDerivIJ,
 	offDiagSecondDerivX, sparseTemplate,
-	verbose=FALSE) {
+	verbose=FALSE,
+	coefForDeriv = c(-2, 4)) {
 
 	if(verbose) {
 		cat("creating matrix\n")
@@ -161,7 +170,7 @@ derivDiag = function(
 		offDiagSecondDerivIJ=offDiagSecondDerivIJ,
 		offDiagSecondDerivX=offDiagSecondDerivX,		
 		precPlusTwoOffset = precMat,
-		sparseTemplate)
+		sparseTemplate, coefForDeriv)
 	derivHere = as.data.frame(derivHere)
 
 	derivMat = Matrix::forceSymmetric(
@@ -187,21 +196,26 @@ derivDiag = function(
 }
 
 objectsForLikelihoodOneMap = function(
-	OijlHere, yHere, 
-	lambdaHere, thetaHere = sqrt(lambdaHere)) {
+	OijlHere, yHere, lambdaHere) {
 
-	# sum_m O_ijm theta_m^2
+	# sum_m O_ijm lambda_m
 	offThetaIJ = as.vector(Matrix::crossprod(
 		OijlHere, lambdaHere))
 
 	
-	# sum_ij Y_ij O_ijl / sum_m O_ijm theta_m^2
+
+	# Y_ij / sum_m O_ijm lambda_m
+	yOverSumM = Matrix::Diagonal(
+			length(offThetaIJ), yHere/offThetaIJ)
+
+	# sum_j Y_ij O_ijl / sum_m O_ijm lambda_m
+
 	diagOf2ndDeriv = apply(
-		OijlHere %*% Matrix::Diagonal(
-			length(offThetaIJ), yHere/offThetaIJ),
+		OijlHere %*% yOverSumM,
 		1, sum, na.rm=TRUE)
 
-	# sum_ij Y_ij O_ijl theta_l O_ijk theta-k / [sum_m O_ijm theta_m^2]^2
+	# sum_j Y_ij O_ijl theta_l O_ijk theta_k / [sum_m O_ijm theta_m^2]^2
+
 	offDiagSecondDeriv = Matrix::tcrossprod(
 		Matrix::Diagonal(
 			length(lambdaHere), lambdaHere) %*%
@@ -234,8 +248,7 @@ function(yHere,
 		OijlHere = Oijl,
 		yHere = yHere,
 		MoreArgs = list(
-			lambdaHere = lambdaHere,
-			thetaHere = thetaHere
+			lambdaHere = lambdaHere
 			))
 
 	res = mapply(
